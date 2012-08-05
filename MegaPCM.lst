@@ -1,10 +1,10 @@
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 1 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 1 - 8/5/2012 14:56:18
 
 
        1/       0 :                     
        2/       0 :                     ; ===============================================================
        3/       0 :                     ; ---------------------------------------------------------------
-       4/       0 :                     ; Sonic 1 Mega PCM driver
+       4/       0 :                     ; Mega PCM v.1.1
        5/       0 :                     ; (C) 2012, Vladikcomper
        6/       0 :                     ; ---------------------------------------------------------------
        7/       0 :                     
@@ -61,7 +61,7 @@
       58/       A : 67                  	ld	h,a
       59/       B : 6F                  	ld	l,a
       60/       C : 22 B2 00            	ld	(Ptr_InitPlayback),hl	; reset 'InitPlayback' event
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 2 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 2 - 8/5/2012 14:56:18
 
 
       61/       F : 22 B5 00            	ld	(Ptr_SoundProc),hl	; reset 'SoundProc' event
@@ -124,7 +124,7 @@
      118/      56 :                     ; ---------------------------------------------------------------
      119/      56 :                     
      120/      56 :                     SetupDAC:
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 3 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 3 - 8/5/2012 14:56:18
 
 
      121/      56 : FD 36 00 2B         	ld	(iy+0),2Bh		;
@@ -141,22 +141,22 @@
      132/      71 :                     
      133/      71 :                     Events_List:
      134/      71 :                     	;	Initplayback,	SoundProc,	Interrupt,	EndPlayback	;
-     135/      71 : 27 01 3A 01 BD 00   	dw	Init_PCM,	Process_PCM,	Int_Normal,	StopDAC		; Mode 0
+     135/      71 : 28 01 3D 01 BD 00   	dw	Init_PCM,	Process_PCM,	Int_Normal,	StopDAC		; Mode 0
                     EA 00 
-     136/      79 : 27 01 3A 01 CB 00   	dw	Init_PCM,	Process_PCM,	Int_NoOverride,	StopDAC		; Mode 1
+     136/      79 : 28 01 3D 01 CB 00   	dw	Init_PCM,	Process_PCM,	Int_NoOverride,	StopDAC		; Mode 1
                     EA 00 
-     137/      81 : 27 01 3A 01 BD 00   	dw	Init_PCM,	Process_PCM,	Int_Normal,	Reload_PCM	; Mode 2
-                    27 01 
-     138/      89 : 27 01 3A 01 CB 00   	dw	Init_PCM,	Process_PCM,	Int_NoOverride,	Reload_PCM	; Mode 3
-                    27 01 
-     139/      91 : 6C 01 83 01 BD 00   	dw	Init_DPCM,	Process_DPCM,	Int_Normal,	StopDAC		; Mode 4
+     137/      81 : 28 01 3D 01 BD 00   	dw	Init_PCM,	Process_PCM,	Int_Normal,	Reload_PCM	; Mode 2
+                    28 01 
+     138/      89 : 28 01 3D 01 CB 00   	dw	Init_PCM,	Process_PCM,	Int_NoOverride,	Reload_PCM	; Mode 3
+                    28 01 
+     139/      91 : 6E 01 87 01 BD 00   	dw	Init_DPCM,	Process_DPCM,	Int_Normal,	StopDAC		; Mode 4
                     EA 00 
-     140/      99 : 6C 01 83 01 CB 00   	dw	Init_DPCM,	Process_DPCM,	Int_NoOverride,	StopDAC		; Mode 5
+     140/      99 : 6E 01 87 01 CB 00   	dw	Init_DPCM,	Process_DPCM,	Int_NoOverride,	StopDAC		; Mode 5
                     EA 00 
-     141/      A1 : 6C 01 83 01 BD 00   	dw	Init_DPCM,	Process_DPCM,	Int_Normal,	Reload_DPCM	; Mode 6
-                    6C 01 
-     142/      A9 : 6C 01 83 01 CB 00   	dw	Init_DPCM,	Process_DPCM,	Int_NoOverride,	Reload_DPCM	; Mode 7
-                    6C 01 
+     141/      A1 : 6E 01 87 01 BD 00   	dw	Init_DPCM,	Process_DPCM,	Int_Normal,	Reload_DPCM	; Mode 6
+                    6E 01 
+     142/      A9 : 6E 01 87 01 CB 00   	dw	Init_DPCM,	Process_DPCM,	Int_NoOverride,	Reload_DPCM	; Mode 7
+                    6E 01 
      143/      B1 :                     
      144/      B1 :                     ; ===============================================================
      145/      B1 :                     ; ---------------------------------------------------------------
@@ -187,7 +187,7 @@
      170/      BD :                     ;	You may do push/pop from stack though.
      171/      BD :                     ;	'StopDAC' is expection, as it breaks playback anyway.
      172/      BD :                     ; ---------------------------------------------------------------
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 4 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 4 - 8/5/2012 14:56:18
 
 
      173/      BD :                     
@@ -250,7 +250,7 @@
      230/      F1 :                     ; Bank-Switch Registers Set:
      231/      F1 :                     ;	b'	= Current Bank Number
      232/      F1 :                     ;	c'	= Last Bank Number
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 5 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 5 - 8/5/2012 14:56:18
 
 
      233/      F1 :                     ;	de'	= Bank Register
@@ -300,232 +300,233 @@
      277/     11F : 12                  	ld	(de), a	; A20
      278/     120 : 0F                  	rrca
      279/     121 : 12                  	ld	(de), a	; A21
-     280/     122 : AF                  	xor	a	; a = 0
+     280/     122 : 0F                  	rrca
      281/     123 : 12                  	ld	(de), a	; A22
-     282/     124 : 12                  	ld	(de), a	; A23
-     283/     125 : D9                  	exx
-     284/     126 : C9                  	ret
-     285/     127 :                     
-     286/     127 :                     ; ===============================================================
-     287/     127 :                     ; ---------------------------------------------------------------
-     288/     127 :                     ; Routines to process PCM sound playback
-     289/     127 :                     ; ---------------------------------------------------------------
-     290/     127 :                     ; PCM Registers Set:
-     291/     127 :                     ;	B	= Pitch Counter
-     292/     127 :                     ;	C	= Pitch
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 6 - 6/11/2012 18:38:22
+     282/     124 : AF                  	xor	a	; a = 0
+     283/     125 : 12                  	ld	(de), a	; A23
+     284/     126 : D9                  	exx
+     285/     127 : C9                  	ret
+     286/     128 :                     
+     287/     128 :                     ; ===============================================================
+     288/     128 :                     ; ---------------------------------------------------------------
+     289/     128 :                     ; Routines to process PCM sound playback
+     290/     128 :                     ; ---------------------------------------------------------------
+     291/     128 :                     ; PCM Registers Set:
+     292/     128 :                     ;	B	= Pitch Counter
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 6 - 8/5/2012 14:56:18
 
 
-     293/     127 :                     ;	DE	= <Unused>
-     294/     127 :                     ;	HL	= PCM byte pointer
-     295/     127 :                     ; ---------------------------------------------------------------
-     296/     127 :                     
-     297/     127 :                     ; ---------------------------------------------------------------
-     298/     127 :                     ; Init PCM playback or reload PCM file
-     299/     127 :                     ; ---------------------------------------------------------------
-     300/     127 :                     
-     301/     127 :                     Reload_PCM:
-     302/     127 :                     
-     303/     127 :                     Init_PCM:    
-     304/     127 : CD 56 00            	call	SetupDAC       
-     305/     12A : CD F1 00            	call	InitBankSwitching
-     306/     12D : DD 4E 01            	ld	c,(ix+pitch)		; c  = pitch
-     307/     130 : DD 66 05            	ld	h,(ix+s_pos+1)		;
-     308/     133 : DD 6E 04            	ld	l,(ix+s_pos)		; hl = Start offset
-     309/     136 : FD 36 00 2A         	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
-     310/     13A :                     
-     311/     13A :                     ; ---------------------------------------------------------------
-     312/     13A :                     ; PCM Playback Loop
-     313/     13A :                     ; ---------------------------------------------------------------
-     314/     13A :                     
-     315/     13A :                     Process_PCM:
-     316/     13A :                     
-     317/     13A :                     	; Read sample's byte and send it to DAC with pitching
-     318/     13A : 7E                  	ld	a,(hl)			; 7	; get PCM byte
-     319/     13B : 41                  	ld	b,c			; 4	; b = Pitch
-     320/     13C : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
-     321/     13E : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
-     322/     141 :                     	; Cycles: 24
-     323/     141 :                     
-     324/     141 :                     	; Increment PCM byte pointer and switch the bank if necessary
-     325/     141 : 23                  	inc	hl			; 6	; next PCM byte
-     326/     142 : CB 7C               	bit	7,h			; 8	; has the bank warped?
-     327/     144 : 28 1A               	jr	z,++			; 7/12	; if yes, switch the bank
-     328/     146 :                     	; Cycles: 21
-     329/     146 :                     
-     330/     146 :                     	; Check if sample playback is finished
-     331/     146 : D9                  	exx				; 4	;
-     332/     147 : 79                  	ld	a,c			; 4	; load last bank no.
-     333/     148 : 90                  	sub	b			; 4	; compare to current bank no.
-     334/     149 : 20 10               	jr	nz,+			; 7/12	; if last bank isn't reached, branch
-     335/     14B : 2B                  	dec	hl			; 6	; decrease number of bytes to play in last bank
-     336/     14C : B4                  	or	h			; 4	; is hl positive?
-     337/     14D : F2 68 01            	jp	p,+++			; 10	; if yes, quit playback loop
-     338/     150 : D9                  	exx				; 4	;
-     339/     151 :                     	; Cycles: 43
-     340/     151 :                     
-     341/     151 :                     	; Check if we should play a new sample
-     342/     151 : 3A FF 1F            -	ld	a,(DAC_Number)		; 13	; load DAC number
-     343/     154 : B7                  	or	a			; 4	; test it
-     344/     155 : CA 3A 01            	jp	z,Process_PCM		; 10	; if zero, go on playing
-     345/     158 : C3 B7 00            	jp	Event_Interrupt		;	; otherwise, interrupt playback
-     346/     15B :                     	; Cycles: 27
-     347/     15B :                     
-     348/     15B :                     	; Synchronization loop (24 cycles)
-     349/     15B : D9                  +	exx				; 4
-     350/     15C : 00                  	nop				; 4
-     351/     15D : 00                  	nop				; 4
-     352/     15E : 18 F1               	jr	-			; 12
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 7 - 6/11/2012 18:38:22
+     293/     128 :                     ;	C	= Pitch
+     294/     128 :                     ;	DE	= <Unused>
+     295/     128 :                     ;	HL	= PCM byte pointer
+     296/     128 :                     ; ---------------------------------------------------------------
+     297/     128 :                     
+     298/     128 :                     ; ---------------------------------------------------------------
+     299/     128 :                     ; Init PCM playback or reload PCM file
+     300/     128 :                     ; ---------------------------------------------------------------
+     301/     128 :                     
+     302/     128 :                     Reload_PCM:
+     303/     128 :                     
+     304/     128 :                     Init_PCM:    
+     305/     128 : CD 56 00            	call	SetupDAC       
+     306/     12B : CD F1 00            	call	InitBankSwitching
+     307/     12E : DD 4E 01            	ld	c,(ix+pitch)		; c  = pitch
+     308/     131 : DD 66 05            	ld	h,(ix+s_pos+1)		;
+     309/     134 : DD 6E 04            	ld	l,(ix+s_pos)		; hl = Start offset
+     310/     137 : CB FC               	set	7,h			; make it 8000h-based if it's not (perverts memory damage if playing corrupted slots)
+     311/     139 : FD 36 00 2A         	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
+     312/     13D :                     
+     313/     13D :                     ; ---------------------------------------------------------------
+     314/     13D :                     ; PCM Playback Loop
+     315/     13D :                     ; ---------------------------------------------------------------
+     316/     13D :                     
+     317/     13D :                     Process_PCM:
+     318/     13D :                     
+     319/     13D :                     	; Read sample's byte and send it to DAC with pitching
+     320/     13D : 7E                  	ld	a,(hl)			; 7	; get PCM byte
+     321/     13E : 41                  	ld	b,c			; 4	; b = Pitch
+     322/     13F : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
+     323/     141 : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
+     324/     144 :                     	; Cycles: 31
+     325/     144 :                     
+     326/     144 :                     	; Increment PCM byte pointer and switch the bank if necessary
+     327/     144 : 23                  	inc	hl			; 6	; next PCM byte
+     328/     145 : CB 7C               	bit	7,h			; 8	; has the bank warped?
+     329/     147 : 28 19               	jr	z,++			; 7/12	; if yes, switch the bank
+     330/     149 :                     	; Cycles: 21
+     331/     149 :                     
+     332/     149 :                     	; Check if sample playback is finished
+     333/     149 : D9                  	exx				; 4	;
+     334/     14A : 79                  	ld	a,c			; 4	; load last bank no.
+     335/     14B : 90                  	sub	b			; 4	; compare to current bank no.
+     336/     14C : 20 10               	jr	nz,+			; 7/12	; if last bank isn't reached, branch
+     337/     14E : 2B                  	dec	hl			; 6	; decrease number of bytes to play in last bank
+     338/     14F : B4                  	or	h			; 4	; is hl positive?
+     339/     150 : F2 6A 01            	jp	p,+++			; 10	; if yes, quit playback loop
+     340/     153 : D9                  	exx				; 4	;
+     341/     154 :                     	; Cycles: 43
+     342/     154 :                     
+     343/     154 :                     	; Check if we should play a new sample
+     344/     154 : 3A FF 1F            -	ld	a,(DAC_Number)		; 13	; load DAC number
+     345/     157 : B7                  	or	a			; 4	; test it
+     346/     158 : CA 3D 01            	jp	z,Process_PCM		; 10	; if zero, go on playing
+     347/     15B : C3 B7 00            	jp	Event_Interrupt		;	; otherwise, interrupt playback
+     348/     15E :                     	; Cycles: 27
+     349/     15E :                     
+     350/     15E :                     	; Synchronization loop (20 cycles)
+     351/     15E : D9                  +	exx				; 4
+     352/     15F : 00                  	nop				; 4
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 7 - 8/5/2012 14:56:18
 
 
-     353/     160 :                     
-     354/     160 :                     	; Switch to next bank
-     355/     160 : 26 80               +	ld	h,80h			; restore base addr
-     356/     162 : CD 12 01            	call	LoadNextBank
-     357/     165 : C3 51 01            	jp	-
-     358/     168 :                     
-     359/     168 :                     	; Quit playback loop
-     360/     168 : D9                  +	exx
-     361/     169 : C3 BA 00            	jp	Event_EndPlayback
-     362/     16C :                     
-     363/     16C :                     ; ---------------------------------------------------------------
-     364/     16C :                     ; Best cycles per loop:	116
-     365/     16C :                     ; Max Possible rate:	30 kHz (PAL)
-     366/     16C :                     ; ---------------------------------------------------------------
-     367/     16C :                     
-     368/     16C :                     ; ===============================================================
-     369/     16C :                     ; ---------------------------------------------------------------
-     370/     16C :                     ; Routines to process DPCM sound playback
-     371/     16C :                     ; ---------------------------------------------------------------
-     372/     16C :                     ; DPCM Registers Set:
-     373/     16C :                     ;	B	= Pitch Counter / also DAC Value
-     374/     16C :                     ;	C	= Pitch
-     375/     16C :                     ;	DE	= DPCM byte pointer
-     376/     16C :                     ;	HL	= Delta Table
-     377/     16C :                     ; ---------------------------------------------------------------
-     378/     16C :                     
-     379/     16C :                     ; ---------------------------------------------------------------
-     380/     16C :                     ; Init DPCM playback or reload DPCM file
-     381/     16C :                     ; ---------------------------------------------------------------
-     382/     16C :                     
-     383/     16C :                     Reload_DPCM:
-     384/     16C :                     
-     385/     16C :                     Init_DPCM:
-     386/     16C : CD 56 00            	call	SetupDAC
-     387/     16F : CD F1 00            	call	InitBankSwitching
-     388/     172 : DD 4E 01            	ld	c,(ix+pitch)		; c  = pitch
-     389/     175 : DD 56 05            	ld	d,(ix+s_pos+1)		;
-     390/     178 : DD 5E 04            	ld	e,(ix+s_pos)		; de = start offset
-     391/     17B : 26 02               	ld	h,DPCM_DeltaArray>>8	; load delta table base
-     392/     17D : FD 36 00 2A         	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
-     393/     181 : 06 80               	ld	b,80h			; init DAC value
-     394/     183 :                     
-     395/     183 :                     Process_DPCM:
-     396/     183 :                     
-     397/     183 :                     	; Calculate and send 2 values to DAC
-     398/     183 : 1A                  	ld	a,(de)			; 7	; get a byte from DPCM stream
-     399/     184 : 0F                  	rrca				; 4	; get first nibble
-     400/     185 : 0F                  	rrca				; 4	;
-     401/     186 : 0F                  	rrca				; 4	;
-     402/     187 : 0F                  	rrca				; 4	;
-     403/     188 : E6 0F               	and	0Fh			; 7	; mask nibble
-     404/     18A : 6F                  	ld	l,a			; 4	; setup delta table index
-     405/     18B : 78                  	ld	a,b			; 4	; load DAC Value
-     406/     18C : 86                  	add	a,(hl)			; 7	; add delta to it
-     407/     18D : 41                  	ld	b,c			; 4	; b = Pitch
-     408/     18E : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
-     409/     190 : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
-     410/     193 : 47                  	ld	b,a			; 4	; b = DAC Value
-     411/     194 :                     	; Cycles: 73
-     412/     194 :                     
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 8 - 6/11/2012 18:38:22
+     353/     160 : 18 F2               	jr	-			; 12
+     354/     162 :                     
+     355/     162 :                     	; Switch to next bank
+     356/     162 : 26 80               +	ld	h,80h			; restore base addr
+     357/     164 : CD 12 01            	call	LoadNextBank
+     358/     167 : C3 54 01            	jp	-
+     359/     16A :                     
+     360/     16A :                     	; Quit playback loop
+     361/     16A : D9                  +	exx
+     362/     16B : C3 BA 00            	jp	Event_EndPlayback
+     363/     16E :                     
+     364/     16E :                     ; ---------------------------------------------------------------
+     365/     16E :                     ; Best cycles per loop:	122
+     366/     16E :                     ; Max Possible rate:	3,550 kHz / 122 = 29 kHz (PAL)
+     367/     16E :                     ; ---------------------------------------------------------------
+     368/     16E :                     
+     369/     16E :                     ; ===============================================================
+     370/     16E :                     ; ---------------------------------------------------------------
+     371/     16E :                     ; Routines to process DPCM sound playback
+     372/     16E :                     ; ---------------------------------------------------------------
+     373/     16E :                     ; DPCM Registers Set:
+     374/     16E :                     ;	B	= Pitch Counter / also DAC Value
+     375/     16E :                     ;	C	= Pitch
+     376/     16E :                     ;	DE	= DPCM byte pointer
+     377/     16E :                     ;	HL	= Delta Table
+     378/     16E :                     ; ---------------------------------------------------------------
+     379/     16E :                     
+     380/     16E :                     ; ---------------------------------------------------------------
+     381/     16E :                     ; Init DPCM playback or reload DPCM file
+     382/     16E :                     ; ---------------------------------------------------------------
+     383/     16E :                     
+     384/     16E :                     Reload_DPCM:
+     385/     16E :                     
+     386/     16E :                     Init_DPCM:
+     387/     16E : CD 56 00            	call	SetupDAC
+     388/     171 : CD F1 00            	call	InitBankSwitching
+     389/     174 : DD 4E 01            	ld	c,(ix+pitch)		; c  = pitch
+     390/     177 : DD 56 05            	ld	d,(ix+s_pos+1)		;
+     391/     17A : DD 5E 04            	ld	e,(ix+s_pos)		; de = start offset
+     392/     17D : CB FA               	set	7,d			; make it 8000h-based if it's not (perverts memory damage if playing corrupted slots)
+     393/     17F : 26 02               	ld	h,DPCM_DeltaArray>>8	; load delta table base
+     394/     181 : FD 36 00 2A         	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
+     395/     185 : 06 80               	ld	b,80h			; init DAC value
+     396/     187 :                     
+     397/     187 :                     Process_DPCM:
+     398/     187 :                     
+     399/     187 :                     	; Calculate and send 2 values to DAC
+     400/     187 : 1A                  	ld	a,(de)			; 7	; get a byte from DPCM stream
+     401/     188 : 0F                  	rrca				; 4	; get first nibble
+     402/     189 : 0F                  	rrca				; 4	;
+     403/     18A : 0F                  	rrca				; 4	;
+     404/     18B : 0F                  	rrca				; 4	;
+     405/     18C : E6 0F               	and	0Fh			; 7	; mask nibble
+     406/     18E : 6F                  	ld	l,a			; 4	; setup delta table index
+     407/     18F : 78                  	ld	a,b			; 4	; load DAC Value
+     408/     190 : 86                  	add	a,(hl)			; 7	; add delta to it
+     409/     191 : 41                  	ld	b,c			; 4	; b = Pitch
+     410/     192 : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
+     411/     194 : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
+     412/     197 : 47                  	ld	b,a			; 4	; b = DAC Value
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 8 - 8/5/2012 14:56:18
 
 
-     413/     194 : 1A                  	ld	a,(de)			; 7	; reload DPCM stream byte
-     414/     195 : E6 0F               	and	0Fh			; 7	; get second nibble
-     415/     197 : 6F                  	ld	l,a			; 4	; setup delta table index
-     416/     198 : 78                  	ld	a,b			; 4	; load DAC Value
-     417/     199 : 86                  	add	a,(hl)			; 7	; add delta to it
-     418/     19A : 41                  	ld	b,c			; 4	; b = Pitch
-     419/     19B : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
-     420/     19D : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
-     421/     1A0 : 47                  	ld	b,a			; 4	; b = DAC Value
-     422/     1A1 :                     	; Cycles: 57
-     423/     1A1 :                     
-     424/     1A1 :                     	; Increment DPCM byte pointer and switch the bank if necessary
-     425/     1A1 : 13                  	inc	de			; 6	; next DPCM byte
-     426/     1A2 : CB 7A               	bit	7,d			; 8	; has the bank warped?
-     427/     1A4 : 28 1A               	jr	z,++			; 7/12	; if no, switch the bank
-     428/     1A6 :                     	; Cycles: 21
-     429/     1A6 :                     
-     430/     1A6 :                     	; Check if sample playback is finished
-     431/     1A6 : D9                  	exx				; 4	;
-     432/     1A7 : 79                  	ld	a,c			; 4	; load last bank no.
-     433/     1A8 : 90                  	sub	b			; 4	; compare to current bank no.
-     434/     1A9 : 20 10               	jr	nz,+			; 7/12	; if last bank isn't reached, branch
-     435/     1AB : 2B                  	dec	hl			; 6	; decrease number of bytes to play in last bank
-     436/     1AC : B4                  	or	h			; 4	; is hl positive?
-     437/     1AD : F2 C8 01            	jp	p,+++			; 10	; if yes, quit playback loop
-     438/     1B0 : D9                  	exx				; 4	;
-     439/     1B1 :                     	; Cycles: 43
-     440/     1B1 :                     
-     441/     1B1 :                     	; Check if we should play a new sample
-     442/     1B1 : 3A FF 1F            -	ld	a,(DAC_Number)		; 13	; load DAC number
-     443/     1B4 : B7                  	or	a			; 4	; test it
-     444/     1B5 : CA 83 01            	jp	z,Process_DPCM		; 10	; if zero, go on playing
-     445/     1B8 : C3 B7 00            	jp	Event_Interrupt		;	; otherwise, interrupt playback
-     446/     1BB :                     	; Cycles: 27
-     447/     1BB :                     
-     448/     1BB :                     	; Synchronization loop (24 cycles)
-     449/     1BB : D9                  +	exx				; 4
-     450/     1BC : 00                  	nop				; 4
-     451/     1BD : 00                  	nop				; 4
-     452/     1BE : 18 F1               	jr	-			; 12
-     453/     1C0 :                     
-     454/     1C0 :                     	; Switch to next bank
-     455/     1C0 : 16 80               +	ld	d,80h			; restore base address
-     456/     1C2 : CD 12 01            	call	LoadNextBank
-     457/     1C5 : C3 B1 01            	jp	-
-     458/     1C8 :                     
-     459/     1C8 :                     	; Quit playback loop
-     460/     1C8 : D9                  +	exx
-     461/     1C9 : C3 BA 00            	jp	Event_EndPlayback
-     462/     1CC :                     
-     463/     1CC :                     ; ---------------------------------------------------------------
-     464/     1CC :                     ; Best cycles per loop:	221/2
-     465/     1CC :                     ; Max possible rate:	32 kHz (PAL)
-     466/     1CC :                     ; ---------------------------------------------------------------
-     467/     1CC :                                                             
-     468/     1CC :                     	align	100h	; it's important to align this way, or the code above won't work properly
-     469/     200 :                     
-     470/     200 :                     DPCM_DeltaArray:
-     471/     200 : 00 01 02 04 08 10   	db	0, 1, 2, 4, 8, 10h, 20h, 40h
+     413/     198 :                     	; Cycles: 73
+     414/     198 :                     
+     415/     198 : 1A                  	ld	a,(de)			; 7	; reload DPCM stream byte
+     416/     199 : E6 0F               	and	0Fh			; 7	; get second nibble
+     417/     19B : 6F                  	ld	l,a			; 4	; setup delta table index
+     418/     19C : 78                  	ld	a,b			; 4	; load DAC Value
+     419/     19D : 86                  	add	a,(hl)			; 7	; add delta to it
+     420/     19E : 41                  	ld	b,c			; 4	; b = Pitch
+     421/     19F : 10 FE               	djnz	$			; 7/13+	; wait until pitch zero
+     422/     1A1 : 32 01 40            	ld	(YM_Port0_Data),a	; 13	; write to DAC
+     423/     1A4 : 47                  	ld	b,a			; 4	; b = DAC Value
+     424/     1A5 :                     	; Cycles: 57
+     425/     1A5 :                     
+     426/     1A5 :                     	; Increment DPCM byte pointer and switch the bank if necessary
+     427/     1A5 : 13                  	inc	de			; 6	; next DPCM byte
+     428/     1A6 : CB 7A               	bit	7,d			; 8	; has the bank warped?
+     429/     1A8 : 28 19               	jr	z,++			; 7/12	; if no, switch the bank
+     430/     1AA :                     	; Cycles: 21
+     431/     1AA :                     
+     432/     1AA :                     	; Check if sample playback is finished
+     433/     1AA : D9                  	exx				; 4	;
+     434/     1AB : 79                  	ld	a,c			; 4	; load last bank no.
+     435/     1AC : 90                  	sub	b			; 4	; compare to current bank no.
+     436/     1AD : 20 10               	jr	nz,+			; 7/12	; if last bank isn't reached, branch
+     437/     1AF : 2B                  	dec	hl			; 6	; decrease number of bytes to play in last bank
+     438/     1B0 : B4                  	or	h			; 4	; is hl positive?
+     439/     1B1 : F2 CB 01            	jp	p,+++			; 10	; if yes, quit playback loop
+     440/     1B4 : D9                  	exx				; 4	;
+     441/     1B5 :                     	; Cycles: 43
+     442/     1B5 :                     
+     443/     1B5 :                     	; Check if we should play a new sample
+     444/     1B5 : 3A FF 1F            -	ld	a,(DAC_Number)		; 13	; load DAC number
+     445/     1B8 : B7                  	or	a			; 4	; test it
+     446/     1B9 : CA 87 01            	jp	z,Process_DPCM		; 10	; if zero, go on playing
+     447/     1BC : C3 B7 00            	jp	Event_Interrupt		;	; otherwise, interrupt playback
+     448/     1BF :                     	; Cycles: 27
+     449/     1BF :                     
+     450/     1BF :                     	; Synchronization loop (20 cycles)
+     451/     1BF : D9                  +	exx				; 4
+     452/     1C0 : 00                  	nop				; 4
+     453/     1C1 : 18 F2               	jr	-			; 12
+     454/     1C3 :                     
+     455/     1C3 :                     	; Switch to next bank
+     456/     1C3 : 16 80               +	ld	d,80h			; restore base address
+     457/     1C5 : CD 12 01            	call	LoadNextBank
+     458/     1C8 : C3 B5 01            	jp	-
+     459/     1CB :                     
+     460/     1CB :                     	; Quit playback loop
+     461/     1CB : D9                  +	exx
+     462/     1CC : C3 BA 00            	jp	Event_EndPlayback
+     463/     1CF :                     
+     464/     1CF :                     ; ---------------------------------------------------------------
+     465/     1CF :                     ; Best cycles per loop:	221/2
+     466/     1CF :                     ; Max possible rate:	32 kHz (PAL)
+     467/     1CF :                     ; ---------------------------------------------------------------
+     468/     1CF :                                                             
+     469/     1CF :                     	align	100h	; it's important to align this way, or the code above won't work properly
+     470/     200 :                     
+     471/     200 :                     DPCM_DeltaArray:
+     472/     200 : 00 01 02 04 08 10   	db	0, 1, 2, 4, 8, 10h, 20h, 40h
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 9 - 8/5/2012 14:56:18
+
+
                     20 40 
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 9 - 6/11/2012 18:38:22
-
-
-     472/     208 : 80 FF FE FC F8 F0   	db	-80h, -1, -2, -4, -8, -10h, -20h, -40h
+     473/     208 : 80 FF FE FC F8 F0   	db	-80h, -1, -2, -4, -8, -10h, -20h, -40h
                     E0 C0 
-     473/     210 :                     
-     474/     210 :                     ; ---------------------------------------------------------------
-     475/     210 :                     ; NOTICE ABOUT PLAYBACK RATES:
-     476/     210 :                     ;	YM is only capable in producing DAC sound @ ~26 kHz
-     477/     210 :                     ;	frequency, overpassing it leads to missed writes!
-     478/     210 :                     ;	The fact playback code can play faster than that
-     479/     210 :                     ;	means there is a good amount of room for more features,
-     480/     210 :                     ;	i.e. to waste even more processor cycles! ;)
-     481/     210 :                     ; ---------------------------------------------------------------
-     482/     210 :                     
-     483/     210 :                     ; ===============================================================
-     484/     210 :                     
-     485/     210 :                     ; Table of DAC samples goes right after the code.
-     486/     210 :                     ; It remains empty here, you are meant to fill it in your hack's
-     487/     210 :                     ; disassembly right after including compiled driver.
-     488/     210 :                     
-     489/     210 :                     DAC_Table:
-     490/     210 :                     
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 10 - 6/11/2012 18:38:22
+     474/     210 :                     
+     475/     210 :                     ; ---------------------------------------------------------------
+     476/     210 :                     ; NOTICE ABOUT PLAYBACK RATES:
+     477/     210 :                     ;	YM is only capable of producing DAC sound @ ~26 kHz
+     478/     210 :                     ;	frequency, overpassing it leads to missed writes!
+     479/     210 :                     ;	The fact playback code can play faster than that
+     480/     210 :                     ;	means there is a good amount of room for more features,
+     481/     210 :                     ;	i.e. to waste even more processor cycles! ;)
+     482/     210 :                     ; ---------------------------------------------------------------
+     483/     210 :                     
+     484/     210 :                     ; ===============================================================
+     485/     210 :                     
+     486/     210 :                     ; Table of DAC samples goes right after the code.
+     487/     210 :                     ; It remains empty here, you are meant to fill it in your hack's
+     488/     210 :                     ; disassembly right after including compiled driver.
+     489/     210 :                     
+     490/     210 :                     DAC_Table:
+     491/     210 :                     
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 10 - 8/5/2012 14:56:18
 
 
   symbol table (* = unused):
@@ -535,7 +536,7 @@
 *BIGENDIAN :                      0 - | *BRANCHEXT :                      0 - |
 *CASESENSITIVE :                  0 - | *CONSTPI :        3.141592653589793 - |
  DAC_NUMBER :                  1FFF - |  DAC_TABLE :                    210 C |
-*DATE :                   6/11/2012 - |  DPCM_DELTAARRAY :              200 C |
+*DATE :                    8/5/2012 - |  DPCM_DELTAARRAY :              200 C |
  EVENTS_LIST :                   71 C |  EVENT_ENDPLAYBACK :             BA C |
  EVENT_INITPLAYBACK :            B1 C |  EVENT_INTERRUPT :               B7 C |
  EVENT_SOUNDPROC :               B4 C |  E_BANK :                         3 - |
@@ -545,7 +546,7 @@
 *HASFPU :                         0 - | *HASPMMU :                        0 - |
  IDLE_LOOP :                     1C C |  IDLE_WAITDAC :                  1F C |
 *INEXTMODE :                      0 - |  INITBANKSWITCHING :             F1 C |
- INIT_DPCM :                    16C C |  INIT_PCM :                     127 C |
+ INIT_DPCM :                    16E C |  INIT_PCM :                     128 C |
 *INLWORDMODE :                    0 - | *INMAXMODE :                      0 - |
 *INSRCMODE :                      0 - | *INSUPMODE :                      0 - |
  INT_NOOVERRIDE :                CB C |  INT_NORMAL :                    BD C |
@@ -555,28 +556,28 @@
 *MOMCPUNAME :                   Z80 - | *NESTMAX :                      100 - |
 *PACKING :                        0 - | *PADDING :                        1 - |
  PAUSEDAC :                      DA C |  PITCH :                          1 - |
- PROCESS_DPCM :                 183 C |  PROCESS_PCM :                  13A C |
+ PROCESS_DPCM :                 187 C |  PROCESS_PCM :                  13D C |
  PTR_ENDPLAYBACK :               BB - |  PTR_INITPLAYBACK :              B2 - |
  PTR_INTERRUPT :                 B8 - |  PTR_SOUNDPROC :                 B5 - |
-*RELAXED :                        0 - |  RELOAD_DPCM :                  16C C |
- RELOAD_PCM :                   127 C |  SETUPDAC :                      56 C |
+*RELAXED :                        0 - |  RELOAD_DPCM :                  16E C |
+ RELOAD_PCM :                   128 C |  SETUPDAC :                      56 C |
  STACK :                       1FF0 - |  STOPDAC :                       EA C |
  S_BANK :                         2 - |  S_POS :                          4 - |
-*TIME :                    18:38:22 - | *TRUE :                           1 - |
+*TIME :                    14:56:18 - | *TRUE :                           1 - |
 *VERSION :                     142F - |  YM_PORT0_CTRL :               4000 - |
  YM_PORT0_DATA :               4001 - | *YM_PORT1_CTRL :               4002 - |
 *YM_PORT1_DATA :               4003 - |  __BACK0 :                       4C C |
- __BACK1 :                       DE C |  __BACK2 :                      151 C |
- __BACK3 :                      1B1 C |  __FORW0 :                       6C C |
- __FORW1 :                      10C C |  __FORW2 :                      15B C |
- __FORW3 :                      160 C |  __FORW4 :                      168 C |
- __FORW5 :                      1BB C |  __FORW6 :                      1C0 C |
- __FORW7 :                      1C8 C |
+ __BACK1 :                       DE C |  __BACK2 :                      154 C |
+ __BACK3 :                      1B5 C |  __FORW0 :                       6C C |
+ __FORW1 :                      10C C |  __FORW2 :                      15E C |
+ __FORW3 :                      162 C |  __FORW4 :                      16A C |
+ __FORW5 :                      1BF C |  __FORW6 :                      1C3 C |
+ __FORW7 :                      1CB C |
 
      81 symbols
      30 unused symbols
 
- AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 11 - 6/11/2012 18:38:22
+ AS V1.42 Beta [Bld 55] - source file MegaPCM.asm - page 11 - 8/5/2012 14:56:18
 
 
   codepages:
@@ -585,9 +586,9 @@
 STANDARD (0 changed characters)
 
 
-0.01 seconds assembly time
+0.03 seconds assembly time
 
-    490 lines source file
+    491 lines source file
       2 passes
       0 errors
       0 warnings

@@ -1,7 +1,7 @@
 
 ; ===============================================================
 ; ---------------------------------------------------------------
-; Sonic 1 Mega PCM driver
+; Mega PCM v.1.1
 ; (C) 2012, Vladikcomper
 ; ---------------------------------------------------------------
 
@@ -277,8 +277,9 @@ LoadBank:
 	ld	(de), a	; A20
 	rrca
 	ld	(de), a	; A21
-	xor	a	; a = 0
+	rrca
 	ld	(de), a	; A22
+	xor	a	; a = 0
 	ld	(de), a	; A23
 	exx
 	ret
@@ -306,6 +307,7 @@ Init_PCM:
 	ld	c,(ix+pitch)		; c  = pitch
 	ld	h,(ix+s_pos+1)		;
 	ld	l,(ix+s_pos)		; hl = Start offset
+	set	7,h			; make it 8000h-based if it's not (perverts memory damage if playing corrupted slots)
 	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
 
 ; ---------------------------------------------------------------
@@ -319,7 +321,7 @@ Process_PCM:
 	ld	b,c			; 4	; b = Pitch
 	djnz	$			; 7/13+	; wait until pitch zero
 	ld	(YM_Port0_Data),a	; 13	; write to DAC
-	; Cycles: 24
+	; Cycles: 31
 
 	; Increment PCM byte pointer and switch the bank if necessary
 	inc	hl			; 6	; next PCM byte
@@ -345,9 +347,8 @@ Process_PCM:
 	jp	Event_Interrupt		;	; otherwise, interrupt playback
 	; Cycles: 27
 
-	; Synchronization loop (24 cycles)
+	; Synchronization loop (20 cycles)
 +	exx				; 4
-	nop				; 4
 	nop				; 4
 	jr	-			; 12
 
@@ -361,8 +362,8 @@ Process_PCM:
 	jp	Event_EndPlayback
 
 ; ---------------------------------------------------------------
-; Best cycles per loop:	116
-; Max Possible rate:	30 kHz (PAL)
+; Best cycles per loop:	122
+; Max Possible rate:	3,550 kHz / 122 = 29 kHz (PAL)
 ; ---------------------------------------------------------------
 
 ; ===============================================================
@@ -388,6 +389,7 @@ Init_DPCM:
 	ld	c,(ix+pitch)		; c  = pitch
 	ld	d,(ix+s_pos+1)		;
 	ld	e,(ix+s_pos)		; de = start offset
+	set	7,d			; make it 8000h-based if it's not (perverts memory damage if playing corrupted slots)
 	ld	h,DPCM_DeltaArray>>8	; load delta table base
 	ld	(iy+0),2Ah		; YM => prepare to fetch DAC bytes
 	ld	b,80h			; init DAC value
@@ -445,9 +447,8 @@ Process_DPCM:
 	jp	Event_Interrupt		;	; otherwise, interrupt playback
 	; Cycles: 27
 
-	; Synchronization loop (24 cycles)
+	; Synchronization loop (20 cycles)
 +	exx				; 4
-	nop				; 4
 	nop				; 4
 	jr	-			; 12
 
@@ -462,7 +463,7 @@ Process_DPCM:
 
 ; ---------------------------------------------------------------
 ; Best cycles per loop:	221/2
-; Max possible rate:	32 kHz (PAL)
+; Max possible rate:	3,550 kHz / 111 = 32 kHz (PAL)
 ; ---------------------------------------------------------------
                                         
 	align	100h	; it's important to align this way, or the code above won't work properly
@@ -473,7 +474,7 @@ DPCM_DeltaArray:
 
 ; ---------------------------------------------------------------
 ; NOTICE ABOUT PLAYBACK RATES:
-;	YM is only capable in producing DAC sound @ ~26 kHz
+;	YM is only capable of producing DAC sound @ ~26 kHz
 ;	frequency, overpassing it leads to missed writes!
 ;	The fact playback code can play faster than that
 ;	means there is a good amount of room for more features,
