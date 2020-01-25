@@ -7,6 +7,10 @@ The drivers primarily works on the "Zilog Z80" CPU and is intended to be used in
 Mega PCM is generally used to play digitized drum samples in game. 
 It was initially designed to be used in modifications of Sonic the Hedgehog (1991) game and released in 2012.
 
+For demonstration, please see the example of in-game implementation:
+https://www.youtube.com/watch?v=LCDx7YUzFZ4
+
+
 ## Features
 
 * __Automatic bank-switching__
