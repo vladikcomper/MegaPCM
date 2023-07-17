@@ -1,16 +1,16 @@
 
 SRC_DIR ?= ./src
-OUT_DIR ?= ./out
+BUILD_DIR ?= ./build
 TOOLCHAIN_DIR ?= ./toolchain
 
-SJASM = $(TOOLCHAIN_DIR)/sjasm
+SJASMPLUS = sjasmplus
 
 .PHONY:	megapcm clean
 
-megapcm:	$(OUT_DIR)/megapcm.bin
+megapcm:	$(BUILD_DIR)/megapcm.bin
 
-$(OUT_DIR)/megapcm.bin:	$(wildcard $(SRC_DIR)/*.asm)
-	$(SJASM) $(SRC_DIR)/main.asm $(OUT_DIR)/megapcm.bin $(OUT_DIR)/megapcm.lst
+$(BUILD_DIR)/megapcm.bin:	$(wildcard $(SRC_DIR)/*.asm)
+	$(SJASMPLUS) --raw=$(BUILD_DIR)/megapcm.bin --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/main.asm
 
 clean:
 	rm out/*
