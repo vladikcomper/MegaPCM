@@ -1,6 +1,7 @@
 
 #include "z80vm.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -10,23 +11,18 @@ const uint8_t program1[] = {
 };
 
 int main(int argc, char * argv[]) {
-	int exit_code = 0;
-
 	Z80VM_Context * context = Z80VM_Init();
 
 	Z80VM_LoadProgram(context, program1, sizeof(program1));
 	size_t cycles_emulated = Z80VM_Emulate(context, 17-1);
 
-	printf("cycles_emulated = %ld\n", cycles_emulated);
-	printf("a = %x\n", context->z80State.registers.byte[Z80_A]);
-	printf("hl = %x\n", context->z80State.registers.word[Z80_HL]);
-
-	if (context->z80State.registers.byte[Z80_A] != 0x12 || context->z80State.registers.word[Z80_HL] != 0x3456) {
-		printf("Sanity check failed.\n");
-		exit_code = 1;
-	}
+	assert(cycles_emulated == 17);
+	assert(context->z80State.registers.byte[Z80_A] == 0x12);
+	assert(context->z80State.registers.word[Z80_HL] == 0x3456);
 
 	Z80VM_Destroy(context);
 
-	return exit_code;
+	puts("OK");
+
+	return 0;
 }
