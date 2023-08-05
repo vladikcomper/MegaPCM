@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 /* -------------------------------------------- */
 /* Z80 VM API                                   */
 /* -------------------------------------------- */
@@ -29,9 +30,9 @@ typedef struct {
 
 Z80VM_Context * Z80VM_Init();
 
-void Z80VM_LoadProgram(Z80VM_Context * context, void * buffer, size_t bufferSize);
+void Z80VM_LoadProgram(Z80VM_Context * context, const uint8_t * buffer, size_t bufferSize);
 
-// void * Z80VM_Emulate(Z80VM_Context * context);
+size_t Z80VM_Emulate(Z80VM_Context * context, size_t cycles);
 
 void Z80VM_Destroy(Z80VM_Context * context);
 

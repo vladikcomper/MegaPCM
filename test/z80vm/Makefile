@@ -6,7 +6,7 @@ CFLAGS := -Wall -pedantic -O2 -fomit-frame-pointer
 
 BUILD_DIR ?= ../../build/z80vm
 
-Z80VM_A := $(BUILD_DIR)/z80vm.a
+LIBZ80VM_A := $(BUILD_DIR)/libz80vm.a
 Z80VM_O := $(BUILD_DIR)/z80vm.o
 Z80EMU_O := $(BUILD_DIR)/z80emu.o
 
@@ -17,10 +17,10 @@ OBJECT_FILES := $(Z80VM_O) $(Z80EMU_O)
 
 all: z80vm
 
-z80vm: $(Z80VM_A)
+z80vm: $(LIBZ80VM_A)
 
-$(Z80VM_A):	$(OBJECT_FILES)
-$(Z80VM_A): | $(BUILD_DIR)
+$(LIBZ80VM_A):	$(OBJECT_FILES)
+$(LIBZ80VM_A): | $(BUILD_DIR)
 	$(AR) $@ $(OBJECT_FILES)
 
 $(Z80EMU_O): z80emu.c z80emu.h z80config.h instructions.h macros.h tables.h
