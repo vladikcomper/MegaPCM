@@ -15,6 +15,9 @@ flags:		byte			; playback flags
 ; Z80 RAM
 ; ------------------------
 
+; TODO: Hide behind a debug flag
+Debug_BufferPos:equ	1FD0h
+
 CommandByte:	equ	1FE0h
 
 Stack:		equ	2000h

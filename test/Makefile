@@ -1,6 +1,6 @@
 
 CC := gcc
-CFLAGS := -I./z80vm -O2 -std=c99 -Wall -pedantic-errors
+CFLAGS := -I./z80vm -I../build -O2 -std=c99 -Wall -pedantic-errors
 LDFLAGS := -L../build/z80vm -lz80vm
 
 BUILD_DIR ?= ../build/test
@@ -12,7 +12,7 @@ SRC_FILES := $(wildcard *.c)
 EXE_FILES := $(SRC_FILES:%.c=%)
 
 
-.PHONY:	all run build
+.PHONY:	all run build clean
 
 all:	run build
 
@@ -21,6 +21,9 @@ run:	$(EXE_FILES)
 
 build:	$(EXE_FILES)
 
+clean:
+	rm -f $(EXE_FILES)
+
 $(EXE_FILES):	$(SRC_FILES)
 
 $(SRC_FILES):	$(LIBZ80VM_A)
@@ -28,5 +31,5 @@ $(SRC_FILES):	$(LIBZ80VM_A)
 $(LIBZ80VM_A):	$(LIBFILES)
 	make -C z80vm
 
-%: %.c
+%: %.c $(LIBZ80VM_A)
 	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@

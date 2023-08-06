@@ -23,7 +23,7 @@ $(LIBZ80VM_A):	$(OBJECT_FILES)
 $(LIBZ80VM_A): | $(BUILD_DIR)
 	$(AR) $@ $(OBJECT_FILES)
 
-$(Z80EMU_O): z80emu.c z80emu.h z80config.h instructions.h macros.h tables.h
+$(Z80EMU_O): z80vm.h z80emu.c z80emu.h z80config.h instructions.h macros.h tables.h
 $(Z80EMU_O): | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c z80emu.c -o $@
 

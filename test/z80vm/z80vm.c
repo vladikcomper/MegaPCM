@@ -10,7 +10,7 @@ Z80VM_Context * Z80VM_Init() {
 	Z80VM_Context * context = calloc(1, sizeof(Z80VM_Context));
 
 	if (!context) {
-		fprintf(stderr, "Failed to allocate Z80VM context");
+		fprintf(stderr, "Failed to allocate Z80VM context\n");
 		abort();
 	}
 
@@ -28,7 +28,7 @@ Z80VM_Context * Z80VM_Init() {
 
 void Z80VM_LoadProgram(Z80VM_Context *context, const uint8_t *buffer, size_t bufferSize) {
 	if (bufferSize > 0x2000) {
-		fprintf(stderr, "Z80 Program is too large");
+		fprintf(stderr, "Z80 Program is too large\n");
 		abort();
 	}
 

@@ -1,7 +1,9 @@
 *
+
+!z80vm/
+
 !.gitignore
 !.clangd
 !Makefile
 !*.h
 !*.c
-!*.md

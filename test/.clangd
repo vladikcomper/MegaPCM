@@ -1,2 +1,2 @@
 CompileFlags:
-	Add: [-std=c99, -Wall, -pedantic-errors, -I./z80vm]
+	Add: [-std=c99, -Wall, -pedantic-errors, -I./z80vm, -I../build]
