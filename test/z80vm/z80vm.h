@@ -3,6 +3,7 @@
 
 #include "z80emu.h"
 
+#include <bits/stdint-uintn.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,8 +31,17 @@ struct Z80VM_Context {
 	uint8_t ymPort1Reg;
 	uint8_t ymGlobalRegValues [0x10];	// regs 20h .. 2Fh
 
+	/* VM console */
+	union {
+		uint16_t asWord;
+		struct {
+			uint8_t low;
+			uint8_t high;
+		} asByte;
+	} vmConsoleStrAddr;
+
 	/* ROM support */
-	uint8_t* ROM;
+	const uint8_t* ROM;
 	size_t ROMsize;
 	uint16_t ROMBankId;
 	uint8_t ROMBankRegPos;
@@ -68,6 +78,30 @@ static inline void Z80VM_WriteYMRegister(uint8_t reg, uint8_t val, uint8_t port,
 }
 
 
+static inline uint8_t Z80VM_ReadROMByte(uint16_t address, Z80VM_Context * context) {
+	if (address < 0x8000) {
+		fprintf(stderr, "%s: Invalid in-bank address: %04X\n", __func__, address);
+		abort();
+	}
+	const size_t absoluteAddress = (address & 0x7FFF) + context->ROMBankId * 0x8000;
+	if (absoluteAddress >= context->ROMsize) {
+		fprintf(stderr, "%s: Attempt to read outside of ROM: %08lX\n", __func__, absoluteAddress);
+		abort();
+	}
+	return context->ROM[absoluteAddress];
+}
+
+
+static inline void Z80VM_LogDebugMessage(uint16_t msgAddress, Z80VM_Context * context) {
+	if (msgAddress >= 0x2000) {
+		fprintf(stderr, "%s: Logging strings outside of Z80 RAM is not supported: %04X\n", __func__, msgAddress);
+		abort();
+	}
+	const uint8_t * msg = &context->programRAM[msgAddress];
+	fprintf(stderr, "DEBUG MESSAGE: %s\n", msg);
+}
+
+
 /* -------------------------------------------- */
 /* Inline functions to provide API for "z80emu" */
 /* -------------------------------------------- */
@@ -80,6 +114,10 @@ static inline uint8_t Z80_ReadByte(uint16_t address, Z80VM_Context * context) {
 	if (address < 0x2000) {
 		return context->programRAM[address];
 	}
+	else if (address >= 0x8000) {
+		return Z80VM_ReadROMByte(address, context);
+	}
+
 	fprintf(stderr, "%s: Illegal read: %04X\n", __func__, address);
 	abort();
 }
@@ -117,6 +155,20 @@ static inline void Z80_WriteByte(uint16_t address, uint8_t value, Z80VM_Context 
 		else {
 			goto illegalWrite;
 		}
+	}
+
+	/* Bank register */
+	else if (address == 0x6000) {
+		context->ROMBankId = (context->ROMBankId >> 1 | value << 8) & 0x1FF;
+	}
+
+	/* VM console */
+	else if (address == 0x7000) {
+		context->vmConsoleStrAddr.asByte.low = value;
+	}
+	else if (address == 0x7001) {
+		context->vmConsoleStrAddr.asByte.high = value;
+		Z80VM_LogDebugMessage(context->vmConsoleStrAddr.asWord, context);
 	}
 
 	else {

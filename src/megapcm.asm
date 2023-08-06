@@ -6,6 +6,8 @@
 ; (c) 2023, Vladikcomper
 ; --------------------------------------------------------------
 
+	define	__DEBUG__	; ###
+
 	include	'vars.asm'
 	include	'macros.asm'
 
@@ -16,16 +18,40 @@
 	org	00h
 
 Driver_Start:
-
 	include	'init.asm'
 
-	org	28h
+; --------------------------------------------------------------
+	org	38h
+VBlank:
+	jp	VoidInterrupt
 
-	include	'update-dac.asm'
-
-	include	'loop-buffer-test.asm'
+VBlankRoutine:	equ	VBlank+1
 
 ; --------------------------------------------------------------
+VoidInterrupt:
+	ifdef __DEBUG__
+		reti	; ###
+	else
+		reti
+	endif
+
+; --------------------------------------------------------------
+	ifdef __DEBUG__
+		include	"debug.asm"
+	endif
+
+; --------------------------------------------------------------
+
+	include	'load-bank.asm'
+
+	include	'loop-idle.asm'
+	include	'loop-pcm.asm'
+
+; --------------------------------------------------------------
+SampleTable:
+	db	0,0,0,0,0		; sample 80h is dynamic
+	; Rest of the table goes here ...
+
 	align	100h
 SampleBuffer:
 	incbin 'sample.bin'

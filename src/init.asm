@@ -1,37 +1,21 @@
 
 InitDriver:
 	di				; disable interrupts
-	ld	sp, Stack		; initialize stack
 
-	; -------------------
-	; Setup YM registers
-	; -------------------
+	; Clear work RAM (uses Blast processing(tm))
+	ld	sp, WorkRAM_End
+	ld	bc, 0000h
+	rept	(WorkRAM_End-WorkRAM)/2
+		push	bc
+	endr
 
-	ld	hl, YM_Port0_Ctrl
+	; Initialize stack
+	ld	sp, Stack
 
-	; YM: Enable DAC (send 2B 80 to Port 0)
-	ld	(hl), 2Bh
-	inc	l
-	ld	(hl), 80h
-	dec	l
+	; Initialize index registers
+	ld	iy, DriverIO_RAM
 
-	; YM: Set DAC panning to LR (send B6 C0 to Port 0)
-	; NOTICE: We may take this out ...
-	;ld	(hl), 0B6h
-	;inc	l
-	;ld	(hl), 0C0h
-	;dec	l			; optimized out
+	; Mark driver as ready for operation
+	ld	(iy+sDriverIO.OUT_ready), 01h	
 
-	; YM: Initialize DAC playback
-	ld	(hl), 2Ah
-
-	; ------------------------------
-	; Setup "Update DAC" registers
-	; ------------------------------
-
-	exx
-	ld	hl, SampleBuffer
-	ld	de, YM_Port0_Data
-	exx
-
-	jr	DriverLoop_BufferTest
+	jr	IdleLoop_Init
