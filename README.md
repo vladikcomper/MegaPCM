@@ -1,4 +1,14 @@
 
+# Features
+
+- Crystal clear PCM playback at up to 22 kHz;
+- Auto-bankswitching;
+
+Planned:
+- DPCM playback;
+- 2-channel mixer?
+- Volume control?
+
 # Architecture
 
 256-byte sample buffer and a read-ahead loop.
