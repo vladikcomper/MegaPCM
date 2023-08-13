@@ -117,6 +117,10 @@ PCMLoop_Drain:
 	PlaybackPitched_Run_Draining	e, PCMLoop_Drain_Done
 	; Total cycles: 64 (pitch), 65 (no pitch)
 
+	; Idle reads from ROM to keep timings accurate
+	ld	a, (ROMWindow)		; 13
+	ld	a, (ROMWindow)		; 13
+
 	; TODOH: CYCLES
 	jp	PCMLoop_Drain
 
@@ -130,11 +134,28 @@ PCMLoop_Drain_Done:
 
 ; --------------------------------------------------------------
 PCMLoop_LoadNextBank:
-	
+	; Increment current bank index
+	ld	a, (CurrentBank)
+	inc	a
+	ld	(CurrentBank), a
 
-	ld	a, ERROR__NOT_IMPLEMENTED
-	call	Debug_ErrorTrap
+	; Setup sample source and length
+	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
+	ld	b, 8h				; bc = 8000h (alt: ld b, h)
+	cp	(ix+sSample.endBank)		; current bank is the last one?
+	jr	nz, .lengh_ok			; if not, branch
+	ld	c, (ix+sSample.endLen)
+	ld	b, (ix+sSample.endLen+1)	; bc = length
+	res	0, c				; bc = length & 0FFFEh
+.lengh_ok:
 
+	; Switch to bank stored in A
+	call	LoadBank
+
+	; Ready to continue playback!
+	jp	PCMLoop_Normal
+
+; --------------------------------------------------------------
 PCMLoop_Sync_ReadaheadFull:
 	ld	a, ERROR__NOT_IMPLEMENTED
 	call	Debug_ErrorTrap

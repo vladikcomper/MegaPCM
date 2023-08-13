@@ -91,6 +91,7 @@ According to Blastem, Z80's INT signal only lasts for around 171.5 cycles:
 
 - Between `di`/`ei` less than 120 cycles should occur!
 - When writing both register and value to YM, set a flag to avoid busreq.
+- Take care of the edge case: when sample is exactly 32kb and aligned, it should start and end in the same bank!
 
 ## Future optimizations
 
