@@ -5,6 +5,7 @@ LDFLAGS := -L../build/z80vm -lz80vm
 
 BUILD_DIR ?= ../build/test
 
+MEGAPCM_H := ../build/megapcm.h
 LIBZ80VM_A := ../build/z80vm/libz80vm.a
 LIBFILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
 
@@ -26,10 +27,10 @@ clean:
 
 $(EXE_FILES):	$(SRC_FILES)
 
-$(SRC_FILES):	$(LIBZ80VM_A)
+$(SRC_FILES):	$(LIBZ80VM_A) $(MEGAPCM_H)
 
 $(LIBZ80VM_A):	$(LIBFILES)
 	make -C z80vm
 
-%: %.c $(LIBZ80VM_A)
+%: %.c $(LIBZ80VM_A) $(MEGAPCM_H)
 	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
