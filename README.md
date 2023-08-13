@@ -1,7 +1,7 @@
 
 # Features
 
-- Crystal clear PCM playback at up to 22 kHz;
+- Crystal clear PCM playback at up to 24 kHz;
 - Auto-bankswitching;
 
 Planned:
@@ -91,3 +91,12 @@ According to Blastem, Z80's INT signal only lasts for around 171.5 cycles:
 
 - Between `di`/`ei` less than 120 cycles should occur!
 - When writing both register and value to YM, set a flag to avoid busreq.
+
+## Future optimizations
+
+```asm
+ 	; Handle "read-ahead"
+	ldi					; 16
+	ldi					; 16
+	jp		po, BC_is_zero	; 10
+```

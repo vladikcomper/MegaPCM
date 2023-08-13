@@ -36,6 +36,10 @@ VoidInterrupt:
 	endif
 
 ; --------------------------------------------------------------
+
+	include	'playback-pitched.asm'
+
+; --------------------------------------------------------------
 	ifdef __DEBUG__
 		include	"debug.asm"
 	endif

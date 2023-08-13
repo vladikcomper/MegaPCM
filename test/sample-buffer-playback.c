@@ -80,7 +80,7 @@ int main(int argc, char * argv[]) {
 	sample_80->startBank = 0;
 	sample_80->startOffset = 0x8000;
 	sample_80->endBank = 0;
-	sample_80->endLen = sizeof(ROM) - 1;
+	sample_80->endLen = sizeof(ROM);
 
 	/* Setup callbacks */
 	context->onWriteByte = &WriteByteCallback;
