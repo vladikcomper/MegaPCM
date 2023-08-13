@@ -50,7 +50,7 @@ PCMLoop_Init:
 	xor	a				; a' = 0
 	ex	af, af'
 	ld	b, (ix+sSample.pitch)
-	ld	c, 03h				; c = 03h (contant)
+	ld	c, 03h				; c = 03h (constant)
 	ld	hl, SampleBuffer
 	ld	de, YM_Port0_Data
 	exx
@@ -87,7 +87,7 @@ PCMLoop_Main:
 	ld	a, (hl)				; 7	load sample
 	ld	(de), a				; 7	send it to YM
 	ex	af, af'				; 4
-	add	a, b				; 4	should we apply pitch?
+	add	b				; 4	should we apply pitch?
 	jr	nc, .playback_NoPitch		; 7	if not, branch
 	inc	l				; 4	advance playback pointer
 .playback_NoPitch:
@@ -95,7 +95,7 @@ PCMLoop_Main:
 	inc	l				; 4	roll through 256-byte buffer
 .playback_Skip:
 	ld	a, l				; 4	a = buffer position
-	add	a, c				; 4	a = buffer position + 3
+	add	c				; 4	a = buffer position + 3
 	exx					; 4
 	ei					; 4
 	; Total cycles: 80 (pitch), 81 (no pitch)
