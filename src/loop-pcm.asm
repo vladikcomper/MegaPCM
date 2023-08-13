@@ -64,57 +64,43 @@ PCMLoop_Init:
 ; --------------------------------------------------------------
 ; PCM: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
-; Playback registers:
-;	a'	= Pitch counter
-;	b'	= Pitch value
-;	c'	= `03h`
-;	de'	= YM Port 0 data
-;	hl'	= Sample buffer pos (playback)
-;
-; Read ahead registers:
+; Registers:
 ;	bc	= Length + 0FFh (so b = 0, c = -overshoot)
 ;	de 	= Sample buffer pos (read-ahead)
 ;	hl	= ROM pos
 ; --------------------------------------------------------------
 
-PCMLoop_Normal:
-	DebugMsg "PCMLoop_Normal iteration"
+PCMLoop_NormalPhase:
+	DebugMsg "PCMLoop_NormalPhase iteration"
 
 	; Handle playback
-	PlaybackPitched_Run_Normal	e, PCMLoop_Sync_ReadaheadFull
+	PlaybackPitched_Run_Normal	e, PCMLoop_NormalPhase_ReadaheadFull
 	; Total cycles: 91-92 (read-ahead ok), 96/97 (read-ahead full)
 
-	; Handle "read-ahead"
+	; Handle "read-ahead" (if `PlaybackPitched_Run_Normal` decides so ...)
 	ldi					; 16
 	ldi					; 16
 	ld	d, SampleBuffer>>8		; 7	fix `d` in case of carry from `e`
-	jp	pe, PCMLoop_Normal		; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
+	jp	pe, PCMLoop_NormalPhase		; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
 	; Total cycles: 49
 
-	; Total "PCMLoop_Normal" cycles: 140-141
+	; Total "PCMLoop_NormalPhase" cycles: 140-141
 
 ; --------------------------------------------------------------
-PCMLoop_ReadAheadExhausted:
+;PCMLoop_ReadAheadExhausted:
 	; Are we done playing?
 	ld	a, (CurrentBank)
-	cp	(ix+sSample.endBank)		; current bank is the last one?
-	jr	nz, PCMLoop_LoadNextBank	; if not, branch
+	cp	(ix+sSample.endBank)			; current bank is the last one?
+	jr	nz, PCMLoop_NormalPhase_LoadNextBank	; if not, branch
 
 ; --------------------------------------------------------------
 ; PCM: Draining loop (playback only)
 ; --------------------------------------------------------------
-; Playback registers:
-;	a'	= Pitch counter
-;	b'	= Pitch value
-;	c'	= `03h`
-;	de'	= YM Port 0 data
-;	hl'	= Sample buffer pos (playback)
-; --------------------------------------------------------------
 
-PCMLoop_Drain:
-	DebugMsg "PCMLoop_Drain iteration"
+PCMLoop_DrainPhase:
+	DebugMsg "PCMLoop_DrainPhase iteration"
 
-	PlaybackPitched_Run_Draining	e, PCMLoop_Drain_Done
+	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done
 	; Total cycles: 64 (pitch), 65 (no pitch)
 
 	; Idle reads from ROM to keep timings accurate
@@ -122,18 +108,17 @@ PCMLoop_Drain:
 	ld	a, (ROMWindow)		; 13
 
 	; TODOH: CYCLES
-	jp	PCMLoop_Drain
+	jp	PCMLoop_DrainPhase
 
 ; --------------------------------------------------------------
-
-PCMLoop_Drain_Done:
+PCMLoop_DrainPhase_Done:
 	exx
 
-	ld	a, ERROR__NOT_IMPLEMENTED
-	call	Debug_ErrorTrap
+	; Back to idle loop
+	jp	IdleLoop_Init
 
 ; --------------------------------------------------------------
-PCMLoop_LoadNextBank:
+PCMLoop_NormalPhase_LoadNextBank:
 	; Increment current bank index
 	ld	a, (CurrentBank)
 	inc	a
@@ -153,12 +138,16 @@ PCMLoop_LoadNextBank:
 	call	LoadBank
 
 	; Ready to continue playback!
-	jp	PCMLoop_Normal
+	jp	PCMLoop_NormalPhase
 
 ; --------------------------------------------------------------
-PCMLoop_Sync_ReadaheadFull:
-	ld	a, ERROR__NOT_IMPLEMENTED
-	call	Debug_ErrorTrap
+PCMLoop_NormalPhase_ReadaheadFull:
+	; Idle reads from ROM to keep timings accurate
+	ld	a, (ROMWindow)		; 13
+	ld	a, (ROMWindow)		; 13
+
+	; Back to the main loop
+	jp	PCMLoop_NormalPhase
 
 ; --------------------------------------------------------------
 ;
@@ -175,10 +164,25 @@ PCMLoop_VBlank_Loop:
 	PlaybackPitched_Run_DrainingSeq	e
 	; Total cycles: 64 (pitch), 65 (no pitch)
 
-	djnz	PCMLoop_VBlank_Loop
+	; Waste 63 cycles
+	rept 3
+		pop	bc				; 10
+		push	bc				; 11
+	endr
+	; Total cycles: 63
 
-	; TODO: Check for new samples
+	djnz	PCMLoop_VBlank_Loop			; 10/13
+	; Total cycles per iteration: 140-141 (TODO: Verify)
 
+;PCMLoop_CheckCommand:
+	ld	bc, DriverIO_RAM+sDriverIO.IN_command
+	ld	a, (bc)					; a = command
+	or	a					; is command > 00h?
+	jr	z, .ChkSample_Done			; if not, branch
+
+	; TODO: Finish this!
+
+.ChkSample_Done:
 	pop	bc
 	pop	af
 	ei

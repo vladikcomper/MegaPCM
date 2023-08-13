@@ -50,7 +50,7 @@ Invariant for checking if we can read-ahead (A):
 
 The driver implements two loops:
 - `IdleLoop`
-- `PCMPlaybackLoop`
+- `PCMLoop`
 
 ## `IdleLoop`
 
@@ -64,8 +64,11 @@ Phases:
 ## `PCMPlaybackLoop`
 
 Phase:
-- `PCMPlaybackLoop_Init` - enables PCM playback, loads a sample?
-- `PCMPlaybackLoop_Main`
+- `PCMLoop_Init` - enables PCM playback, loads a sample
+- `PCMLoop_NormalPhase` - handles both playback and read-ahead
+	- => `PCMLoop_ReadAheadExhausted`
+	- => `PCMLoop_Sync_ReadaheadFull`
+- `PCMLoop_DrainingPhase` - playback the remaining buffer, read-ahead is done
 - `PCMPlyabackLoop_VBlank` - to keep buffer playing during VBlank
 
 
