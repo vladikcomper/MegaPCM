@@ -12,7 +12,11 @@ endBank:	byte			; end bank id
 endLen:		word			; length in the final bank - 1
 pitch:		byte			; pitch of the sample
 flags:		byte			; playback flags
+__reserved:	byte			; <<RESERVED>>
 	ends
+
+FLAGS_PRIORITY:	equ	7
+FLAGS_LOOP:	equ	6
 
 
 	ifdef __DEBUG__
