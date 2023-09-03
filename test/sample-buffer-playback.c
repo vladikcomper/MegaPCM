@@ -77,6 +77,7 @@ int main(int argc, char * argv[]) {
 	/* Setup sample table */
 	Sample * sample_80 = (Sample*) &context->programRAM[Z_MPCM_SampleTable];
 	sample_80->type = 'P';
+	sample_80->pitch = 0xFF;
 	sample_80->startBank = 0;
 	sample_80->startOffset = 0x8000;
 	sample_80->endBank = 0;
