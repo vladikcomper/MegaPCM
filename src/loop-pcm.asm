@@ -19,6 +19,8 @@
 PCMLoop_Init:
 	di
 
+	DebugMsg "Entering PCMLoop"
+
 	; Load initial bank ...
 	ld	a, (ix+sSample.startBank)
 	ld	(CurrentBank), a
@@ -100,7 +102,7 @@ PCMLoop_NormalPhase:
 PCMLoop_DrainPhase:
 	DebugMsg "PCMLoop_DrainPhase iteration"
 
-	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done
+	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX
 	; Total cycles: 64 (pitch), 65 (no pitch)
 
 	; Idle reads from ROM to keep timings accurate
@@ -111,8 +113,11 @@ PCMLoop_DrainPhase:
 	jp	PCMLoop_DrainPhase
 
 ; --------------------------------------------------------------
-PCMLoop_DrainPhase_Done:
+PCMLoop_DrainPhase_Done_EXX:
 	exx
+
+	bit	FLAGS_LOOP, (ix+sSample.flags)		; is sample set to loop?
+	jp	nz, PCMLoop_Init			; re-enter playback loop
 
 	; Back to idle loop
 	jp	IdleLoop_Init
@@ -161,9 +166,12 @@ PCMLoop_VBlank:
 
 PCMLoop_VBlank_Loop:
 	; Playback routine
-	PlaybackPitched_Run_DrainingSeq	e
-	; Total cycles: 64 (pitch), 65 (no pitch)
+	; NOTE: When out of buffer, it's recommended to stay inside this loop,
+	; but we currently just bail out.
+	PlaybackPitched_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
+	; Total cycles: 64 (pitch), 65 (no pitch), 22 (drained)
 
+PCMLoop_VBlank_Loop_Sync:
 	; Waste 63 cycles
 	rept 3
 		pop	bc				; 10
@@ -171,19 +179,54 @@ PCMLoop_VBlank_Loop:
 	endr
 	; Total cycles: 63
 
-	djnz	PCMLoop_VBlank_Loop			; 10/13
+	djnz	PCMLoop_VBlank_Loop			; 8/13
 	; Total cycles per iteration: 140-141 (TODO: Verify)
 
-;PCMLoop_CheckCommand:
+; --------------------------------------------------------------
+PCMLoop_CheckCommandOrSample:
 	ld	bc, DriverIO_RAM+sDriverIO.IN_command
 	ld	a, (bc)					; a = command
 	or	a					; is command > 00h?
-	jr	z, .ChkSample_Done			; if not, branch
+	jr	z, .ChkCommandOrSample_Done		; if not, branch
+	jp	p, .ChkCommandOrSample_Command		; if command = 01..7Fh, branch
 
-	; TODO: Finish this!
+	; Only low-priority samples can be overriden
+	bit	FLAGS_PRIORITY, (ix+sSample.flags)	; is sample high priority?
+	jp	z, .ResetDriver_ToLoadSample		; if not, branch
 
-.ChkSample_Done:
+.ChkCommandOrSample_Done:
 	pop	bc
 	pop	af
 	ei
 	reti
+
+; --------------------------------------------------------------
+.ChkCommandOrSample_Command:
+	dec	a					; is command 01h (STOP)?
+	jp	z, .ResetDriver_ToIdleLoop		; if yes, branch
+	dec	a					; is command 02h (PAUSE)?
+	jr	nz, .ChkCommandOrSample_Done		; if unknown command, ignore
+
+.PausePlayback:
+	ld	a, ERROR__NOT_IMPLEMENTED
+	call	Debug_ErrorTrap
+
+; --------------------------------------------------------------
+.ResetDriver_ToIdleLoop:
+	ld	sp, Stack				; reset stack
+	jp	IdleLoop_Init				;
+
+; --------------------------------------------------------------
+.ResetDriver_ToLoadSample:
+	ld	sp, Stack				; reset stack
+	jp	LoadSample				; load sample stored in A
+
+; --------------------------------------------------------------
+PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
+	exx						; 4
+
+	; Waste 8 cycles
+	nop						; 4
+	nop						; 4
+
+	jp	PCMLoop_VBlank_Loop_Sync		; 10

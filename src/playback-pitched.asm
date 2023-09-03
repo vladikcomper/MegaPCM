@@ -99,8 +99,7 @@
 	ex	af, af'				; 4
 	inc	l				; 4	roll through 256-byte buffer
 	exx					; 4
-	; Total cycles: 64 (pitch), 65 (no pitch)
-	; TODO: "Drain done" cycles
+	; Total cycles: 64 (pitch), 65 (no pitch), 24 (drain done)
 
 	endm
 
@@ -110,6 +109,7 @@
 ;
 ; -----------------------------------------------------------------------------
 
+; WARNING! Unused
 	macro	PlaybackPitched_Run_DrainingSeq	regReadAheadPtrLow
 
 	ld	a, regReadAheadPtrLow		; 4	a = read ahead position
@@ -127,8 +127,7 @@
 	inc	l				; 4	roll through 256-byte buffer
 .playback_Skip:
 	exx					; 4
-	; Total cycles: 64 (pitch), 65 (no pitch)
-	; TODO: "Drain done" cycles
+	; Total cycles: 64 (pitch), 65 (no pitch), 28 (skipped)
 
 	endm
 
