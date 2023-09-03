@@ -13,6 +13,7 @@
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
 ;	regReadaheadPtr	- Register with readahead position (bc, de, hl)
+;	readaheadCount - Number or readahead samples per iteration
 ; 
 ; INPUT:
 ;	ix	= Sample pointer
@@ -25,14 +26,14 @@
 ;	hl'	= Playback position (in SampleBuffer)
 ; -----------------------------------------------------------------------------
 
-	macro	PlaybackPitched_Init regReadaheadPtr
+	macro	PlaybackPitched_Init regReadaheadPtr, readaheadCount
 	push	regReadaheadPtr
 	exx
 	ex	af, af'
 	xor	a				; a' = 0
 	ex	af, af'
 	ld	b, (ix+sSample.pitch)
-	ld	c, 03h				; c = 03h (constant)
+	ld	c, readaheadCount+1		; c = readaheadCount + 1 (constant)
 	pop	hl				; hl = regReadaheadPtr
 	ld	de, YM_Port0_Data
 	exx
@@ -60,19 +61,18 @@
 	ex	af, af'				; 4
 .playback_Skip:
 	ld	a, l				; 4	a = buffer position
-	add	c				; 4	a = buffer position + 3
+	sub	c				; 4	a = buffer position - 3
 	exx					; 4
 	ei					; 4
-	; Cycles: 44 (drained), 80 (playback/pitched), 81 (playback/didn't pitch)
+	; Cycles: 44 (drained), 76 (playback, pitched), 77 (playback, didn't pitch)
 
-	sub	regReadAheadPtrLow		; 4	a = buffer position + 3 - regReadAheadPtrLow
-	jr	c, procReadaheadFull		; 7/12	if "read-ahead" position is about to collide with "playback", branch
-	; Cycles: 11 (read-ahead ok), 16 (read-ahead full)
+	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow - 3
+	jp	p, procReadaheadFull 		; 10	if (buffer position - regReadAheadPtrLow - 3 <= 0), then read ahead is full
+	; Cycles: 14
 
 	; Total cycles:
-	; - 55 cycles (playback drained, read-ahead ok)
-	; - 91-92 cycles (playback ok, read-ahead ok)
-	; - 96-97 cycles (playback ok, read-ahead full)
+	; - 58 cycles (playback drained)
+	; - 90-91 cycles (playback ok)
 
 	endm
 

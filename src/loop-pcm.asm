@@ -57,7 +57,7 @@ PCMLoop_Init:
 .readAheadDone:
 
 	; Init playback registers ...
-	PlaybackPitched_Init	de
+	PlaybackPitched_Init	de, 2
 
 	; Prepare DAC playback
 	ld	a, 2Ah
@@ -77,7 +77,7 @@ PCMLoop_NormalPhase:
 
 	; Handle playback
 	PlaybackPitched_Run_Normal	e, PCMLoop_NormalPhase_ReadaheadFull
-	; Total cycles: 91-92 (read-ahead ok), 96/97 (read-ahead full)
+	; Total cycles: 90-91 (playback ok)
 
 	; Handle "read-ahead" (if `PlaybackPitched_Run_Normal` decides so ...)
 	ldi					; 16
@@ -86,7 +86,7 @@ PCMLoop_NormalPhase:
 	jp	pe, PCMLoop_NormalPhase		; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
 	; Total cycles: 49
 
-	; Total "PCMLoop_NormalPhase" cycles: 140-141
+	; Total "PCMLoop_NormalPhase" cycles: 139-140
 
 ; --------------------------------------------------------------
 ;PCMLoop_ReadAheadExhausted:
@@ -169,7 +169,7 @@ PCMLoop_VBlank:
 	push	af
 	push	bc
 
-	ld	b, 10
+	ld	b, 38		; TODO: Verify this
 
 PCMLoop_VBlank_Loop:
 	; Playback routine
@@ -180,14 +180,18 @@ PCMLoop_VBlank_Loop:
 
 PCMLoop_VBlank_Loop_Sync:
 	; Waste 63 cycles
+	; TODO: 62!
 	rept 3
-		pop	bc				; 10
 		push	bc				; 11
+		pop	bc				; 10
 	endr
 	; Total cycles: 63
 
 	djnz	PCMLoop_VBlank_Loop			; 8/13
 	; Total cycles per iteration: 140-141 (TODO: Verify)
+
+	; TODO: 
+	;PlaybackPitched_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
 
 ; --------------------------------------------------------------
 PCMLoop_CheckCommandOrSample:
@@ -205,7 +209,7 @@ PCMLoop_CheckCommandOrSample:
 	pop	bc
 	pop	af
 	ei
-	reti
+	ret
 
 ; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
