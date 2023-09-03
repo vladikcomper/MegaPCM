@@ -102,18 +102,27 @@ PCMLoop_NormalPhase:
 PCMLoop_DrainPhase:
 	DebugMsg "PCMLoop_DrainPhase iteration"
 
-	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX
-	; Total cycles: 64 (pitch), 65 (no pitch)
+	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX_DI
+	; Total cycles: 72-73 (playback ok), 28 (drained)
 
 	; Idle reads from ROM to keep timings accurate
-	ld	a, (ROMWindow)		; 13
-	ld	a, (ROMWindow)		; 13
+	ld	a, (ROMWindow)			; 13
+	nop					; 4
+	ld	a, (ROMWindow)			; 13
+	nop					; 4
+	; Total cycles: 30
 
-	; TODOH: CYCLES
-	jp	PCMLoop_DrainPhase
+	; Waste 21 cycles
+	push	bc				; 11
+	pop	bc				; 10
+	; Total cycles: 21
+
+	jr	PCMLoop_DrainPhase		; 12
+	; Total "PCMLoop_DrainPhase" cycles: 139-140
 
 ; --------------------------------------------------------------
-PCMLoop_DrainPhase_Done_EXX:
+PCMLoop_DrainPhase_Done_EXX_DI:
+	; NOTE: We won't re-enable interrupts here
 	exx
 
 	bit	FLAGS_LOOP, (ix+sSample.flags)		; is sample set to loop?
@@ -169,34 +178,35 @@ PCMLoop_VBlank:
 	push	af
 	push	bc
 
-	ld	b, 38		; TODO: Verify this
+	ld	b, 38-1		; TODO: Verify this
 
-PCMLoop_VBlank_Loop:
+PCMLoop_VBlankPhase:
 	; Playback routine
 	; NOTE: When out of buffer, it's recommended to stay inside this loop,
 	; but we currently just bail out.
-	PlaybackPitched_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
-	; Total cycles: 64 (pitch), 65 (no pitch), 22 (drained)
+	PlaybackPitched_Run_DrainingVBlank	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
+	; Total cycles: 64-65 (playback ok), 24 (drained)
 
-PCMLoop_VBlank_Loop_Sync:
-	; Waste 63 cycles
-	; TODO: 62!
-	rept 3
-		push	bc				; 11
-		pop	bc				; 10
-	endr
-	; Total cycles: 63
+PCMLoop_VBlankPhase_Sync:
+	; Waste 62 cycles
+	push	bc					; 11
+	ld	b, 03h		 			; 7
+	djnz	$					; 13 * 2 + 8
+	pop	bc					; 10
+	; Total cycles: 62
 
-	djnz	PCMLoop_VBlank_Loop			; 8/13
-	; Total cycles per iteration: 140-141 (TODO: Verify)
+	djnz	PCMLoop_VBlankPhase			; 8/13
+	; Total "PCMLoop_VBlankPhase" cycles: 139-140
 
-	; TODO: 
-	;PlaybackPitched_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
+	; Last iteration is special:
+	; We reload pitch from memory to make it dynamic and
+	; we don't have a sync branch, since we're out of the loop
+	PlaybackPitched_Run_DrainingVBlank_ReloadPitch_NoSync	e, (ix+sSample.pitch)
+	; Total cycles: 83-84 (playback ok), 28 (drained)
 
 ; --------------------------------------------------------------
 PCMLoop_CheckCommandOrSample:
-	ld	bc, DriverIO_RAM+sDriverIO.IN_command
-	ld	a, (bc)					; a = command
+	ld	a, (DriverIO_RAM+sDriverIO.IN_command)	; a = command
 	or	a					; is command > 00h?
 	jr	z, .ChkCommandOrSample_Done		; if not, branch
 	jp	p, .ChkCommandOrSample_Command		; if command = 01..7Fh, branch
@@ -216,16 +226,22 @@ PCMLoop_CheckCommandOrSample:
 	dec	a					; is command 01h (STOP)?
 	jp	z, .ResetDriver_ToIdleLoop		; if yes, branch
 	dec	a					; is command 02h (PAUSE)?
-	jr	nz, .ChkCommandOrSample_Done		; if unknown command, ignore
-
-.PausePlayback:
-
 	ifdef __DEBUG__
+		jr	z, .PausePlayback
 		ld	a, ERROR__NOT_IMPLEMENTED
 		call	Debug_ErrorTrap
 	else
-		jp	$
+		jr	nz, .ChkCommandOrSample_Done		; if unknown command, ignore
 	endif
+
+.PausePlayback:
+	; There's a trick to it: While the "pause command" is set,
+	; we reset sample pitch to 0, cancelling pitch reload above.
+	; As soon as this command is unset, the pitch reload will restore it.
+	exx
+	ld	b, 0					; set pitch to 00h
+	exx
+	jr	.ChkCommandOrSample_Done
 
 ; --------------------------------------------------------------
 .ResetDriver_ToIdleLoop:
@@ -239,10 +255,10 @@ PCMLoop_CheckCommandOrSample:
 
 ; --------------------------------------------------------------
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
+	; Waste 40 cycles
 	exx						; 4
-
-	; Waste 8 cycles
-	nop						; 4
-	nop						; 4
-
-	jp	PCMLoop_VBlank_Loop_Sync		; 10
+	inc	bc					; 6
+	dec	bc					; 6
+	inc	bc					; 6
+	dec	bc					; 6
+	jr	PCMLoop_VBlankPhase_Sync		; 12
