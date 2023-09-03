@@ -32,11 +32,11 @@ LoadSample:
 	; Calculate sample's index (part 1)
 	sub	80h			; a = sampleIndex (80..FFh -> 00..7Fh)
 	add	a			; a = sampleIndex * 2
-	ld	b, a
-	ld	c, 0h			; bc = sampleIndex * 2
+	ld	c, a
+	ld	b, 0h			; bc = sampleIndex * 2
 
 	; Mark command as accepted
-	ld	(hl), c			; IN_command = 00h
+	ld	(hl), b			; IN_command = 00h
 
 	; Calculate sample's index (part 2)
 	ld	h, b

@@ -49,10 +49,10 @@ PCMLoop_Init:
 	; Implements: bc = 10000h - hl, or simply bc = -hl
 	xor	a				; a = 0
 	sub	l				; a = 0 - l
-	ld	e, a				; e = 0 - l
+	ld	c, a				; c = 0 - l
 	sbc	h				; a = 0 - h - l - carry
 	add	l				; a = 0 - h - carry
-	ld	d, a				; d = 0 - h - carry
+	ld	b, a				; b = 0 - h - carry
 
 .readAheadDone:
 
@@ -131,7 +131,7 @@ PCMLoop_NormalPhase_LoadNextBank:
 
 	; Setup sample source and length
 	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
-	ld	b, 8h				; bc = 8000h (alt: ld b, h)
+	ld	b, 80h				; bc = 8000h (alt: ld b, h)
 	cp	(ix+sSample.endBank)		; current bank is the last one?
 	jr	nz, .lengh_ok			; if not, branch
 	ld	c, (ix+sSample.endLen)
@@ -208,8 +208,13 @@ PCMLoop_CheckCommandOrSample:
 	jr	nz, .ChkCommandOrSample_Done		; if unknown command, ignore
 
 .PausePlayback:
-	ld	a, ERROR__NOT_IMPLEMENTED
-	call	Debug_ErrorTrap
+
+	ifdef __DEBUG__
+		ld	a, ERROR__NOT_IMPLEMENTED
+		call	Debug_ErrorTrap
+	else
+		jp	$
+	endif
 
 ; --------------------------------------------------------------
 .ResetDriver_ToIdleLoop:

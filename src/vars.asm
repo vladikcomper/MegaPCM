@@ -24,9 +24,6 @@ FLAGS_LOOP:	equ	6
 	struct sDriverIO
 IN_command:		byte		; IN	receives a sample or command from 68k
 OUT_ready:		byte		; OUT	flag to indicate that the driver is ready for operation
-OUT_block68kYMWrites:	byte		; OUT	flag set in-between full YM writes (both reg and val);
-					;	68k shouldn't touch YM during bus req while this flag is set
-					;	TODO: Assert this is set in testing suite
 OUT_dbg_loopId:		byte		; OUT	current loop number (DEBUG only)
 OUT_dbg_errorCode:	byte		; OUT	error code set by Mega PCM (DEBUG only)
 	ends
@@ -42,11 +39,7 @@ ERROR__NOT_IMPLEMENTED:	equ	80h
 	struct sDriverIO
 IN_command:		byte		; IN	receives a sample or command from 68k
 OUT_ready:		byte		; OUT	flag to indicate that the driver is ready for operation
-OUT_block68kYMWrites:	byte		; OUT	flag set in-between full YM writes (both reg and val);
-					;	68k shouldn't touch YM during bus req while this flag is set
-					;	TODO: Assert this is set in testing suite
 	ends
-
 
 	endif
 
@@ -60,16 +53,16 @@ Stack_Boundary:		equ	1FE0h		; stack boundary
 Stack:			equ	2000h		; start of the stack
 
 	phase	WorkRAM
-	ifdef __DEBUG__
-Debug_BufferPos:	ds	2
-	endif
 
 DriverIO_RAM:		ds	sDriverIO
 
 CurrentBank:		ds	1
 
-	align	2
+	ifdef __DEBUG__
+Debug_BufferPos:	ds	2
+	endif
 
+	align	2
 	assert	$ <= Stack_Boundary
 WorkRAM_End:		equ	$
 

@@ -6,8 +6,6 @@
 ; (c) 2023, Vladikcomper
 ; --------------------------------------------------------------
 
-	define	__DEBUG__	; ###
-
 	include	'vars.asm'
 	include	'macros.asm'
 
@@ -52,13 +50,14 @@ VoidInterrupt:
 	include	'loop-pcm.asm'
 
 ; --------------------------------------------------------------
-SampleTable:
-	db	0,0,0,0,0		; sample 80h is dynamic
-	; Rest of the table goes here ...
-
 	align	100h
 SampleBuffer:
-	incbin 'sample.bin'
+	ds	100h, 0
+
+; --------------------------------------------------------------
+SampleTable:
+	dw	0,0,0,0,0		; sample 80h is dynamic
+	; Rest of the table goes here ...
 
 Driver_End:
 
