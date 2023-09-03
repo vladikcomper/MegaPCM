@@ -58,7 +58,6 @@
 	inc	l				; 4	advance playback pointer
 .playback_NoPitch:
 	ex	af, af'				; 4
-	inc	l				; 4	roll through a 256-byte buffer
 .playback_Skip:
 	ld	a, l				; 4	a = buffer position
 	add	c				; 4	a = buffer position + 3
@@ -97,7 +96,6 @@
 	inc	l				; 4	advance playback pointer
 .playback_NoPitch:
 	ex	af, af'				; 4
-	inc	l				; 4	roll through 256-byte buffer
 	exx					; 4
 	; Total cycles: 64 (pitch), 65 (no pitch), 24 (drain done)
 
@@ -124,7 +122,6 @@
 	inc	l				; 4	advance playback pointer
 .playback_NoPitch:
 	ex	af, af'				; 4
-	inc	l				; 4	roll through 256-byte buffer
 .playback_Skip:
 	exx					; 4
 	; Total cycles: 64 (pitch), 65 (no pitch), 28 (skipped)

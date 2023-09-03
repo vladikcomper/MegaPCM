@@ -147,12 +147,19 @@ PCMLoop_NormalPhase_LoadNextBank:
 
 ; --------------------------------------------------------------
 PCMLoop_NormalPhase_ReadaheadFull:
+	; Cycles spent so far: 96-97
+	; Cycles to waste: 140-141 - 96-97 = 44-45
+
 	; Idle reads from ROM to keep timings accurate
 	ld	a, (ROMWindow)		; 13
 	ld	a, (ROMWindow)		; 13
 
+	nop				; 4
+	nop				; 4
+	; Waste 8 cycles
+
 	; Back to the main loop
-	jp	PCMLoop_NormalPhase
+	jp	PCMLoop_NormalPhase	; 10
 
 ; --------------------------------------------------------------
 ;
