@@ -33,6 +33,9 @@ def getArgs():
 	parser.add_argument('-s', '--sort', action='store_true',
 		help='Sort symbols by offsets'
 	)
+	parser.add_argument('-f', '--outputFormat', choices=('h', 'asm'), default='h',
+		help='Output format (e.g. C or assembly header)'
+	)
 	args = parser.parse_args()
 
 	return args
@@ -68,8 +71,10 @@ def main():
 	# Step 3: Output `symbols` to .h file ...
 	with open(args.outputFilename, 'w') as outputFilename:
 		for symbol in symbols:
-			outputFilename.write(f'#define\t{args.prefix}{symbol.label}\t{hex(symbol.offset)}\n')
-
+			if args.outputFormat == 'h':
+				outputFilename.write(f'#define\t{args.prefix}{symbol.label}\t0x{symbol.offset:x}\n')
+			elif args.outputFormat == 'asm':
+				outputFilename.write(f'{args.prefix}{symbol.label}:\tequ ${symbol.offset:x}\n')
 
 if __name__ == '__main__':
 	main()

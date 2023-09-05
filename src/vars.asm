@@ -19,51 +19,43 @@ FLAGS_PRIORITY:	equ	7
 FLAGS_LOOP:	equ	6
 
 
-	ifdef __DEBUG__
-
-	struct sDriverIO
-IN_command:		byte		; IN	receives a sample or command from 68k
-OUT_ready:		byte		; OUT	flag to indicate that the driver is ready for operation
-OUT_dbg_loopId:		byte		; OUT	current loop number (DEBUG only)
-OUT_dbg_errorCode:	byte		; OUT	error code set by Mega PCM (DEBUG only)
-	ends
-
-LOOP_IDLE:	equ	01h
-LOOP_PCM:	equ	02h
-
-ERROR__BAD_SAMPLE_TYPE:	equ	01h
-ERROR__NOT_IMPLEMENTED:	equ	80h
-
-	else
-
-	struct sDriverIO
-IN_command:		byte		; IN	receives a sample or command from 68k
-OUT_ready:		byte		; OUT	flag to indicate that the driver is ready for operation
-	ends
-
-	endif
-
-
 ; ------------------------
 ; Z80 RAM
 ; ------------------------
 
-WorkRAM:		equ	1FD0h		; driver's working memory
-Stack_Boundary:		equ	1FE0h		; stack boundary
-Stack:			equ	2000h		; start of the stack
+WorkRAM:		equ	1FD0h	; driver's working memory
+Stack_Boundary:		equ	1FE0h	; stack boundary
+Stack:			equ	2000h	; start of the stack
 
 	phase	WorkRAM
+CommandInput:	ds	1		; command input byte (written by the main CPU):
+					; - 00h - nothing
+COMMAND_STOP:	equ	01h		; - 01h - STOP playback
+COMMAND_PAUSE:	equ	02h		; - 02h - PAUSE playback
+					; - 03..7Fh - ignored
+					; - 80..FFh - play sample
+DriverReady:	ds	1		; flag to indicate that the driver is ready for operation:
+					; - 'R' (52h) - set when `InitDriver` finishes
+					; - 00h or anything else - still initializing
+CurrentBank:	ds	1		; determines the currently active bank
 
-DriverIO_RAM:		ds	sDriverIO
+LoopId:		ds	1		; id of the current loop
+LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
+LOOP_PCM:	equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
 
-CurrentBank:		ds	1
+BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)
+					; (00h - buffer is drained .. 0FFh - maximum health)
 
 	ifdef __DEBUG__
-Debug_BufferPos:	ds	2
+Debug_ErrorCode:	ds	1	; last error code
+ERROR__BAD_SAMPLE_TYPE:	equ	01h
+ERROR__BAD_INTERRUPT:	equ	02h
+ERROR__NOT_SUPPORTED:	equ	80h
 	endif
 
 	align	2
 	assert	$ <= Stack_Boundary
+
 WorkRAM_End:		equ	$
 
 	dephase

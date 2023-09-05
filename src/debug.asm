@@ -3,10 +3,11 @@
 ; --------------------------------------------------------------
 ; Mega PCM 2.0
 ; --------------------------------------------------------------
-; Debug module (DEBUG only)
+; Debug module
 ;
 ; (c) 2023, Vladikcomper
 ; --------------------------------------------------------------
+
 
 ; --------------------------------------------------------------
 ; Error trap routine
@@ -15,16 +16,20 @@
 ;	a	Error number
 ; --------------------------------------------------------------
 
+	ifdef __DEBUG__
 Debug_ErrorTrap:
+	DebugMsg "Exception raised"
+
 	di
 	or	a
 	jr	nz, .error_code_ok
 	dec	a				; error code = FFh
 
 .error_code_ok:
-	ld	(DriverIO_RAM+sDriverIO.OUT_dbg_errorCode), a
+	ld	(Debug_ErrorCode), a
 
 .loop:
 	nop
 	nop
 	jr	.loop
+	endif

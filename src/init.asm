@@ -23,10 +23,8 @@ InitDriver:
 	inc	l			; ''
 	ld	(hl), 0C0h		; ''
 
-	; Initialize index registers
-	ld	iy, DriverIO_RAM
-
 	; Mark driver as ready for operation
-	ld	(iy+sDriverIO.OUT_ready), 01h
+	ld	a, 'R'
+	ld	(DriverReady), a
 
 	jr	IdleLoop_Init

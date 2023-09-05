@@ -13,13 +13,15 @@
 ; --------------------------------------------------------------
 ; INPUT:
 ;	ix	Pointer to `sSample` structure
-;	iy	Pointer to `sDriverIO` structure
 ; --------------------------------------------------------------
 
 PCMLoop_Init:
 	di
 
 	DebugMsg "Entering PCMLoop"
+
+	ld	a, LOOP_PCM
+	ld	(LoopId), a
 
 	; Load initial bank ...
 	ld	a, (ix+sSample.startBank)
@@ -198,15 +200,21 @@ PCMLoop_VBlankPhase_Sync:
 	djnz	PCMLoop_VBlankPhase			; 8/13
 	; Total "PCMLoop_VBlankPhase" cycles: 139-140
 
+PCMLoop_VBlankPhase_LastIteration:
 	; Last iteration is special:
 	; We reload pitch from memory to make it dynamic and
 	; we don't have a sync branch, since we're out of the loop
 	PlaybackPitched_Run_DrainingVBlank_ReloadPitch_NoSync	e, (ix+sSample.pitch)
 	; Total cycles: 83-84 (playback ok), 28 (drained)
 
-; --------------------------------------------------------------
-PCMLoop_CheckCommandOrSample:
-	ld	a, (DriverIO_RAM+sDriverIO.IN_command)	; a = command
+	; Report buffer health at the end of every frame
+	PlaybackPitched_VBlank_ReportBufferHealth	e, (BufferHealth)
+	; Total cycles: 29
+
+	; fall through ...
+
+PCMLoop_VBlankPhase_CheckCommandOrSample:
+	ld	a, (CommandInput)			; a = command
 	or	a					; is command > 00h?
 	jr	z, .ChkCommandOrSample_Done		; if not, branch
 	jp	p, .ChkCommandOrSample_Command		; if command = 01..7Fh, branch
@@ -214,6 +222,11 @@ PCMLoop_CheckCommandOrSample:
 	; Only low-priority samples can be overriden
 	bit	FLAGS_PRIORITY, (ix+sSample.flags)	; is sample high priority?
 	jp	z, .ResetDriver_ToLoadSample		; if not, branch
+
+.ChkCommandOrSample_ResetInput:
+	; Reset command
+	xor	a
+	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
 	pop	bc
@@ -223,15 +236,16 @@ PCMLoop_CheckCommandOrSample:
 
 ; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
-	dec	a					; is command 01h (STOP)?
+	dec	a					; is command 01h (`COMMAND_STOP`)?
 	jp	z, .ResetDriver_ToIdleLoop		; if yes, branch
-	dec	a					; is command 02h (PAUSE)?
+	dec	a					; is command 02h (`COMMAND_PAUSE`)?
 	ifdef __DEBUG__
-		jr	z, .PausePlayback
-		ld	a, ERROR__NOT_IMPLEMENTED
-		call	Debug_ErrorTrap
+		jr	z, .PausePlayback			; if yes, branch
+
+		; other commands are considered invalid in DEBUG builds and cause error traps
+		DebugErrorTrap ERROR__NOT_SUPPORTED
 	else
-		jr	nz, .ChkCommandOrSample_Done		; if unknown command, ignore
+		jr	nz, .ChkCommandOrSample_ResetInput		; if unknown command, ignore
 	endif
 
 .PausePlayback:

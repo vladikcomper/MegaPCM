@@ -7,7 +7,7 @@
 ; --------------------------------------------------------------
 
 	include	'vars.asm'
-	include	'macros.asm'
+	include 'macros.asm'
 
 ; --------------------------------------------------------------
 
@@ -28,23 +28,18 @@ VBlankRoutine:	equ	VBlank+1
 ; --------------------------------------------------------------
 VoidInterrupt:
 	ifdef __DEBUG__
-		reti	; ###
+		DebugErrorTrap ERROR__BAD_INTERRUPT
 	else
-		reti
+		ret
 	endif
 
 ; --------------------------------------------------------------
 
 	include	'playback-pitched.asm'
-
-; --------------------------------------------------------------
-	ifdef __DEBUG__
-		include	"debug.asm"
-	endif
-
-; --------------------------------------------------------------
-
+	include	'debug.asm'
 	include	'load-bank.asm'
+
+; --------------------------------------------------------------
 
 	include	'loop-idle.asm'
 	include	'loop-pcm.asm'

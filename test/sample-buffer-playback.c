@@ -1,7 +1,8 @@
 
 #include "z80emu.h"
 #include "z80vm.h"
-#include "megapcm.h"
+
+#include "megapcm.debug.h"
 
 #include <assert.h>
 #include <bits/stdint-uintn.h>
@@ -50,7 +51,10 @@ void loadMegaPCM(const char * path, uint8_t ** buffer, size_t * bufferSize) {
 
 void WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * context) {
 	if (address == 0x4001) {
-		printf("YM Write: %02X %02X\n", context->ymPort0Reg, value);
+		printf("YM Port 0 Write: %02X %02X\n", context->ymPort0Reg, value);
+	}
+	else if (address == 0x4003) {
+		printf("YM Port 1 Write: %02X %02X\n", context->ymPort1Reg, value);
 	}
 	// if (address < 0x2000) {
 	// 	printf("RAM Write: %04X %02X\n", address, value);
@@ -66,7 +70,7 @@ int main(int argc, char * argv[]) {
 
 	uint8_t * buffer;
 	size_t bufferSize;
-	loadMegaPCM("../build/megapcm.bin", &buffer, &bufferSize);
+	loadMegaPCM("../build/megapcm.debug.bin", &buffer, &bufferSize);
 
 	Z80VM_LoadProgram(context, buffer, bufferSize);
 
@@ -92,23 +96,23 @@ int main(int argc, char * argv[]) {
 	const size_t CYCLES_PER_ITERATION = 100;
 	size_t cycles_emulated = 0;
 
-	int isReady = 0;
-	int errorCode = 0;
+	uint8_t isReady = 0;
+	uint8_t errorCode = 0;
 
 	while (cycles_emulated < MAX_CYCLES && !isReady && !errorCode) {
 		cycles_emulated += Z80VM_Emulate(context, CYCLES_PER_ITERATION);
 		
-		isReady = Z80_ReadByte(Z_MPCM_DriverIO_RAM + 1, context);
-		errorCode = Z80_ReadByte(Z_MPCM_DriverIO_RAM + 4, context);
+		isReady = Z80_ReadByte(Z_MPCM_DriverReady, context);
+		errorCode = Z80_ReadByte(Z_MPCM_Debug_ErrorCode, context);
 	}
 
 	// Request sample 80
-	Z80_WriteByte(Z_MPCM_DriverIO_RAM + 0, 0x80, context);
+	Z80_WriteByte(Z_MPCM_CommandInput, 0x80, context);
 
 	while (cycles_emulated < MAX_CYCLES && !errorCode) {
 		cycles_emulated += Z80VM_Emulate(context, CYCLES_PER_ITERATION);
 
-		errorCode = Z80_ReadByte(Z_MPCM_DriverIO_RAM + 4, context);
+		errorCode = Z80_ReadByte(Z_MPCM_Debug_ErrorCode, context);
 	}
 
 	if (errorCode) {
@@ -125,7 +129,7 @@ int main(int argc, char * argv[]) {
 	}
 
 	assert(errorCode == 0);
-	assert(isReady == 1);
+	assert(isReady == 'R');
 	assert(cycles_emulated < MAX_CYCLES);
 
 	Z80VM_Destroy(context);

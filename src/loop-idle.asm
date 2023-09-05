@@ -13,15 +13,17 @@ IdleLoop_Init:
 
 	DebugMsg "Entering IdleLoop"
 
+	ld	a, LOOP_IDLE
+	ld	(LoopId), a
+
 	ifdef __DEBUG__
 		ld	hl, VoidInterrupt
 		ld	(VBlankRoutine), hl
-		ld	(iy+sDriverIO.OUT_dbg_loopId), LOOP_IDLE
 	endif
 
 ; --------------------------------------------------------------
 IdleLoop_Main:
-	ld	hl, DriverIO_RAM+sDriverIO.IN_command
+	ld	hl, CommandInput
 
 .loop:
 	ld	a, (hl)			; read command
@@ -56,8 +58,8 @@ LoadSample:
 	ifdef __DEBUG__
 		; Error out on illegal sample
 		push	af			; remember A for analysis
-		ld	a, ERROR__BAD_SAMPLE_TYPE
-		call	Debug_ErrorTrap
+
+		DebugErrorTrap	ERROR__BAD_SAMPLE_TYPE
 	else
 		jp	IdleLoop_Main
 	endif

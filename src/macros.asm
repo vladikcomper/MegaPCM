@@ -1,4 +1,8 @@
 
+; --------------------------------------------------------------
+;
+; --------------------------------------------------------------
+
 	macro	DebugMsg str
 	ifdef __DEBUG__
 	push	hl
@@ -10,5 +14,16 @@
 .string:
 	db	str, 0h
 .string_end:
+	endif
+	endm
+
+; --------------------------------------------------------------
+;
+; --------------------------------------------------------------
+
+	macro	DebugErrorTrap	ErrorCode
+	ifdef __DEBUG__
+	ld	a, ErrorCode
+	call	Debug_ErrorTrap
 	endif
 	endm
