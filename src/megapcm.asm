@@ -19,6 +19,11 @@ Driver_Start:
 	include	'init.asm'
 
 ; --------------------------------------------------------------
+
+	; Driver version magic string
+	db	'MegaPCM v.2.0-alpha', 0
+
+; --------------------------------------------------------------
 	org	38h
 VBlank:
 	jp	VoidInterrupt
