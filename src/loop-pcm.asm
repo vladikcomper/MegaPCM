@@ -265,6 +265,7 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 ; --------------------------------------------------------------
 .ResetDriver_ToLoadSample:
 	ld	sp, Stack				; reset stack
+	ld	hl, CommandInput
 	jp	LoadSample				; load sample stored in A
 
 ; --------------------------------------------------------------
