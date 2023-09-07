@@ -208,7 +208,7 @@ PCMLoop_VBlankPhase_LastIteration:
 	; Total cycles: 83-84 (playback ok), 28 (drained)
 
 	; Report buffer health at the end of every frame
-	PlaybackPitched_VBlank_ReportBufferHealth	e, (BufferHealth)
+	;PlaybackPitched_VBlank_ReportBufferHealth	e, (BufferHealth)
 	; Total cycles: 29
 
 	; fall through ...
