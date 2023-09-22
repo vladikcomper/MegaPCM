@@ -21,7 +21,7 @@
 ; OUTPUT:
 ;	a'	= Pitch counter
 ;	b'	= Pitch value
-;	c'	= `03h`
+;	c'	= Value of: `readaheadCount + 1`
 ;	de'	= YM Port 0 data
 ;	hl'	= Playback position (in SampleBuffer)
 ; -----------------------------------------------------------------------------
