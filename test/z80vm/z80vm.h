@@ -51,6 +51,9 @@ struct Z80VM_Context {
 	/* Callback support */
 	Z80VM_WriteByteCallback onWriteByte;
 	Z80VM_ReadByteCallback onReadByte;
+
+	/* Custom state extension (can be set to any external struct) */
+	void * stateExtension;
 };
 
 
