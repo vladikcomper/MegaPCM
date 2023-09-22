@@ -45,8 +45,7 @@ Invariant for checking if we can still play (P):
 
 Invariant for checking if we can read-ahead (A):
 
-	^A + 3 <= ^P	
-
+	^P - ^A - 3 <= 0
 
 The driver implements two loops:
 - `IdleLoop`
@@ -69,7 +68,7 @@ Phase:
 	- => `PCMLoop_ReadAheadExhausted`
 	- => `PCMLoop_Sync_ReadaheadFull`
 - `PCMLoop_DrainingPhase` - playback the remaining buffer, read-ahead is done
-- `PCMPlyabackLoop_VBlank` - to keep buffer playing during VBlank
+- `PCMPlaybackLoop_VBlank` - to keep buffer playing during VBlank
 
 
 Sound Driver Loops in playback state:
@@ -104,3 +103,12 @@ According to Blastem, Z80's INT signal only lasts for around 171.5 cycles:
 	ldi					; 16
 	jp		po, BC_is_zero	; 10
 ```
+
+## Regarding bus access
+
+
+When the Z80 accesses ROM the bus arbiter needs to pause the 68k, let the Z80 finish its request, then unpause the 68k again. Since all those components run asynchronously timing is barely predictable, also if the 68k is just about to access the bus itself it finishes its own access cycle first before releasing the bus. This typically means that the Z80’s 68k bus accesses will be delayed by 2 to 5 cycles. IIRC reads and writes behave exactly the same way. The average Z80 delay is around 3.3 Z80 cycles, whereas the average 68k delay is around 11 68k cycles.[1] 
+
+IIRC If the Z80 tries to access ROM while the VDP is doing a DMA from 68k RAM this can lead to corruption of RAM contents due to glitchy signals on the address bus (similar to the C64’s VSP bug).[2]
+
+Source: https://plutiedev.com/mirror/kabuto-hardware-notes#bus-system
