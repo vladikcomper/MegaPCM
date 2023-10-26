@@ -40,7 +40,7 @@ VoidInterrupt:
 
 ; --------------------------------------------------------------
 
-	include	'playback-pitched.asm'
+	include	'playback.asm'
 	include	'debug.asm'
 	include	'load-bank.asm'
 
@@ -53,6 +53,10 @@ VoidInterrupt:
 	align	100h
 SampleBuffer:
 	ds	100h, 0
+
+; --------------------------------------------------------------
+VolumeTables:
+	include	'volume-tables.asm'
 
 ; --------------------------------------------------------------
 SampleTable:

@@ -245,7 +245,7 @@ int main(int argc, char * argv[]) {
 
 	/* With bankswitching */
 	runTest(context, sample_2, sizeof(sample_2), 0x7FFE);
-	runTest(context, sample_8, sizeof(sample_8)+1, 0x7FFE);
+	runTest(context, sample_8, sizeof(sample_8), 0x7FFE);
 	runTest(context, sample_254, sizeof(sample_254), 0x7FFE);
 
 	Z80VM_Destroy(context);

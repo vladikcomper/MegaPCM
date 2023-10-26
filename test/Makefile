@@ -18,7 +18,7 @@ EXE_FILES := $(SRC_FILES:%.c=%)
 all:	run build
 
 run:	$(EXE_FILES)
-	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... "; ./$(executable);)
+	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... " && ./$(executable) 2>$(executable).log)
 
 build:	$(EXE_FILES)
 

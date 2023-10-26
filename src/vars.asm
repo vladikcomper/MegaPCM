@@ -42,6 +42,7 @@ CurrentBank:	ds	1		; determines the currently active bank
 LoopId:		ds	1		; id of the current loop
 LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
 LOOP_PCM:	equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
+LOOP_PCM_TURBO:	equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
 
 BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)
 					; (00h - buffer is drained .. 0FFh - maximum health)

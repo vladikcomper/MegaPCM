@@ -59,7 +59,7 @@ PCMLoop_Init:
 .readAheadDone:
 
 	; Init playback registers ...
-	PlaybackPitched_Init	de, 2
+	Playback_Init	de, VolumeTables, (ix+sSample.pitch)
 
 	; Prepare DAC playback
 	ld	a, 2Ah
@@ -77,25 +77,41 @@ PCMLoop_Init:
 PCMLoop_NormalPhase:
 	DebugMsg "PCMLoop_NormalPhase iteration"
 
+	; Handle "read-ahead" buffer
+	di
+	ldi							; 16
+	ldi							; 16
+	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
+	jp	po, PCMLoop_NormalPhase_ReadAheadExhausted_DI	; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
+
 	; Handle playback
-	PlaybackPitched_Run_Normal	e, PCMLoop_NormalPhase_ReadaheadFull
-	; Total cycles: 90-91 (playback ok)
-
-	; Handle "read-ahead" (if `PlaybackPitched_Run_Normal` decides so ...)
-	ldi					; 16
-	ldi					; 16
-	ld	d, SampleBuffer>>8		; 7	fix `d` in case of carry from `e`
-	jp	pe, PCMLoop_NormalPhase		; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
-	; Total cycles: 49
-
-	; Total "PCMLoop_NormalPhase" cycles: 139-140
+PCMLoop_NormalPhase_Playback_DI:
+	Playback_Run						; 67-68	playback a buffered sample
+	ei							; 4	we only allow interrupts before buffering samples
+	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 14
+	; Total "PCMLoop_NormalPhase" cycles: 134-135
 
 ; --------------------------------------------------------------
-;PCMLoop_ReadAheadExhausted:
+PCMLoop_NormalPhase_ReadAheadFull:
+	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
+
+	; Waste 49 cycles (we cannot handle "read-ahead" now)
+	ld	a, (ROMWindow)					; 13	idle read from ROM keeps timings accurate
+	ld	a, 0h						; 7	''
+	ld	a, (ROMWindow)					; 13	''
+	di							; 4
+	jr	PCMLoop_NormalPhase_Playback_DI			; 12
+
+; --------------------------------------------------------------
+PCMLoop_NormalPhase_ReadAheadExhausted_DI:
+	ei							; 4
+
 	; Are we done playing?
-	ld	a, (CurrentBank)
-	cp	(ix+sSample.endBank)			; current bank is the last one?
-	jr	nz, PCMLoop_NormalPhase_LoadNextBank	; if not, branch
+	ld	a, (CurrentBank)				; 13
+	cp	(ix+sSample.endBank)				; 19	current bank is the last one?
+	jr	nz, PCMLoop_NormalPhase_LoadNextBank		; 7/12	if not, branch
+
+	; TODO: Make sure we waste as many cycles as half of the drain iteration
 
 ; --------------------------------------------------------------
 ; PCM: Draining loop (playback only)
@@ -104,23 +120,19 @@ PCMLoop_NormalPhase:
 PCMLoop_DrainPhase:
 	DebugMsg "PCMLoop_DrainPhase iteration"
 
-	PlaybackPitched_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX_DI
-	; Total cycles: 72-73 (playback ok), 28 (drained)
+	; Handle playback in draining mode
+	di								; 4
+	Playback_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX_DI	; 71-72
+	ei								; 4
 
-	; Idle reads from ROM to keep timings accurate
-	ld	a, (ROMWindow)			; 13
-	nop					; 4
-	ld	a, (ROMWindow)			; 13
-	nop					; 4
-	; Total cycles: 30
-
-	; Waste 21 cycles
-	push	bc				; 11
-	pop	bc				; 10
-	; Total cycles: 21
-
-	jr	PCMLoop_DrainPhase		; 12
-	; Total "PCMLoop_DrainPhase" cycles: 139-140
+	; Waste 55 cycles (instead of handling readahead)
+	ld	a, (ROMWindow)						; 13	idle read from ROM keeps timings accurate
+	ld	c, 0FFh							; 7
+	ld	a, (ROMWindow)						; 13
+	dec	bc							; 6
+	nop								; 4
+	jr	PCMLoop_DrainPhase					; 12
+	; Total "PCMLoop_DrainPhase" cycles: 134-135
 
 ; --------------------------------------------------------------
 PCMLoop_DrainPhase_Done_EXX_DI:
@@ -156,21 +168,6 @@ PCMLoop_NormalPhase_LoadNextBank:
 	; Ready to continue playback!
 	jp	PCMLoop_NormalPhase
 
-; --------------------------------------------------------------
-PCMLoop_NormalPhase_ReadaheadFull:
-	; Cycles spent so far: 96-97
-	; Cycles to waste: 140-141 - 96-97 = 44-45
-
-	; Idle reads from ROM to keep timings accurate
-	ld	a, (ROMWindow)		; 13
-	ld	a, (ROMWindow)		; 13
-
-	nop				; 4
-	nop				; 4
-	; Waste 8 cycles
-
-	; Back to the main loop
-	jp	PCMLoop_NormalPhase	; 10
 
 ; --------------------------------------------------------------
 ;
@@ -180,44 +177,41 @@ PCMLoop_VBlank:
 	push	af
 	push	bc
 
-	ld	b, 38-1		; TODO: Verify this
+	ld	b, 38-1					; TODO: Verify this
+							; TODO: Different draining for PAL
 
+; --------------------------------------------------------------
 PCMLoop_VBlankPhase:
-	; Playback routine
-	; NOTE: When out of buffer, it's recommended to stay inside this loop,
-	; but we currently just bail out.
-	PlaybackPitched_Run_DrainingVBlank	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX
-	; Total cycles: 64-65 (playback ok), 24 (drained)
+	DebugMsg "PCMLoop_VBlankPhase iteration"
+
+	; Handle sample playback in draining mode
+	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72	playback one sample
 
 PCMLoop_VBlankPhase_Sync:
-	; Waste 62 cycles
+	; Waste 63 cycles
 	push	bc					; 11
-	ld	b, 03h		 			; 7
-	djnz	$					; 13 * 2 + 8
+	nop						; 4
 	pop	bc					; 10
-	; Total cycles: 62
+	push	bc					; 11
+	nop						; 4
+	pop	bc					; 10
+	djnz	PCMLoop_VBlankPhase			; 13/8
+	; Total "PCMLoop_VBlankPhase" cycles: 134-135
 
-	djnz	PCMLoop_VBlankPhase			; 8/13
-	; Total "PCMLoop_VBlankPhase" cycles: 139-140
-
+; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
-	; Last iteration is special:
-	; We reload pitch from memory to make it dynamic and
-	; we don't have a sync branch, since we're out of the loop
-	PlaybackPitched_Run_DrainingVBlank_ReloadPitch_NoSync	e, (ix+sSample.pitch)
-	; Total cycles: 83-84 (playback ok), 28 (drained)
+	; Handle sample playback for the last iteration
+	Playback_Run_Draining_NoSync	e		; 71-72/28
 
-	; Report buffer health at the end of every frame
-	;PlaybackPitched_VBlank_ReportBufferHealth	e, (BufferHealth)
-	; Total cycles: 29
-
-	; fall through ...
+	; Reload pitch
+	ld	b, (ix+sSample.pitch)			; 19
+	ld	iyl, b					; 8
 
 PCMLoop_VBlankPhase_CheckCommandOrSample:
-	ld	a, (CommandInput)			; a = command
-	or	a					; is command > 00h?
-	jr	z, .ChkCommandOrSample_Done		; if not, branch
-	jp	p, .ChkCommandOrSample_Command		; if command = 01..7Fh, branch
+	ld	a, (CommandInput)			; 13	a = command
+	or	a					; 4	is command > 00h?
+	jr	z, .ChkCommandOrSample_Done		; 7/12	if not, branch
+	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
 
 	; Only low-priority samples can be overriden
 	bit	FLAGS_PRIORITY, (ix+sSample.flags)	; is sample high priority?
@@ -229,10 +223,11 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
-	pop	bc
-	pop	af
-	ei
-	ret
+	; TODO: Handle draining one more time maybe
+	pop	bc					; 10
+	pop	af					; 10
+	ei						; 4
+	ret						; 10
 
 ; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
@@ -253,7 +248,7 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	; we reset sample pitch to 0, cancelling pitch reload above.
 	; As soon as this command is unset, the pitch reload will restore it.
 	exx
-	ld	b, 0					; set pitch to 00h
+	ld	iyl, 00h				; set pitch to 00h
 	exx
 	jr	.ChkCommandOrSample_Done
 
@@ -270,8 +265,9 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 
 ; --------------------------------------------------------------
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 40 cycles
+	; Waste 47 cycles
 	exx						; 4
+	ld	a, 00h					; 7
 	inc	bc					; 6
 	dec	bc					; 6
 	inc	bc					; 6
