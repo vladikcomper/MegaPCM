@@ -57,9 +57,24 @@ PCMLoop_Init:
 	ld	b, a				; b = 0 - h - carry
 
 .readAheadDone:
+	; Prepare YM playback
+	ld	iy, YM_Port0_Reg
+	xor	a
+	ld	(DriverReady), a		; cannot interrupt driver now ...
+	ld	(iy+0), 2Bh			; YM => Enable DAC
+	ld	(iy+1), 80h			; ''
+	ld	a, (ix+sSample.flags)		; load flags
+	and	0C0h				; are pan bits set?
+	jr	z, .panDone			; if not, branch
+        ld	(iy+2), 0B6h			; YM => Set Pan
+	ld	(iy+3), a			; ''
+.panDone:
+	ld	a, 'R'
+	ld	(DriverReady), a		; ready to fetch inputs now
+	ld	(iy+0), 2Ah			; setup YM to fetch DAC bytes
 
 	; Init playback registers ...
-	Playback_Init	de, VolumeTables, (ix+sSample.pitch)
+	Playback_Init	de, (ix+sSample.pitch)
 
 	; Prepare DAC playback
 	ld	a, 2Ah
@@ -202,10 +217,7 @@ PCMLoop_VBlankPhase_Sync:
 PCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback for the last iteration
 	Playback_Run_Draining_NoSync	e		; 71-72/28
-
-	; Reload pitch
-	ld	b, (ix+sSample.pitch)			; 19
-	ld	iyl, b					; 8
+	Playback_LoadPitch	b, (ix+sSample.pitch)	; 27	reload pitch
 
 PCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	a, (CommandInput)			; 13	a = command
@@ -223,7 +235,14 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
-	; TODO: Handle draining one more time maybe
+	; Handle sample playback one last time
+	nop
+	nop
+	Playback_Run_Draining_NoSync	e		; 71-72/28
+	exx
+	Playback_LoadVolume_EXX				; 31	reload volume
+	exx
+
 	pop	bc					; 10
 	pop	af					; 10
 	ei						; 4
@@ -247,9 +266,7 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	; There's a trick to it: While the "pause command" is set,
 	; we reset sample pitch to 0, cancelling pitch reload above.
 	; As soon as this command is unset, the pitch reload will restore it.
-	exx
-	ld	iyl, 00h				; set pitch to 00h
-	exx
+	Playback_ResetPitch				; set pitch to 00h
 	jr	.ChkCommandOrSample_Done
 
 ; --------------------------------------------------------------

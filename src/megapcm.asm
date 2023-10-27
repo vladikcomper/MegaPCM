@@ -58,11 +58,6 @@ SampleBuffer:
 VolumeTables:
 	include	'volume-tables.asm'
 
-; --------------------------------------------------------------
-SampleTable:
-	dw	0,0,0,0,0		; sample 80h is dynamic
-	; Rest of the table goes here ...
-
 Driver_End:
 
 ; --------------------------------------------------------------

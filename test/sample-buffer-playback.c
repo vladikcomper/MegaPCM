@@ -170,13 +170,13 @@ void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampl
 	context->ROMsize = 1024 * 1024;
 
 	/* Setup sample */
-	Sample * sample_80 = (Sample*) &context->programRAM[Z_MPCM_SampleTable];
-	sample_80->type = 'P';
-	sample_80->pitch = pitch;
-	sample_80->startBank = startOffsetInROM >> 15;
-	sample_80->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
-	sample_80->endBank = (startOffsetInROM + sampleSize - 1) >> 15;
-	sample_80->endLen = sample_80->startBank == sample_80->endBank ? sampleSize & 0x7FFE : (startOffsetInROM + sampleSize) & 0x7FFE;
+	Sample * sampleInput = (Sample*) &context->programRAM[Z_MPCM_SampleInput];
+	sampleInput->type = 'P';
+	sampleInput->pitch = pitch;
+	sampleInput->startBank = startOffsetInROM >> 15;
+	sampleInput->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
+	sampleInput->endBank = (startOffsetInROM + sampleSize - 1) >> 15;
+	sampleInput->endLen = sampleInput->startBank == sampleInput->endBank ? sampleSize & 0x7FFE : (startOffsetInROM + sampleSize) & 0x7FFE;
 
 	/* Setup playback emulation state */
 	EmulatedPlaybackState playbackState = {
@@ -194,7 +194,7 @@ void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampl
 
 	uint8_t errorCode = 0;
 
-	/* Request sample 80 */
+	/* Request sample playback */
 	Z80_WriteByte(Z_MPCM_CommandInput, 0x80, context);
 
 	/* Emulate Mega PCM now */

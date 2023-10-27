@@ -13,7 +13,6 @@
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
 ;	regReadaheadPtr	- Register with readahead position (bc, de, hl)
-;	locVolumeTables - Volume tables location
 ;	opPitchSource - pitch source register (ix+NN)
 ; 
 ; OUTPUT:
@@ -27,18 +26,68 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_Init regReadaheadPtr, locVolumeTables, opPitchSource
+	macro	Playback_Init regReadaheadPtr, opPitchSource
 	push	regReadaheadPtr
 	exx
 	ex	af, af'
 	xor	a				; a' = 0
 	ex	af, af'
-	ld	b, locVolumeTables>>8		; bc = volume table ###
-	ld	c, opPitchSource		; c can be trashed
-	ld	iyl, c				; iyl = pitch
+	Playback_LoadVolume_EXX			; bc = volume table
+	Playback_LoadPitch c, opPitchSource	; iyl = pitch
 	pop	hl				; hl = regReadaheadPtr
 	ld	de, YM_Port0_Data
 	exx
+	endm
+
+; -----------------------------------------------------------------------------
+; Loads playback pitch
+; -----------------------------------------------------------------------------
+; ARGUMENTS:
+;	regScratch - scratch register for loading a pitch (a, b, c, d, h, l)
+;	opPitchSource - pitch source operand (ix+NN)
+;
+; OUTPUT:
+;	iyl	= Pitch value
+;
+; USES:
+;	af, Shadow registers
+; -----------------------------------------------------------------------------
+
+	macro	Playback_LoadPitch	regScratch, opPitchSource
+	ld	regScratch, opPitchSource	; 19
+	ld	iyl, regScratch			; 8
+	; Cycles: 27
+	endm
+
+; -----------------------------------------------------------------------------
+; Sets pitch to zero and effectively pauses playback
+; -----------------------------------------------------------------------------
+; OUTPUT:
+;	iyl	= Pitch value
+; -----------------------------------------------------------------------------
+
+	macro	Playback_ResetPitch
+	ld	iyl, 00h			; 11
+	; Cycles: 11
+	endm
+
+
+; -----------------------------------------------------------------------------
+; Loads playback volume
+; -----------------------------------------------------------------------------
+; OUTPUT:
+;	bc	= Volume table
+;
+; USES:
+;	af, Shadow registers
+; -----------------------------------------------------------------------------
+
+	macro	Playback_LoadVolume_EXX
+	ld	a, (VolumeInput)		; 13
+	and	0Fh				; 7
+	add	VolumeTables>>8			; 7
+	ld	b, a				; 4	bc = volume table
+	; Cycles: 31
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -153,6 +202,7 @@
 	; Total cycles: 71-72 (playback), 28 (drained)
 
 	endm
+
 
 ; -----------------------------------------------------------------------------
 ;

@@ -31,24 +31,19 @@ IdleLoop_Main:
 	jp	p, .loop		; if not, branch
 
 LoadSample:
-	; Calculate sample's index (part 1)
-	sub	80h			; a = sampleIndex (80..FFh -> 00..7Fh)
-	add	a			; a = sampleIndex * 2
-	ld	c, a
-	ld	b, 0h			; bc = sampleIndex * 2
+	xor	a
+	ld	(hl), a			; CommandInput = 00h
+	
+	ld	hl, SampleInput
+	ld	de, ActiveSample
+	ld	(DriverReady), a	; cannot accept inputs during sample data copy (otherwise we can overwrite it mid-copy)
+	rept sSample-1	; copy "SampleInput" to "ActiveSample" (minus 1 reserved byte)
+		ldi
+	endr
+	ld	a, 'R'
+	ld	(DriverReady), a	; can accept inputs now
 
-	; Mark command as accepted
-	ld	(hl), b			; IN_command = 00h
-
-	; Calculate sample's index (part 2)
-	ld	h, b
-	ld	l, c			; hl = sampleIndex * 2
-	add	hl, hl			; hl = sampleIndex * 4
-	add	hl, hl			; hl = sampleIndex * 8
-	add	hl, bc			; hl = sampleIndex * 10
-	ld	ix, SampleTable
-	ex	de, hl
-	add	ix, de			; ix = SampleTable + sampleIndex * 10
+	ld	ix, ActiveSample
 
 	; Determine loop to run based on sample type
 	ld	a, (ix+sSample.type)

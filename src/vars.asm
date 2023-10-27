@@ -15,15 +15,17 @@ flags:		byte			; playback flags
 __reserved:	byte			; <<RESERVED>>
 	ends
 
-FLAGS_PRIORITY:	equ	7
-FLAGS_LOOP:	equ	6
+FLAGS_PRIORITY:	equ	0
+FLAGS_LOOP:	equ	1
+FLAGS_PANR:	equ	6
+FLAGS_PANL:	equ	7
 
 
 ; ------------------------
 ; Z80 RAM
 ; ------------------------
 
-WorkRAM:		equ	1FD0h	; driver's working memory
+WorkRAM:		equ	1FC0h	; driver's working memory
 Stack_Boundary:		equ	1FE0h	; stack boundary
 Stack:			equ	2000h	; start of the stack
 
@@ -33,10 +35,15 @@ CommandInput:	ds	1		; command input byte (written by the main CPU):
 COMMAND_STOP:	equ	01h		; - 01h - STOP playback
 COMMAND_PAUSE:	equ	02h		; - 02h - PAUSE playback
 					; - 03..7Fh - ignored
-					; - 80..FFh - play sample
-DriverReady:	ds	1		; flag to indicate that the driver is ready for operation:
+					; - 80..FFh - play sample record from `SampleInput`
+DriverReady:	ds	1		; flag to indicate that the driver is ready for operation
 					; - 'R' (52h) - set when `InitDriver` finishes
 					; - 00h or anything else - still initializing
+VolumeInput:	ds	1		; volume (00h = max, 0Fh = min)
+
+SampleInput:	ds	sSample		; input sample data
+ActiveSample:	ds	sSample		; currently playing sample data
+
 CurrentBank:	ds	1		; determines the currently active bank
 
 LoopId:		ds	1		; id of the current loop
@@ -44,6 +51,7 @@ LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
 LOOP_PCM:	equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
 LOOP_PCM_TURBO:	equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
 
+; WARNING! Unused!
 BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)
 					; (00h - buffer is drained .. 0FFh - maximum health)
 
