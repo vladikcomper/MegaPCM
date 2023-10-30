@@ -83,6 +83,7 @@
 ; -----------------------------------------------------------------------------
 
 	macro	Playback_LoadVolume_EXX
+@.selfModVolumeSource: = $+1
 	ld	a, (VolumeInput)		; 13
 	and	0Fh				; 7
 	add	VolumeTables>>8			; 7

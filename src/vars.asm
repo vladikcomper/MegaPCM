@@ -15,7 +15,7 @@ flags:		byte			; playback flags
 __reserved:	byte			; <<RESERVED>>
 	ends
 
-FLAGS_PRIORITY:	equ	0
+FLAGS_SFX:	equ	0
 FLAGS_LOOP:	equ	1
 FLAGS_PANR:	equ	6
 FLAGS_PANL:	equ	7
@@ -39,7 +39,11 @@ COMMAND_PAUSE:	equ	02h		; - 02h - PAUSE playback
 DriverReady:	ds	1		; flag to indicate that the driver is ready for operation
 					; - 'R' (52h) - set when `InitDriver` finishes
 					; - 00h or anything else - still initializing
-VolumeInput:	ds	1		; volume (00h = max, 0Fh = min)
+VolumeInput:	ds	1		; normal samples volume (00h = max, 0Fh = min)
+SFXVolumeInput:	ds	1		; SFX samples volume (00h = max, 0Fh = min)
+
+	; `VolumeInput` and `SFXVolumeInput` should be within the same 256-byte block for some optimizations to work
+	assert (VolumeInput>>8)==(SFXVolumeInput>>8)
 
 SampleInput:	ds	sSample		; input sample data
 ActiveSample:	ds	sSample		; currently playing sample data

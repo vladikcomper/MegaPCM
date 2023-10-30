@@ -27,10 +27,37 @@ IdleLoop_Main:
 
 .loop:
 	ld	a, (hl)			; read command
-	or	a			; is command a sample 80h?
-	jp	p, .loop		; if not, branch
+	or	a
+	jp	p, .loop
 
+; --------------------------------------------------------------
 LoadSample:
+	sub	80h			; is command a sample 80h?
+	jr	z, LoadFromSampleInput
+
+LoadFromSampleTable:
+	; Calculate sample's index (part 1)
+	add	a			; a = sampleIndex * 2
+	ld	c, a
+	ld	b, 0h			; bc = sampleIndex * 2
+
+	; Mark command as accepted
+	ld	(hl), b			; IN_command = 00h
+
+	; Calculate sample's index (part 2)
+	ld	h, b
+	ld	l, c			; hl = sampleIndex * 2
+	add	hl, hl			; hl = sampleIndex * 4
+	add	hl, hl			; hl = sampleIndex * 8
+	add	hl, bc			; hl = sampleIndex * 10
+	ld	ix, SampleTable-10
+	ex	de, hl
+	add	ix, de			; ix = SampleTable + (sampleIndex - 1) * 10
+
+	jp	PlaySample
+
+; --------------------------------------------------------------
+LoadFromSampleInput:
 	xor	a
 	ld	(hl), a			; CommandInput = 00h
 	
@@ -45,6 +72,8 @@ LoadSample:
 
 	ld	ix, ActiveSample
 
+; --------------------------------------------------------------
+PlaySample:
 	; Determine loop to run based on sample type
 	ld	a, (ix+sSample.type)
 	cp	'P'			; is type 'P' (PCM)?

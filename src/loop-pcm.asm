@@ -73,6 +73,15 @@ PCMLoop_Init:
 	ld	(DriverReady), a		; ready to fetch inputs now
 	ld	(iy+0), 2Ah			; setup YM to fetch DAC bytes
 
+	; Setup volume source (VolumeInput or SFXVolumeInput)
+	ld	a, VolumeInput&0FFh
+	bit	FLAGS_SFX, (ix+sSample.flags)
+	jr	z, .setVolumeSource
+	ld	a, SFXVolumeInput&0FFh
+.setVolumeSource:
+	ld	(PCMLoop_Init.selfModVolumeSource), a
+	ld	(PCMLoop_VBlankPhase_CheckCommandOrSample.selfModVolumeSource), a
+
 	; Init playback registers ...
 	Playback_Init	de, (ix+sSample.pitch)
 
@@ -226,7 +235,7 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
 
 	; Only low-priority samples can be overriden
-	bit	FLAGS_PRIORITY, (ix+sSample.flags)	; is sample high priority?
+	bit	FLAGS_SFX, (ix+sSample.flags)	; is sample high priority?
 	jp	z, .ResetDriver_ToLoadSample		; if not, branch
 
 .ChkCommandOrSample_ResetInput:

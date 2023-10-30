@@ -21,7 +21,7 @@ Driver_Start:
 ; --------------------------------------------------------------
 
 	; Driver version magic string
-	db	'MegaPCM v.2.0-alpha', 0
+	db	'MegaPCM v.2.0-beta', 0
 
 ; --------------------------------------------------------------
 	org	38h
@@ -57,6 +57,10 @@ SampleBuffer:
 ; --------------------------------------------------------------
 VolumeTables:
 	include	'volume-tables.asm'
+
+; --------------------------------------------------------------
+SampleTable:
+	; samples from 81h onwards go here
 
 Driver_End:
 
