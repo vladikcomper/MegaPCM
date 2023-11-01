@@ -4,15 +4,25 @@
 ; ------------------------
 
 
-	struct sSample
+	struct sSampleInput
 type:		byte			; sample type (only 'P' is supported)
-startBank:	byte			; start bank id
-startOffset:	word			; start offset in bank
-endBank:	byte			; end bank id
-endLen:		word			; length in the final bank - 1
-pitch:		byte			; pitch of the sample
 flags:		byte			; playback flags
-__reserved:	byte			; <<RESERVED>>
+pitch:		byte			; pitch of the sample
+startBank:	byte			; start bank id
+endBank:	byte			; end bank id
+startOffset:	word			; offset in start bank
+endOffset:	word			; offset in end bank
+	ends
+
+	struct sActiveSample
+volumeInputPtr:	word			; volume input source (`VolumeInput` or `SFXVolumeInput`)
+startBank:	byte			; start bank id
+endBank:	byte			; end bank id (NOTE: corrected)
+startLength:	word			; length in start bank
+endLength:	word			; length in end bank (used if bankswitching to the end bank)
+startOffset:	word			; start bank offset (corrected)
+flags:		byte			; playback flags
+pitch:		byte			; pitch of the sample
 	ends
 
 FLAGS_SFX:	equ	0
@@ -44,9 +54,10 @@ SFXVolumeInput:	ds	1		; SFX samples volume (00h = max, 0Fh = min)
 
 	; `VolumeInput` and `SFXVolumeInput` should be within the same 256-byte block for some optimizations to work
 	assert (VolumeInput>>8)==(SFXVolumeInput>>8)
+	assert (VolumeInput+1)==(SFXVolumeInput)
 
-SampleInput:	ds	sSample		; input sample data
-ActiveSample:	ds	sSample		; currently playing sample data
+SampleInput:	ds	sSampleInput	; input sample data (used for sample 80h)
+ActiveSample:	ds	sActiveSample	; currently playing sample data
 
 CurrentBank:	ds	1		; determines the currently active bank
 
@@ -54,6 +65,8 @@ LoopId:		ds	1		; id of the current loop
 LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
 LOOP_PCM:	equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
 LOOP_PCM_TURBO:	equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
+
+StackCopy:	dw	1		; stores a copy of stack pointer
 
 ; WARNING! Unused!
 BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)

@@ -60,22 +60,13 @@ LoadFromSampleTable:
 LoadFromSampleInput:
 	xor	a
 	ld	(hl), a			; CommandInput = 00h
-	
-	ld	hl, SampleInput
-	ld	de, ActiveSample
-	ld	(DriverReady), a	; cannot accept inputs during sample data copy (otherwise we can overwrite it mid-copy)
-	rept sSample-1	; copy "SampleInput" to "ActiveSample" (minus 1 reserved byte)
-		ldi
-	endr
-	ld	a, 'R'
-	ld	(DriverReady), a	; can accept inputs now
-
-	ld	ix, ActiveSample
+	ld	ix, SampleInput
+	; fallthrough
 
 ; --------------------------------------------------------------
 PlaySample:
 	; Determine loop to run based on sample type
-	ld	a, (ix+sSample.type)
+	ld	a, (ix+sSampleInput.type)
 	cp	'P'			; is type 'P' (PCM)?
 	jp	z, PCMLoop_Init		; if yes, jump to PCM loop
 

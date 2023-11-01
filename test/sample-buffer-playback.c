@@ -15,12 +15,12 @@ const size_t CYCLES_PER_ITERATION = 100;
 
 typedef struct {
 	uint8_t type;
-	uint8_t startBank;
-	uint16_t startOffset;
-	uint8_t endBank;
-	uint16_t endLen;
-	uint8_t pitch;
 	uint8_t flags;
+	uint8_t pitch;
+	uint8_t startBank;
+	uint8_t endBank;
+	uint16_t startOffset;
+	uint16_t endOffset;
 } __attribute__((packed)) Sample;
 
 typedef struct {
@@ -150,6 +150,9 @@ void runTest_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * 
 	else if (address == 0x4003) {
 		fprintf(stderr, "YM Port 1 Write: %02X %02X\n", context->ymPort1Reg, value);
 	}
+	else if (address == 0x6000) {
+		fprintf(stderr, "Rotating bank register: %04X\n", context->ROMBankId);
+	}
 }
 
 void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampleSize, uint32_t startOffsetInROM) {
@@ -175,8 +178,8 @@ void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampl
 	sampleInput->pitch = pitch;
 	sampleInput->startBank = startOffsetInROM >> 15;
 	sampleInput->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
-	sampleInput->endBank = (startOffsetInROM + sampleSize - 1) >> 15;
-	sampleInput->endLen = sampleInput->startBank == sampleInput->endBank ? sampleSize & 0x7FFE : (startOffsetInROM + sampleSize) & 0x7FFE;
+	sampleInput->endBank = (startOffsetInROM + sampleSize) >> 15;
+	sampleInput->endOffset = 0x8000 | ((startOffsetInROM + sampleSize) & 0x7FFE);
 
 	/* Setup playback emulation state */
 	EmulatedPlaybackState playbackState = {

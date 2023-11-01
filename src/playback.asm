@@ -26,14 +26,14 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_Init regReadaheadPtr, opPitchSource
+	macro	Playback_Init_DI regReadaheadPtr
 	push	regReadaheadPtr
 	exx
 	ex	af, af'
 	xor	a				; a' = 0
 	ex	af, af'
 	Playback_LoadVolume_EXX			; bc = volume table
-	Playback_LoadPitch c, opPitchSource	; iyl = pitch
+	Playback_LoadPitch			; iyl = pitch
 	pop	hl				; hl = regReadaheadPtr
 	ld	de, YM_Port0_Data
 	exx
@@ -42,21 +42,17 @@
 ; -----------------------------------------------------------------------------
 ; Loads playback pitch
 ; -----------------------------------------------------------------------------
-; ARGUMENTS:
-;	regScratch - scratch register for loading a pitch (a, b, c, d, h, l)
-;	opPitchSource - pitch source operand (ix+NN)
-;
 ; OUTPUT:
 ;	iyl	= Pitch value
 ;
 ; USES:
-;	af, Shadow registers
+;	a
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_LoadPitch	regScratch, opPitchSource
-	ld	regScratch, opPitchSource	; 19
-	ld	iyl, regScratch			; 8
-	; Cycles: 27
+	macro	Playback_LoadPitch
+	ld	a, (ActiveSample+sActiveSample.pitch)	; 13
+	ld	iyl, a					; 8
+	; Cycles: 21
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -83,12 +79,12 @@
 ; -----------------------------------------------------------------------------
 
 	macro	Playback_LoadVolume_EXX
-@.selfModVolumeSource: = $+1
-	ld	a, (VolumeInput)		; 13
-	and	0Fh				; 7
-	add	VolumeTables>>8			; 7
-	ld	b, a				; 4	bc = volume table
-	; Cycles: 31
+	ld	bc, (ActiveSample+sActiveSample.volumeInputPtr)	; 20
+	ld	a, (bc)						; 13
+	and	0Fh						; 7
+	add	VolumeTables>>8					; 7
+	ld	b, a						; 4	bc = volume table
+	; Cycles: 51
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -104,7 +100,7 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_Run
+	macro	Playback_Run_DI
 	exx					; 4
 	ld	c, (hl)				; 7	load sample
 	ld	a, (bc)				; 7	apply volume
