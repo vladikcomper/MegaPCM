@@ -13,15 +13,21 @@
 
 	device	NOSLOT64K
 
+; --------------------------------------------------------------
 	org	00h
-
 Driver_Start:
-	include	'init.asm'
+	di				; disable interrupts
+	im	1			; interrupt mode 1
+	jp	InitDriver
+
+; --------------------------------------------------------------
+	org	08h
+	include	'set-bank.asm'		; bank-switching routines
 
 ; --------------------------------------------------------------
 
 	; Driver version magic string
-	db	'MegaPCM v.2.0-beta', 0
+	db	'MegaPCM v.2.0g', 0
 
 ; --------------------------------------------------------------
 	org	38h
@@ -40,9 +46,12 @@ VoidInterrupt:
 
 ; --------------------------------------------------------------
 
+	include	'init.asm'
+
+; --------------------------------------------------------------
+
 	include	'playback.asm'
 	include	'debug.asm'
-	include	'load-bank.asm'
 
 ; --------------------------------------------------------------
 

@@ -30,8 +30,6 @@ PCMLoop_Init:
 	; 
 	ld	(StackCopy), sp			; backup stack
 
-	DebugMsg "About to do shit"
-
 	; Fetch input sample data (see `sSampleInput` struct) ...
 	; TODO: Disable sample input?
 	ld	sp, ix				; load sample in the stack
@@ -60,7 +58,7 @@ PCMLoop_Init:
 	dec	b				; b = endBank - 1 (use previous bank)
 	ld	d, 80h				; de = 8000h (use max end length)
 .lengthOk:
-	; WARNING! POTENTIAL BUG! If this turns sample into single bank sample, we should calculate this differently! We don't care though
+	; WARNING! This value is incorrect for single-bank samples; luckily, it's ignored
 	push	de				; (ActiveSample+sActiveSample.endLength) = de
 
 	ld	a, b				; a = endBank
@@ -99,7 +97,7 @@ PCMLoop_Init:
 	ld	sp, (StackCopy)			; restore stack
 	ld	ix, ActiveSample
 
-	; YM for DAC playback
+	; Setup YM for DAC playback
 	ld	iy, YM_Port0_Reg
 	xor	a
 	ld	(DriverReady), a		; cannot interrupt driver now ...
@@ -117,10 +115,9 @@ PCMLoop_Init:
 
 PCMLoop_Reload_DI:
 
-	; Load initial bank ...
+	; Set initial ROM bank ...
 	ld	a, (ActiveSample+sActiveSample.startBank)
-	ld	(CurrentBank), a
-	call	LoadBank
+	rst	SetBank
 
 	; Init read ahead registers ...
 	ld	de, SampleBuffer
@@ -213,10 +210,9 @@ PCMLoop_DrainPhase_Done_EXX_DI:
 
 ; --------------------------------------------------------------
 PCMLoop_NormalPhase_LoadNextBank:
-	; Increment current bank index
+	; Prepare next bank id
 	ld	a, (CurrentBank)
 	inc	a
-	ld	(CurrentBank), a
 
 	; Setup sample source and length
 	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
@@ -226,8 +222,8 @@ PCMLoop_NormalPhase_LoadNextBank:
 	ld	bc, (ActiveSample+sActiveSample.endLength)
 .lengh_ok:
 
-	; Switch to bank stored in A
-	call	LoadBank
+	; Switch to the next ROM bank
+	rst	SetBank2
 
 	; Ready to continue playback!
 	jp	PCMLoop_NormalPhase

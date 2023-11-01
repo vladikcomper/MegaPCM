@@ -1,8 +1,5 @@
 
 InitDriver:
-	di				; disable interrupts
-	im	1			; interrupt mode 1
-
 	; Clear work RAM (uses Blast processing(tm))
 	ld	sp, WorkRAM_End
 	ld	bc, 0000h

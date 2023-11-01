@@ -10,8 +10,8 @@ flags:		byte			; playback flags
 pitch:		byte			; pitch of the sample
 startBank:	byte			; start bank id
 endBank:	byte			; end bank id
-startOffset:	word			; offset in start bank
-endOffset:	word			; offset in end bank
+startOffset:	word			; offset in the start bank
+endOffset:	word			; offset in the end bank
 	ends
 
 	struct sActiveSample
@@ -58,8 +58,6 @@ SFXVolumeInput:	ds	1		; SFX samples volume (00h = max, 0Fh = min)
 
 SampleInput:	ds	sSampleInput	; input sample data (used for sample 80h)
 ActiveSample:	ds	sActiveSample	; currently playing sample data
-
-CurrentBank:	ds	1		; determines the currently active bank
 
 LoopId:		ds	1		; id of the current loop
 LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
