@@ -36,7 +36,7 @@ $(SRC_DIR)/volume-tables.asm:
 %.asm: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm --sort $< $@
 
-test:	release
+test:	release debug
 	make -C test
 
 clean:
