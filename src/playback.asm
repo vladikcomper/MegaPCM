@@ -12,8 +12,7 @@
 ; Initializes sample playback registers
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
-;	regReadaheadPtr	- Register with readahead position (bc, de, hl)
-;	opPitchSource - pitch source register (ix+NN)
+;	readaheadPtr	- Initial readahead buffer pointer
 ; 
 ; OUTPUT:
 ;	iyl	= Pitch
@@ -26,15 +25,14 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_Init_DI regReadaheadPtr
-	push	regReadaheadPtr
+	macro	Playback_Init_DI readaheadPtr
 	exx
 	ex	af, af'
 	xor	a				; a' = 0
 	ex	af, af'
 	Playback_LoadVolume_EXX			; bc = volume table
 	Playback_LoadPitch			; iyl = pitch
-	pop	hl				; hl = regReadaheadPtr
+	ld	hl, readaheadPtr		; hl = readaheadPtr
 	ld	de, YM_Port0_Data
 	exx
 	endm
@@ -119,7 +117,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
-; Should be used after `Playback_Run`
+; Should be used after `Playback_Run_DI`
 ; -----------------------------------------------------------------------------
 ; INPUT:
 ;	af	= buffer position - 3
@@ -164,7 +162,6 @@
 	ex	af, af'				; 4
 	exx					; 4
 	; Total cycles: 71-72 (playback), 24 (drained)
-
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -197,7 +194,6 @@
 .playback_Drained:
 	exx					; 4
 	; Total cycles: 71-72 (playback), 28 (drained)
-
 	endm
 
 

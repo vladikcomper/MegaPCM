@@ -12,7 +12,7 @@
 ; Loop initialization
 ; --------------------------------------------------------------
 ; INPUT:
-;	ix	Pointer to `sSample` structure
+;	ix	Pointer to `sSampleInput` structure
 ; --------------------------------------------------------------
 
 PCMLoop_Init:
@@ -113,6 +113,7 @@ PCMLoop_Init:
 	ld	(DriverReady), a		; ready to fetch inputs now
 	ld	(iy+0), 2Ah			; setup YM to fetch DAC bytes
 
+; --------------------------------------------------------------
 PCMLoop_Reload_DI:
 
 	; Set initial ROM bank ...
@@ -125,7 +126,7 @@ PCMLoop_Reload_DI:
 	ld	bc, (ActiveSample+sActiveSample.startLength)
 
 	; Init playback registers ...
-	Playback_Init_DI	de
+	Playback_Init_DI	SampleBuffer
 
 ; --------------------------------------------------------------
 ; PCM: Main playback loop (readahead & playback)
@@ -140,32 +141,33 @@ PCMLoop_NormalPhase:
 	DebugMsg "PCMLoop_NormalPhase iteration"
 
 	; Handle "read-ahead" buffer
-	di
+	di							; 4
 	ldi							; 16
 	ldi							; 16
 	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
-	jp	po, PCMLoop_NormalPhase_ReadAheadExhausted_DI	; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
+	jp	po, .ReadAheadExhausted_DI			; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
 
 	; Handle playback
-PCMLoop_NormalPhase_Playback_DI:
+.Playback_DI:
 	Playback_Run_DI						; 67-68	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 14
-	; Total "PCMLoop_NormalPhase" cycles: 134-135
+	; Total "PCMLoop_NormalPhase" cycles: 138-139
 
 ; --------------------------------------------------------------
-PCMLoop_NormalPhase_ReadAheadFull:
+.ReadAheadFull:
 	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
 
-	; Waste 49 cycles (we cannot handle "read-ahead" now)
+	; Waste 53 cycles (we cannot handle "read-ahead" now)
 	ld	a, (ROMWindow)					; 13	idle read from ROM keeps timings accurate
 	ld	a, 0h						; 7	''
 	ld	a, (ROMWindow)					; 13	''
+	nop							; 4
 	di							; 4
-	jr	PCMLoop_NormalPhase_Playback_DI			; 12
+	jr	.Playback_DI					; 12
 
 ; --------------------------------------------------------------
-PCMLoop_NormalPhase_ReadAheadExhausted_DI:
+.ReadAheadExhausted_DI:
 	ei							; 4
 
 	; Are we done playing?
@@ -184,20 +186,21 @@ PCMLoop_DrainPhase:
 
 	; Handle playback in draining mode
 	di								; 4
-	Playback_Run_Draining	e, PCMLoop_DrainPhase_Done_EXX_DI	; 71-72
+	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
 	ei								; 4
 
-	; Waste 55 cycles (instead of handling readahead)
+	; Waste 59 cycles (instead of handling readahead)
 	ld	a, (ROMWindow)						; 13	idle read from ROM keeps timings accurate
 	ld	c, 0FFh							; 7
 	ld	a, (ROMWindow)						; 13
 	dec	bc							; 6
 	nop								; 4
+	nop								; 4
 	jr	PCMLoop_DrainPhase					; 12
-	; Total "PCMLoop_DrainPhase" cycles: 134-135
+	; Total "PCMLoop_DrainPhase" cycles: 138-139
 
 ; --------------------------------------------------------------
-PCMLoop_DrainPhase_Done_EXX_DI:
+.Drained_EXX_DI:
 	; NOTE: We won't re-enable interrupts here
 	exx
 
@@ -234,13 +237,14 @@ PCMLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 47 cycles
+	; Waste 51 cycles
 	exx						; 4
 	ld	a, 00h					; 7
 	inc	bc					; 6
 	dec	bc					; 6
 	inc	bc					; 6
 	dec	bc					; 6
+	nop						; 4
 	jr	PCMLoop_VBlankPhase_Sync		; 12
 
 ; --------------------------------------------------------------
@@ -259,15 +263,16 @@ PCMLoop_VBlankPhase:
 	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72	playback one sample
 
 PCMLoop_VBlankPhase_Sync:
-	; Waste 63 cycles
+	; Waste 67 cycles
 	push	bc					; 11
 	nop						; 4
 	pop	bc					; 10
 	push	bc					; 11
+	nop						; 4
 	nop						; 4
 	pop	bc					; 10
 	djnz	PCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 134-135
+	; Total "PCMLoop_VBlankPhase" cycles: 138-139
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
@@ -277,6 +282,7 @@ PCMLoop_VBlankPhase_LastIteration:
 	exx						; 4
 	Playback_LoadVolume_EXX				; 51
 	exx						; 4
+	nop						; 4
 
 	; Handle sample playback and reload pitch
 	Playback_Run_Draining_NoSync	e		; 71-72/28
@@ -298,7 +304,8 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
-	; Waste 13 more cycles (WARNING: currently it wastes 12)
+	; Waste 17 more cycles (WARNING: currently it wastes 16)
+	nop						; 4
 	nop						; 4
 	nop						; 4
 	nop						; 4
