@@ -24,6 +24,7 @@ typedef struct {
 } __attribute__((packed)) Sample;
 
 typedef struct {
+	char sampleType;
 	uint32_t offset;
 	uint32_t length;
 	uint8_t pitch;
@@ -123,7 +124,7 @@ uint8_t emulateSamplePlayback(Z80VM_Context * context) {
 	uint8_t sample = context->ROM[playbackState->offset];
 
 	/* Apply pitch */
-	if ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100) {
+	if ((playbackState->sampleType == 'T') || ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)) {
 		playbackState->offset++;
 		playbackState->length--;
 	}
@@ -155,7 +156,7 @@ void runTest_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * 
 	}
 }
 
-void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampleSize, uint32_t startOffsetInROM) {
+void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sample, const size_t sampleSize, uint32_t startOffsetInROM) {
 
 	fprintf(stderr, "Testing sample: %ld bytes, @%X...\n", sampleSize, startOffsetInROM);
 
@@ -174,7 +175,7 @@ void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampl
 
 	/* Setup sample */
 	Sample * sampleInput = (Sample*) &context->programRAM[Z_MPCM_SampleInput];
-	sampleInput->type = 'P';
+	sampleInput->type = sampleType;
 	sampleInput->pitch = pitch;
 	sampleInput->startBank = startOffsetInROM >> 15;
 	sampleInput->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
@@ -183,6 +184,7 @@ void runTest(Z80VM_Context * context, const uint8_t * sample, const size_t sampl
 
 	/* Setup playback emulation state */
 	EmulatedPlaybackState playbackState = {
+		.sampleType = sampleType,
 		.offset = startOffsetInROM,
 		.length = sampleSize,
 		.pitch = pitch,
@@ -242,14 +244,20 @@ int main(int argc, char * argv[]) {
 	/* Run actual tests */
 
 	/* No-bankswitching */
-	runTest(context, sample_2, sizeof(sample_2), 0);
-	runTest(context, sample_8, sizeof(sample_8), 0);
-	runTest(context, sample_254, sizeof(sample_254), 0);
+	runTest(context, 'P', sample_2, sizeof(sample_2), 0);
+	runTest(context, 'P', sample_8, sizeof(sample_8), 0);
+	runTest(context, 'P', sample_254, sizeof(sample_254), 0);
+	runTest(context, 'T', sample_2, sizeof(sample_2), 0);
+	runTest(context, 'T', sample_8, sizeof(sample_8), 0);
+	runTest(context, 'T', sample_254, sizeof(sample_254), 0);
 
 	/* With bankswitching */
-	runTest(context, sample_2, sizeof(sample_2), 0x7FFE);
-	runTest(context, sample_8, sizeof(sample_8), 0x7FFE);
-	runTest(context, sample_254, sizeof(sample_254), 0x7FFE);
+	runTest(context, 'P', sample_2, sizeof(sample_2), 0x7FFE);
+	runTest(context, 'P', sample_8, sizeof(sample_8), 0x7FFE);
+	runTest(context, 'P', sample_254, sizeof(sample_254), 0x7FFE);
+	runTest(context, 'T', sample_2, sizeof(sample_2), 0x7FFE);
+	runTest(context, 'T', sample_8, sizeof(sample_8), 0x7FFE);
+	runTest(context, 'T', sample_254, sizeof(sample_254), 0x7FFE);
 
 	Z80VM_Destroy(context);
 

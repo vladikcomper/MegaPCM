@@ -50,13 +50,15 @@ VoidInterrupt:
 
 ; --------------------------------------------------------------
 
-	include	'playback.asm'
 	include	'debug.asm'
+	include	'playback.asm'
+	include	'playback-turbo.asm'
 
 ; --------------------------------------------------------------
 
 	include	'loop-idle.asm'
 	include	'loop-pcm.asm'
+	include	'loop-pcm-turbo.asm'
 
 ; --------------------------------------------------------------
 	align	100h

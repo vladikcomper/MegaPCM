@@ -69,6 +69,8 @@ PlaySample:
 	ld	a, (ix+sSampleInput.type)
 	cp	'P'			; is type 'P' (PCM)?
 	jp	z, PCMLoop_Init		; if yes, jump to PCM loop
+	cp	'T'			; is type 'T' (PCM-Turbo)?
+	jp	z, PCMTurboLoop_Init	; if yes, jump to PCM-Tubro loop
 
 	ifdef __DEBUG__
 		; Error out on illegal sample
