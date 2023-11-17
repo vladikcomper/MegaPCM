@@ -178,15 +178,6 @@ Ptr_EndPlayback:	equ	Event_EndPlayback+1	; End playback event pointer
 
 	include	"play-dpcm.asm"
 
-; ---------------------------------------------------------------
-; NOTICE ABOUT PLAYBACK RATES:
-;	YM is only capable of producing DAC sound @ ~26 kHz
-;	frequency, overpassing it leads to missed writes!
-;	The fact playback code can play faster than that
-;	means there is a good amount of room for more features,
-;	i.e. to waste even more processor cycles! ;)
-; ---------------------------------------------------------------
-
 ; ===============================================================
 
 ; Table of DAC samples goes right after the code.
