@@ -29,6 +29,7 @@ SetBank:
 .sm1:	cp	._DYNAMIC_VALUE		; 7	are we in this bank already?
 	jp	nz, SetBank2		; 10	if not, branch
 	ret				; 10
+	; Total cycles: 162 (bankswitch), 27 (same bank)
 
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank without checking if it's selected already
@@ -54,3 +55,4 @@ SetBank2:
 	ld	(hl),l			; 7	pin A23 is always zero
 	pop	hl			; 10
 	ret				; 10
+	; Total cycles: 145
