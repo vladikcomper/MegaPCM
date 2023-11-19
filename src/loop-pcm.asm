@@ -114,11 +114,13 @@ PCMLoop_Init:
 	ld	(iy+0), 2Ah			; setup YM to fetch DAC bytes
 
 ; --------------------------------------------------------------
-PCMLoop_Reload_DI:
+PCMLoop_Reload:
 
 	; Set initial ROM bank ...
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
+
+	di
 
 	; Init read ahead registers ...
 	ld	de, SampleBuffer
@@ -168,6 +170,10 @@ PCMLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadExhausted_DI:
+	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
+	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
+	; interrupts for longer than that. Missing VBlank may mess up
+	; "DMA protection" (avoiding ROM access during VBlank)
 	ei							; 4
 
 	; Are we done playing?
@@ -201,12 +207,16 @@ PCMLoop_DrainPhase:
 
 ; --------------------------------------------------------------
 .Drained_EXX_DI:
-	; NOTE: We won't re-enable interrupts here
 	exx
 
+	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
+	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
+	; interrupts for longer than that. Missing VBlank may mess up
+	; "DMA protection" (avoiding ROM access during VBlank)
+	ei
+
 	bit	FLAGS_LOOP, (ix+sActiveSample.flags)	; is sample set to loop?
-	; WARNING! It's possible to miss VBlank here, since we spend more than 171 cycles with interrupts disabled
-	jp	nz, PCMLoop_Reload_DI			; re-enter playback loop
+	jp	nz, PCMLoop_Reload			; re-enter playback loop
 
 	; Back to idle loop
 	jp	IdleLoop_Init
