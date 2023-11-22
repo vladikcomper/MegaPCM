@@ -262,8 +262,9 @@ PCMLoop_VBlank:
 	push	af
 	push	bc
 
-	ld	b, 41-3					; TODO: Verify this
-							; TODO: Different draining for PAL
+	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~50930 on PAL (V28 mode).
+	; This means in worst-case scenario, we must play 144 samples to survive VBlank.
+	ld	b, 060h ;144-3+1	; WARNING! Calculations are currently off for some reason, using an emperical value
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase:
