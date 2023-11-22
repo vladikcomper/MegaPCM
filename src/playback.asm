@@ -210,6 +210,6 @@
 	ld	a, l				; 4
 	exx					; 4
 	sub	regReadAheadPtrLow		; 4
-	ld	opHealthDst, a			; 13 - if `opHealthDst` is (nnn)
+	ld	opHealthDst, a			; 13 - if `opHealthDst` is (nn)
 	; Total cycles: 29
 	endm

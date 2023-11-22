@@ -15,7 +15,7 @@ CurrentBank:	equ	SetBank.sm1+1
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank
 ; -----------------------------------------------------------------------------
-; WARNING: Avoid touching `de` here, even if pushed to the stack!
+; WARNING: Avoid using `de` here, even if pushed to the stack!
 ;
 ; `de` is a "global" playback buffer pointer shared between VBlank and normal
 ; routines. If VBlank occurs in the middle of this routine, `de` shouldn't
@@ -42,7 +42,7 @@ SetBank:
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank without checking if it's selected already
 ; -----------------------------------------------------------------------------
-; WARNING: Avoid touching `de` here, even if pushed to the stack!
+; WARNING: Avoid using `de` here, even if pushed to the stack!
 ;
 ; `de` is a "global" playback buffer pointer shared between VBlank and normal
 ; routines. If VBlank occurs in the middle of this routine, `de` shouldn't
