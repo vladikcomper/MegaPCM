@@ -247,9 +247,9 @@ PCMLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 51 cycles
+	; Waste 48 cycles
 	exx						; 4
-	ld	a, 00h					; 7
+	nop						; 4
 	inc	bc					; 6
 	dec	bc					; 6
 	inc	bc					; 6
@@ -271,7 +271,7 @@ PCMLoop_VBlankPhase:
 	DebugMsg "PCMLoop_VBlankPhase iteration"
 
 	; Handle sample playback in draining mode
-	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72	playback one sample
+	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 
 PCMLoop_VBlankPhase_Sync:
 	; Waste 67 cycles
