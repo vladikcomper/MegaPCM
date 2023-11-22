@@ -263,13 +263,13 @@ PCMTurboLoop_VBlankPhase:
 	; Total cycles: 64-65 (playback ok), 24 (drained)
 
 .FetchWindow:
-	; Waste 64 cycles (simulate fetching samples)
+	; Slightly late, but report we're in VBlank
+	ld	a, 0FFh					; 7
+	ld	(VBlankActive), a			; 13
+
+	; Waste 44 cycles (simulate fetching samples)
 	push	bc					; 11
-	inc	bc					; 6
-	inc	bc					; 6
-	inc	bc					; 6
-	inc	bc					; 6
-	inc	bc					; 6
+	ld	bc, 00h					; 10
 	pop	bc					; 10
 	djnz	PCMTurboLoop_VBlankPhase		; 8/13
 	; Total "PCMTurboLoop_VBlankPhase" cycles: 105
@@ -295,6 +295,11 @@ PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
 	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
+	ld	(VBlankActive), a			; 13	report we're out of VBlank
+
+	; ###
+	Playback_VBlank_ReportBufferHealth e, (BufferHealth)	; 29
+
 	pop	bc
 	pop	af
 	ei

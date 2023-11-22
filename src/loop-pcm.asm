@@ -274,13 +274,13 @@ PCMLoop_VBlankPhase:
 	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 
 PCMLoop_VBlankPhase_Sync:
-	; Waste 67 cycles
+	; Slightly late, but report we're in VBlank
+	ld	a, 0FFh					; 7
+	ld	(VBlankActive), a			; 13
+
+	; Waste 47 cycles
 	push	bc					; 11
-	nop						; 4
-	pop	bc					; 10
-	push	bc					; 11
-	nop						; 4
-	nop						; 4
+	ld	(VBlankActive), a			; 13	wasteful write
 	pop	bc					; 10
 	djnz	PCMLoop_VBlankPhase			; 13/8
 	; Total "PCMLoop_VBlankPhase" cycles: 138-139
@@ -315,14 +315,15 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	(CommandInput), a
 
 .ChkCommandOrSample_Done:
-	; Waste 17 more cycles (WARNING: currently it wastes 16)
-	nop						; 4
-	nop						; 4
-	nop						; 4
+	; Slightly early, but report we're out of VBlank
+	ld	(VBlankActive), a			; 13
 	nop						; 4
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28
+
+	; ###
+	Playback_VBlank_ReportBufferHealth e, (BufferHealth)	; 29
 
 	pop	bc					; 10
 	pop	af					; 10

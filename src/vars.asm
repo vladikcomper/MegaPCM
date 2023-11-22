@@ -66,7 +66,7 @@ LOOP_PCM_TURBO:	equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
 
 StackCopy:	dw	1		; stores a copy of stack pointer
 
-; WARNING! Unused!
+VBlankActive:	ds	1		; set if inside VBlank
 BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)
 					; (00h - buffer is drained .. 0FFh - maximum health)
 
