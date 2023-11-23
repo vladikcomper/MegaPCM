@@ -92,7 +92,7 @@
 ;	iyl	= Pitch value
 ;
 ; OUTPUT:
-;	af	= buffer position - 3
+;	af	= buffer position
 ;
 ; USES:
 ;	af, Shadow registers
@@ -110,7 +110,6 @@
 .playback_NoPitch:
 	ex	af, af'				; 4
 	ld	a, l				; 4	a = buffer position
-	sub	3h				; 7	a = buffer position - 3
 	exx					; 4
 	; Cycles: 67-68 (playback)
 	endm
@@ -119,16 +118,21 @@
 ; Checks whether readahead buffer can accept more samples
 ; Should be used after `Playback_Run_DI`
 ; -----------------------------------------------------------------------------
+; ARGUMENTS:
+;	regReadAheadPtrLow - Low byte of readahead position (c, e, l)
+;	locReadaheadOk - location to jump if readahead isn't full
+;
 ; INPUT:
-;	af	= buffer position - 3
+;	af	= buffer position
 ;
 ; USES:
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_ChkReadaheadOk	regReadAheadPtrLow, procReadaheadOk
-	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow - 3
-	jp	m, procReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow - 3 <= 0), then read ahead is full
+	macro	Playback_ChkReadaheadOk	regReadAheadPtrLow, locReadaheadOk
+	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
+	sub	3h				; 7	a = buffer position - regReadAheadPtrLow - 3
+	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 3), then read ahead is full
 	; Cycles: 14
 	endm
 
