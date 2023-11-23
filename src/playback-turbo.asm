@@ -60,6 +60,8 @@
 ; -----------------------------------------------------------------------------
 
 	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, procReadaheadOk
+	; WARNING! The current implementation limits buffer health to 128-3 samples
+	; due to signed check.
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow - 3
 	jp	m, procReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow - 3 > 0), then read ahead is ok
 	; Cycles: 14

@@ -252,7 +252,9 @@ PCMTurboLoop_VBlank:
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~50930 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 191 samples to survive VBlank.
-	ld	b, 070h	;191-1+1		; WARNING! Calculations are currently off for some reason, using an emperical value
+	; However, due to "readahead full" check optimization, buffer capacity is capped
+	; at ~128-3 samples currently. Using 120 samples to have a small overhead.
+	ld	b, 120
 
 ; --------------------------------------------------------------
 PCMTurboLoop_VBlankPhase:
