@@ -139,6 +139,13 @@ void runTest_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * 
 
 		/* For DAC output, make sure we output the exact same bytes we request */
 		if (context->ymPort0Reg == 0x2A) {
+			/* Log cycles elapsed since last DAC write */
+			static long long last_dac_write_cycles = 0;
+			if (last_dac_write_cycles != 0) {
+				fprintf(stderr, "Cycles since last write: %lld\n", context->z80State.cycles_emulated - last_dac_write_cycles);
+			}
+			last_dac_write_cycles = context->z80State.cycles_emulated;
+
 			const uint8_t sample = value;
 			const uint8_t expectedSample = emulateSamplePlayback(context);
 
