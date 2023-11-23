@@ -111,7 +111,7 @@
 	ex	af, af'				; 4
 	ld	a, l				; 4	a = buffer position
 	exx					; 4
-	; Cycles: 67-68 (playback)
+	; Cycles: 60-61 (playback)
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -133,7 +133,7 @@
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
 	sub	3h				; 7	a = buffer position - regReadAheadPtrLow - 3
 	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 3), then read ahead is full
-	; Cycles: 14
+	; Cycles: 21
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -160,7 +160,7 @@
 	ld	(de), a				; 7	send it to YM
 	ex	af, af'				; 4
 	add	iyl				; 8	should we apply pitch?
-	jr	nc, .playback_NoPitch		; 7	if not, branch
+	jr	nc, .playback_NoPitch		; 7/12	if not, branch
 	inc	l				; 4	advance playback pointer
 .playback_NoPitch:
 	ex	af, af'				; 4

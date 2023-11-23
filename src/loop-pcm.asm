@@ -151,9 +151,9 @@ PCMLoop_NormalPhase:
 
 	; Handle playback
 .Playback_DI:
-	Playback_Run_DI						; 67-68	playback a buffered sample
+	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
-	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 14
+	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 21
 	; Total "PCMLoop_NormalPhase" cycles: 138-139
 
 ; --------------------------------------------------------------
