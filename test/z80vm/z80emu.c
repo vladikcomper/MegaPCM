@@ -78,7 +78,7 @@ static const int OVERFLOW_TABLE[4] = {
 
 static int	emulate (Z80_STATE * state, 
 			int opcode,
-			int elapsed_cycles, int number_cycles,
+			int number_cycles,
 			void *context);
 
 void Z80Reset (Z80_STATE *state)
@@ -148,10 +148,13 @@ void Z80Reset (Z80_STATE *state)
         state->fd_register_table[6] = &state->registers.word[Z80_IY];
         state->fd_register_table[10] = &state->registers.word[Z80_IY];
         state->fd_register_table[14] = &state->registers.word[Z80_IY];        
+
+        state->cycles_emulated = 0;
 }
 
 int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
 {
+        long long start_cycles = state->cycles_emulated;
         state->status = 0;
         if (state->iff1) {
 				
@@ -168,42 +171,36 @@ int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
 
                                 return emulate(state, 
 					data_on_bus, 
-					2, 4, 
+					4,
 					context);
                                 
                         }
 
                         case Z80_INTERRUPT_MODE_1: {
-
-				int	elapsed_cycles;
-
-				elapsed_cycles = 0;
                                 SP -= 2;
                                 Z80_WriteWord(SP, state->pc, context);
                                 state->pc = 0x0038;
-                                return elapsed_cycles + 13;
+                                state->cycles_emulated += 13;
 
+                                return state->cycles_emulated - start_cycles;
                         }
 
                         case Z80_INTERRUPT_MODE_2:
                         default: {
+				int	vector;
 
-				int	elapsed_cycles, vector;
-
-				elapsed_cycles = 0;
                                 SP -= 2;
                                 Z80_WriteWord(SP, state->pc, context);
 				vector = state->i << 8 | data_on_bus;
 
 #ifdef Z80_MASK_IM2_VECTOR_ADDRESS
-
                                 vector &= 0xfffe;
-
 #endif
 
+                                state->cycles_emulated += 19;
 				vector = Z80_ReadWord(state->pc, context);
-                                return elapsed_cycles + 19;
-                                
+
+                                return state->cycles_emulated - start_cycles;
                         }
 
                 }
@@ -215,7 +212,7 @@ int Z80Interrupt (Z80_STATE *state, int data_on_bus, void *context)
 
 int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
 {
-	int	elapsed_cycles;
+        long long start_cycles = state->cycles_emulated;
 
         state->status = 0;
 
@@ -223,25 +220,24 @@ int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
         state->iff1 = 0;
         state->r = (state->r & 0x80) | ((state->r + 1) & 0x7f);
 
-	elapsed_cycles = 0;
         SP -= 2;
         Z80_WriteWord(SP, state->pc, context);
         state->pc = 0x0066;
+        state->cycles_emulated += 11;
         
-        return elapsed_cycles + 11;
+        return state->cycles_emulated - start_cycles;
 }
 
 int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
 {
-        int     elapsed_cycles, pc, opcode;
+        int     pc, opcode;
 
         state->status = 0;
-	elapsed_cycles = 0;
 	pc = state->pc;
         opcode = Z80_ReadByte(pc, context);
         state->pc = pc + 1;
 
-        return emulate(state, opcode, elapsed_cycles, number_cycles, context);
+        return emulate(state, opcode, number_cycles, context);
 }
 
 /* Actual emulation function. opcode is the first opcode to emulate, this is 
@@ -250,9 +246,10 @@ int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
 
 static int emulate (Z80_STATE * state, 
 	int opcode, 
-	int elapsed_cycles, int number_cycles, 
+	int number_cycles, 
 	void *context)
 {
+        long long start_cycles = state->cycles_emulated;
         int	pc, r;
 
         pc = state->pc;
@@ -277,7 +274,7 @@ emulate_next_opcode:
 
 emulate_next_instruction:
 
-                elapsed_cycles += 4;
+                state->cycles_emulated += 4;
                 r++;
                 switch (instruction) {
 
@@ -311,7 +308,7 @@ emulate_next_instruction:
                                         d += HL_IX_IY;
                                         READ_BYTE(d, S(Y(opcode)));
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -332,7 +329,7 @@ emulate_next_instruction:
                                         d += HL_IX_IY;
                                         WRITE_BYTE(d, S(Z(opcode)));
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -357,7 +354,7 @@ emulate_next_instruction:
                                         READ_N(n);
                                         WRITE_BYTE(d, n);
 
-                                        elapsed_cycles += 2;
+                                        state->cycles_emulated += 2;
 
                                 }
 
@@ -433,7 +430,7 @@ emulate_next_instruction:
 
                                 AF = (a << 8) | f;
 
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
 
                                 break;
 
@@ -452,7 +449,7 @@ emulate_next_instruction:
 
                                 }
 
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
 
                                 break;
 
@@ -510,7 +507,7 @@ emulate_next_instruction:
                         case LD_SP_HL: {
 
                                 SP = HL_IX_IY;
-                                elapsed_cycles += 2;
+                                state->cycles_emulated += 2;
                                 break;
 
                         }
@@ -518,7 +515,7 @@ emulate_next_instruction:
                         case PUSH_SS: {
 
                                 PUSH(SS(P(opcode)));
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
                                 break;
 
                         }
@@ -563,7 +560,7 @@ emulate_next_instruction:
                                 WRITE_WORD(SP, HL_IX_IY);
                                 HL_IX_IY = t;
 
-                                elapsed_cycles += 3;
+                                state->cycles_emulated += 3;
 
                                 break;                                               
                         }
@@ -593,7 +590,7 @@ emulate_next_instruction:
                                 DE += d;
                                 HL += d;
 
-                                elapsed_cycles += 2;
+                                state->cycles_emulated += 2;
 
                                 break;
 
@@ -620,7 +617,7 @@ emulate_next_instruction:
                                 hl = HL;
 
                                 r -= 2;
-                                elapsed_cycles -= 8;
+                                state->cycles_emulated -= 8;
                                 for ( ; ; ) {
 
                                         r += 2;
@@ -633,11 +630,11 @@ emulate_next_instruction:
 
                                         if (--bc) 
 
-                                                elapsed_cycles += 21;
+                                                state->cycles_emulated += 21;
 
                                         else {
 
-                                                elapsed_cycles += 16;
+                                                state->cycles_emulated += 16;
                                                 break;
 
                                         } 
@@ -655,7 +652,7 @@ emulate_next_instruction:
 
 #endif                                  
 
-                                        if (elapsed_cycles < number_cycles) 
+                                        if (state->cycles_emulated - start_cycles < number_cycles) 
 
                                                 continue;
 
@@ -713,7 +710,7 @@ emulate_next_instruction:
                                 f |= --BC ? Z80_P_FLAG : 0;
                                 F = f | Z80_N_FLAG | (F & Z80_C_FLAG);
 
-                                elapsed_cycles += 5;
+                                state->cycles_emulated += 5;
 
                                 break;
 
@@ -730,7 +727,7 @@ emulate_next_instruction:
                                 hl = HL;
 
                                 r -= 2;
-                                elapsed_cycles -= 8;
+                                state->cycles_emulated -= 8;
                                 for ( ; ; ) {
 
                                         r += 2;
@@ -741,16 +738,16 @@ emulate_next_instruction:
                                         hl += d;
                                         if (--bc && z) 
 
-                                                elapsed_cycles += 21;
+                                                state->cycles_emulated += 21;
 
                                         else {
 
-                                                elapsed_cycles += 16;
+                                                state->cycles_emulated += 16;
                                                 break;
 
                                         } 
 
-                                        if (elapsed_cycles < number_cycles) 
+                                        if (state->cycles_emulated - start_cycles < number_cycles) 
 
                                                 continue;
 
@@ -1020,7 +1017,7 @@ emulate_next_instruction:
                                         INC(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1032,7 +1029,7 @@ emulate_next_instruction:
                                         INC(x);
                                         WRITE_BYTE(d, x);
 
-                                        elapsed_cycles += 6;
+                                        state->cycles_emulated += 6;
 
                                 }
                                 break;
@@ -1056,7 +1053,7 @@ emulate_next_instruction:
                                         DEC(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1068,7 +1065,7 @@ emulate_next_instruction:
                                         DEC(x);
                                         WRITE_BYTE(d, x);
 
-                                        elapsed_cycles += 6;
+                                        state->cycles_emulated += 6;
 
                                 }
                                 break;
@@ -1203,9 +1200,9 @@ emulate_next_instruction:
 				 * remaining number of cycles.
 				 */
 
-				if (elapsed_cycles < number_cycles)
+				if (state->cycles_emulated - start_cycles < number_cycles)
 	
-					elapsed_cycles = number_cycles;
+					state->cycles_emulated = start_cycles + number_cycles;
 
 #endif
 
@@ -1309,7 +1306,7 @@ emulate_next_instruction:
                                 HL_IX_IY = z;
                                 F = f;
 
-                                elapsed_cycles += 7;
+                                state->cycles_emulated += 7;
 
                                 break;
 
@@ -1340,7 +1337,7 @@ emulate_next_instruction:
                                 HL = z;
                                 F = f;  
 
-                                elapsed_cycles += 7;
+                                state->cycles_emulated += 7;
 
                                 break;
 
@@ -1373,7 +1370,7 @@ emulate_next_instruction:
                                 HL = z;
                                 F = f;  
 
-                                elapsed_cycles += 7;
+                                state->cycles_emulated += 7;
 
                                 break;
 
@@ -1387,7 +1384,7 @@ emulate_next_instruction:
                                 x++;
                                 RR(P(opcode)) = x;
 
-                                elapsed_cycles += 2;
+                                state->cycles_emulated += 2;
 
                                 break;
 
@@ -1401,7 +1398,7 @@ emulate_next_instruction:
                                 x--;
                                 RR(P(opcode)) = x;
 
-                                elapsed_cycles += 2;
+                                state->cycles_emulated += 2;
 
                                 break;
 
@@ -1496,7 +1493,7 @@ emulate_next_instruction:
                                         RLC(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1515,7 +1512,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
 
@@ -1540,7 +1537,7 @@ emulate_next_instruction:
                                         RL(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1559,7 +1556,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1583,7 +1580,7 @@ emulate_next_instruction:
                                         RRC(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1602,7 +1599,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1626,7 +1623,7 @@ emulate_next_instruction:
                                         RR_INSTRUCTION(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1645,7 +1642,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1669,7 +1666,7 @@ emulate_next_instruction:
                                         SLA(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1688,7 +1685,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1712,7 +1709,7 @@ emulate_next_instruction:
                                         SLL(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1731,7 +1728,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1755,7 +1752,7 @@ emulate_next_instruction:
                                         SRA(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1774,7 +1771,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1798,7 +1795,7 @@ emulate_next_instruction:
                                         SRL(x);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1817,7 +1814,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1841,7 +1838,7 @@ emulate_next_instruction:
                                 A = y; 
                                 F = SZYXP_FLAGS_TABLE[y] | (F & Z80_C_FLAG);
 
-                                elapsed_cycles += 4;
+                                state->cycles_emulated += 4;
 
                                 break;
 
@@ -1878,7 +1875,7 @@ emulate_next_instruction:
 
                                         d = HL;
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1887,7 +1884,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
 
@@ -1926,7 +1923,7 @@ emulate_next_instruction:
                                         x |= 1 << Y(opcode);
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1945,7 +1942,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -1969,7 +1966,7 @@ emulate_next_instruction:
                                         x &= ~(1 << Y(opcode));
                                         WRITE_BYTE(HL, x);
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -1988,7 +1985,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 5;
+                                        state->cycles_emulated += 5;
 
                                 }
                                 break;
@@ -2004,7 +2001,7 @@ emulate_next_instruction:
                                 nn = Z80_ReadWord(pc, context);
                                 pc = nn;
 
-                                elapsed_cycles += 6;
+                                state->cycles_emulated += 6;
 
                                 break;
 
@@ -2031,7 +2028,7 @@ emulate_next_instruction:
 
                                 }
 
-                                elapsed_cycles += 6;
+                                state->cycles_emulated += 6;
 
                                 break;
 
@@ -2044,7 +2041,7 @@ emulate_next_instruction:
                                 e = Z80_ReadByte(pc, context);
                                 pc += ((signed char) e) + 1;
 
-                                elapsed_cycles += 8;
+                                state->cycles_emulated += 8;
 
                                 break;
 
@@ -2059,7 +2056,7 @@ emulate_next_instruction:
                                         e = Z80_ReadByte(pc, context);
                                         pc += ((signed char) e) + 1;
 
-                                        elapsed_cycles += 8;
+                                        state->cycles_emulated += 8;
 
                                 } else {
 
@@ -2071,7 +2068,7 @@ emulate_next_instruction:
 
                                         pc++;
 
-                                        elapsed_cycles += 3;
+                                        state->cycles_emulated += 3;
 
                                 }
                                 break;  
@@ -2094,7 +2091,7 @@ emulate_next_instruction:
                                         e = Z80_ReadByte(pc, context);
                                         pc += ((signed char) e) + 1;
 
-                                        elapsed_cycles += 9;
+                                        state->cycles_emulated += 9;
 
                                 } else {
 
@@ -2106,7 +2103,7 @@ emulate_next_instruction:
 
                                         pc++;
 
-                                        elapsed_cycles += 4;
+                                        state->cycles_emulated += 4;
 
                                 }
                                 break;
@@ -2123,7 +2120,7 @@ emulate_next_instruction:
                                 PUSH(pc);
                                 pc = nn;
 
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
 
                                 break;
 
@@ -2139,7 +2136,7 @@ emulate_next_instruction:
                                         PUSH(pc);
                                         pc = nn;
 
-                                        elapsed_cycles++;
+                                        state->cycles_emulated++;
 
                                 } else {
 
@@ -2151,7 +2148,7 @@ emulate_next_instruction:
 
                                         pc += 2;
 
-                                        elapsed_cycles += 6;
+                                        state->cycles_emulated += 6;
 
                                 }
                                 break;
@@ -2172,7 +2169,7 @@ emulate_next_instruction:
                                         POP(pc);
 
                                 }
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
                                 break;
 
                         }
@@ -2211,7 +2208,7 @@ emulate_next_instruction:
 
                                 PUSH(pc);
                                 pc = RST_TABLE[Y(opcode)];
-                                elapsed_cycles++;
+                                state->cycles_emulated++;
                                 break;
 
                         }
@@ -2225,7 +2222,7 @@ emulate_next_instruction:
                                 READ_N(n);
                                 A = Z80_InputByte(n, context);
 
-                                elapsed_cycles += 4;
+                                state->cycles_emulated += 4;
 
                                 break;
 
@@ -2241,7 +2238,7 @@ emulate_next_instruction:
 
                                 F = SZYXP_FLAGS_TABLE[x] | (F & Z80_C_FLAG);
 
-                                elapsed_cycles += 4;
+                                state->cycles_emulated += 4;
 
                                 break;
 
@@ -2279,7 +2276,7 @@ emulate_next_instruction:
                                         & Z80_P_FLAG;
                                 F = f;
 
-                                elapsed_cycles += 5;
+                                state->cycles_emulated += 5;
 
                                 break;
 
@@ -2304,7 +2301,7 @@ emulate_next_instruction:
                                 hl = HL;
 
                                 r -= 2;
-                                elapsed_cycles -= 8;
+                                state->cycles_emulated -= 8;
                                 for ( ; ; ) {
 
                                         r += 2;
@@ -2316,12 +2313,12 @@ emulate_next_instruction:
 
                                         if (--b) 
 
-                                                elapsed_cycles += 21;
+                                                state->cycles_emulated += 21;
 
                                         else {
 
                                                 f = Z80_Z_FLAG;
-                                                elapsed_cycles += 16;
+                                                state->cycles_emulated += 16;
                                                 break;
 
                                         } 
@@ -2339,7 +2336,7 @@ emulate_next_instruction:
 
 #endif                                  
 
-                                        if (elapsed_cycles < number_cycles) 
+                                        if (state->cycles_emulated - start_cycles < number_cycles) 
 
                                                 continue;
 
@@ -2374,7 +2371,7 @@ emulate_next_instruction:
                                 READ_N(n);
                                 Z80_OutputByte(n, A, context);
 
-                                elapsed_cycles += 4;
+                                state->cycles_emulated += 4;
 
                                 break;
 
@@ -2389,7 +2386,7 @@ emulate_next_instruction:
                                         : 0;
                                 Z80_OutputByte(C, x, context);
 
-                                elapsed_cycles += 4;
+                                state->cycles_emulated += 4;
 
                                 break;
 
@@ -2426,7 +2423,7 @@ emulate_next_instruction:
                                 hl = HL;
 
                                 r -= 2;
-                                elapsed_cycles -= 8;
+                                state->cycles_emulated -= 8;
                                 for ( ; ; ) {
 
                                         r += 2;
@@ -2437,17 +2434,17 @@ emulate_next_instruction:
                                         hl += d;
                                         if (--b) 
 
-                                                elapsed_cycles += 21;
+                                                state->cycles_emulated += 21;
 
                                         else {
 
                                                 f = Z80_Z_FLAG;
-                                                elapsed_cycles += 16;
+                                                state->cycles_emulated += 16;
                                                 break;
 
                                         } 
 
-                                        if (elapsed_cycles < number_cycles) 
+                                        if (state->cycles_emulated - start_cycles < number_cycles) 
 
                                                 continue;
 
@@ -2515,7 +2512,7 @@ emulate_next_instruction:
                                  * are executed.
                                  */
 
-                                if (elapsed_cycles < number_cycles) {
+                                if (state->cycles_emulated - start_cycles < number_cycles) {
 
                                         opcode = Z80_ReadByte(pc, context);
                                         pc++;
@@ -2525,7 +2522,7 @@ emulate_next_instruction:
 
 					state->status = Z80_STATUS_PREFIX;
                                         pc--;
-                                        elapsed_cycles -= 4;
+                                        state->cycles_emulated -= 4;
                                         goto stop_emulation;
 
                                 }
@@ -2546,7 +2543,7 @@ emulate_next_instruction:
 
 #ifdef Z80_PREFIX_FAILSAFE
 
-                                if (elapsed_cycles < number_cycles) {
+                                if (state->cycles_emulated - start_cycles < number_cycles) {
 
                                         opcode = Z80_ReadByte(pc, context);
                                         pc++;
@@ -2556,7 +2553,7 @@ emulate_next_instruction:
 
 					state->status = Z80_STATUS_PREFIX;
                                         pc--;
-                                        elapsed_cycles -= 4;
+                                        state->cycles_emulated -= 4;
                                         goto stop_emulation;
 
                                 }
@@ -2602,7 +2599,7 @@ emulate_next_instruction:
 
                 }
 
-                if (elapsed_cycles >= number_cycles)
+                if (state->cycles_emulated - start_cycles >= number_cycles)
 
                         goto stop_emulation;
 
@@ -2613,5 +2610,5 @@ stop_emulation:
         state->r = (state->r & 0x80) | (r & 0x7f);
         state->pc = pc & 0xffff;
 
-        return elapsed_cycles;
+        return state->cycles_emulated - start_cycles;
 }

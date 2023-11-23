@@ -138,6 +138,8 @@ typedef struct Z80_STATE {
                         *dd_register_table[16], 
                         *fd_register_table[16];        
 
+        long long cycles_emulated;
+
 } Z80_STATE;
 
 /* Initialize processor's state to power-on default. */

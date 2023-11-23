@@ -57,14 +57,14 @@
 {                                                                       \
         (n) = Z80_ReadByte(pc, context);                                \
         pc++;                                                           \
-        elapsed_cycles += 3;                                            \
+        state->cycles_emulated += 3;                                    \
 }
 
 #define READ_NN(nn)                                                     \
 {                                                                       \
         (nn) = Z80_ReadWord(pc, context);                               \
         pc += 2;                                                        \
-        elapsed_cycles += 6;                                            \
+        state->cycles_emulated += 6;                                    \
 }
 
 #define READ_D(d)                                                       \
@@ -72,7 +72,7 @@
         (d) = Z80_ReadByte(pc, context);                                \
         (d) = (signed char) (d);					\
         pc++;                                                           \
-        elapsed_cycles += 3;                                            \
+        state->cycles_emulated += 3;                                    \
 }
 
 /* Macros to read and write data. */
@@ -80,25 +80,25 @@
 #define READ_BYTE(address, x)                                           \
 {                                                                       \
         (x) = Z80_ReadByte((address), context);                         \
-        elapsed_cycles += 3;                                            \
+        state->cycles_emulated += 3;                                    \
 }
                                                         
 #define WRITE_BYTE(address, x)                                          \
 {                                                                       \
         Z80_WriteByte((address), (x), context);                         \
-        elapsed_cycles += 3;                                            \
+        state->cycles_emulated += 3;                                    \
 }
                                                         
 #define READ_WORD(address, x)                                           \
 {                                                                       \
         (x) = Z80_ReadWord((address), context);                         \
-        elapsed_cycles += 6;                                            \
+        state->cycles_emulated += 6;                                    \
 }
 
 #define WRITE_WORD(address, x)                                          \
 {                                                                       \
         Z80_WriteWord((address), (x), context);                         \
-        elapsed_cycles += 6;                                            \
+        state->cycles_emulated += 6;                                    \
 }
 
 /* Indirect (HL) and indexed (IX + d) or (IY + d) memory operands read and 
@@ -119,7 +119,7 @@
                 d += HL_IX_IY;                                          \
                 READ_BYTE(d, (x));                                      \
                                                                         \
-                elapsed_cycles += 5;                                    \
+                state->cycles_emulated += 5;                            \
                                                                         \
         }                                                               \
 }
@@ -138,7 +138,7 @@
                 d += HL_IX_IY;                                          \
                 WRITE_BYTE(d, (x));                                     \
                                                                         \
-                elapsed_cycles += 5;                                    \
+                state->cycles_emulated += 5;                            \
                                                                         \
         }                                                               \
 }
