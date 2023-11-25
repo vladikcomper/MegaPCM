@@ -18,8 +18,11 @@ megapcm:	$(BUILD_DIR)/megapcm.bin
 $(SJASMPLUS_LOCAL):
 	$(MAKE) -C $(TOOLCHAIN_DIR) sjasmplus_local
 
-$(BUILD_DIR)/megapcm.bin:	$(wildcard $(SRC_DIR)/*.asm) | $(SJASMPLUS)
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+$(BUILD_DIR)/megapcm.bin:	$(wildcard $(SRC_DIR)/*.asm) | $(SJASMPLUS) $(BUILD_DIR)
 	$(SJASMPLUS) --raw=$(BUILD_DIR)/megapcm.bin --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/main.asm
 
 clean:
-	rm out/*
+	rm -drf $(BUILD_DIR)
