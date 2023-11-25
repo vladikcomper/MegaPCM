@@ -52,7 +52,7 @@ https://forums.sonicretro.org/index.php?threads/sonic-1-mega-pcm-driver.29057/
 
 This repository aims to be platform and CPU agnostic, so it can be built on Linux, FreeBSD, MacOS and Windows. The build system is Makefile-based, so `make` should be installed first.
 
-Mega PCM requires Sjasmplus assembler as a dependency. However, if it's installed on your system (meaning `sjasmpllus` is not found in `PATH`), the build system will automatically build it from sources in the `toolchain` directory and will use the locally-built version instead.
+Mega PCM requires Sjasmplus assembler as a dependency. However, if it isn't installed on your system (meaning `sjasmpllus` is not found in `PATH`), the build system will automatically build it from sources in the `toolchain` directory and will use a locally-built version instead.
 
 ### Windows
 
