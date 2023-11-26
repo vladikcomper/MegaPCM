@@ -1229,8 +1229,9 @@ emulate_next_instruction:
                                  * Z80_PREFIX_FAILSAFE is defined, but that
                                  * is an unlikely pathological case.
                                  */
-
-                                number_cycles += 4;
+                                if (state->cycles_emulated - start_cycles >= number_cycles) {
+                                        number_cycles += 4;
+                                }
                                 break;
 
 #endif                  
@@ -1249,8 +1250,9 @@ emulate_next_instruction:
 #else
 
                                 /* See comment for DI. */
-
-                                number_cycles += 4;
+                                if (state->cycles_emulated - start_cycles >= number_cycles) {
+                                        number_cycles += 4;
+                                }
                                 break;
 
 #endif
