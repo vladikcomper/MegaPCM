@@ -230,12 +230,11 @@ int Z80NonMaskableInterrupt (Z80_STATE *state, void *context)
 
 int Z80Emulate (Z80_STATE *state, int number_cycles, void *context)
 {
-        int     pc, opcode;
+        int     opcode;
 
         state->status = 0;
-	pc = state->pc;
-        opcode = Z80_ReadByte(pc, context);
-        state->pc = pc + 1;
+        opcode = Z80_ReadByte(state->pc, context);
+        state->pc++;
 
         return emulate(state, opcode, number_cycles, context);
 }
@@ -250,9 +249,8 @@ static int emulate (Z80_STATE * state,
 	void *context)
 {
         long long start_cycles = state->cycles_emulated;
-        int	pc, r;
+        int	r;
 
-        pc = state->pc;
         r = state->r & 0x7f;
         goto start_emulation;
 
@@ -261,8 +259,8 @@ static int emulate (Z80_STATE * state,
                 void    **registers; 
                 int     instruction;
 
-                opcode = Z80_ReadByte(pc, context);
-                pc++;
+                opcode = Z80_ReadByte(state->pc, context);
+                state->pc++;
 
 start_emulation:                
 
@@ -604,8 +602,8 @@ emulate_next_instruction:
 
                                 int     p, q;
 
-                                p = (pc - 2) & 0xffff;
-                                q = (pc - 1) & 0xffff;
+                                p = (state->pc - 2) & 0xffff;
+                                q = (state->pc - 1) & 0xffff;
 
 #endif                          
 
@@ -645,7 +643,7 @@ emulate_next_instruction:
                                         || ((de - d) & 0xffff) == q) { 
 
                                                 f |= Z80_P_FLAG;
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -659,7 +657,7 @@ emulate_next_instruction:
                                         else {
         
                                                 f |= Z80_P_FLAG;
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -753,7 +751,7 @@ emulate_next_instruction:
 
                                         else {
         
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -1499,7 +1497,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1510,7 +1508,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1543,7 +1541,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1554,7 +1552,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1586,7 +1584,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1597,7 +1595,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1629,7 +1627,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1640,7 +1638,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1672,7 +1670,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1683,7 +1681,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1715,7 +1713,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1726,7 +1724,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1758,7 +1756,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1769,7 +1767,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1801,7 +1799,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1812,7 +1810,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1879,10 +1877,10 @@ emulate_next_instruction:
 
                                 } else {
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1929,7 +1927,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1940,7 +1938,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1972,7 +1970,7 @@ emulate_next_instruction:
 
                                         int     d;
 
-                                        d = Z80_ReadByte(pc, context);
+                                        d = Z80_ReadByte(state->pc, context);
                                         d = ((signed char) d) + HL_IX_IY;
 
                                         READ_BYTE(d, x);
@@ -1983,7 +1981,7 @@ emulate_next_instruction:
 
                                                 R(Z(opcode)) = x;
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 5;
 
@@ -1998,8 +1996,8 @@ emulate_next_instruction:
 
                                 int     nn;
 
-                                nn = Z80_ReadWord(pc, context);
-                                pc = nn;
+                                nn = Z80_ReadWord(state->pc, context);
+                                state->pc = nn;
 
                                 state->cycles_emulated += 6;
 
@@ -2013,18 +2011,18 @@ emulate_next_instruction:
 
                                 if (CC(Y(opcode))) {
 
-                                        nn = Z80_ReadWord(pc, context);
-                                        pc = nn;
+                                        nn = Z80_ReadWord(state->pc, context);
+                                        state->pc = nn;
 
                                 } else {
 
 #ifdef Z80_FALSE_CONDITION_FETCH
 
-                                        nn = Z80_ReadWord(pc, context);
+                                        nn = Z80_ReadWord(state->pc, context);
 
 #endif          
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                 }
 
@@ -2038,8 +2036,8 @@ emulate_next_instruction:
 
                                 int     e;
                                 
-                                e = Z80_ReadByte(pc, context);
-                                pc += ((signed char) e) + 1;
+                                e = Z80_ReadByte(state->pc, context);
+                                state->pc += ((signed char) e) + 1;
 
                                 state->cycles_emulated += 8;
 
@@ -2053,8 +2051,8 @@ emulate_next_instruction:
 
                                 if (DD(Q(opcode))) {
                                 
-                                        e = Z80_ReadByte(pc, context);
-                                        pc += ((signed char) e) + 1;
+                                        e = Z80_ReadByte(state->pc, context);
+                                        state->pc += ((signed char) e) + 1;
 
                                         state->cycles_emulated += 8;
 
@@ -2062,11 +2060,11 @@ emulate_next_instruction:
 
 #ifdef Z80_FALSE_CONDITION_FETCH
 
-                                        e = Z80_ReadByte(pc, context);
+                                        e = Z80_ReadByte(state->pc, context);
 
 #endif
 
-                                        pc++;
+                                        state->pc++;
 
                                         state->cycles_emulated += 3;
 
@@ -2077,7 +2075,7 @@ emulate_next_instruction:
 
                         case JP_HL: {
 
-                                pc = HL_IX_IY;
+                                state->pc = HL_IX_IY;
                                 break;
 
                         }                       
@@ -2088,8 +2086,8 @@ emulate_next_instruction:
                                 
                                 if (--B) {
                                 
-                                        e = Z80_ReadByte(pc, context);
-                                        pc += ((signed char) e) + 1;
+                                        e = Z80_ReadByte(state->pc, context);
+                                        state->pc += ((signed char) e) + 1;
 
                                         state->cycles_emulated += 9;
 
@@ -2097,11 +2095,11 @@ emulate_next_instruction:
 
 #ifdef Z80_FALSE_CONDITION_FETCH
 
-                                        e = Z80_ReadByte(pc, context);
+                                        e = Z80_ReadByte(state->pc, context);
 
 #endif
 
-                                        pc++;
+                                        state->pc++;
 
                                         state->cycles_emulated += 4;
 
@@ -2117,8 +2115,8 @@ emulate_next_instruction:
                                 int     nn;
 
                                 READ_NN(nn);
-                                PUSH(pc);
-                                pc = nn;
+                                PUSH(state->pc);
+                                state->pc = nn;
 
                                 state->cycles_emulated++;
 
@@ -2133,8 +2131,8 @@ emulate_next_instruction:
                                 if (CC(Y(opcode))) {
 
                                         READ_NN(nn);
-                                        PUSH(pc);
-                                        pc = nn;
+                                        PUSH(state->pc);
+                                        state->pc = nn;
 
                                         state->cycles_emulated++;
 
@@ -2142,11 +2140,11 @@ emulate_next_instruction:
 
 #ifdef Z80_FALSE_CONDITION_FETCH
 
-                                        nn = Z80_ReadWord(pc, context);
+                                        nn = Z80_ReadWord(state->pc, context);
 
 #endif
 
-                                        pc += 2;
+                                        state->pc += 2;
 
                                         state->cycles_emulated += 6;
 
@@ -2157,7 +2155,7 @@ emulate_next_instruction:
 
                         case RET: {
 
-                                POP(pc);
+                                POP(state->pc);
                                 break;
 
                         }
@@ -2166,7 +2164,7 @@ emulate_next_instruction:
 
                                 if (CC(Y(opcode))) {
 
-                                        POP(pc);
+                                        POP(state->pc);
 
                                 }
                                 state->cycles_emulated++;
@@ -2177,7 +2175,7 @@ emulate_next_instruction:
                         case RETI_RETN: {
 
                                 state->iff1 = state->iff2;
-                                POP(pc);        
+                                POP(state->pc);        
 
 #if defined(Z80_CATCH_RETI) && defined(Z80_CATCH_RETN)
 
@@ -2206,8 +2204,8 @@ emulate_next_instruction:
 
                         case RST_P: {
 
-                                PUSH(pc);
-                                pc = RST_TABLE[Y(opcode)];
+                                PUSH(state->pc);
+                                state->pc = RST_TABLE[Y(opcode)];
                                 state->cycles_emulated++;
                                 break;
 
@@ -2290,8 +2288,8 @@ emulate_next_instruction:
 
                                 int     p, q;
 
-                                p = (pc - 2) & 0xffff;
-                                q = (pc - 1) & 0xffff;
+                                p = (state->pc - 2) & 0xffff;
+                                q = (state->pc - 1) & 0xffff;
 
 #endif                          
 
@@ -2329,7 +2327,7 @@ emulate_next_instruction:
                                         || ((hl - d) & 0xffff) == q) { 
 
                                                 f = SZYX_FLAGS_TABLE[b];
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -2343,7 +2341,7 @@ emulate_next_instruction:
                                         else {
 
                                                 f = SZYX_FLAGS_TABLE[b];
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -2451,7 +2449,7 @@ emulate_next_instruction:
                                         else {
 
                                                 f = SZYX_FLAGS_TABLE[b];
-                                                pc -= 2;
+                                                state->pc -= 2;
                                                 break;
 
                                         }
@@ -2488,12 +2486,12 @@ emulate_next_instruction:
                                          * correctly update pc.
                                          */
 
-                                        opcode = Z80_ReadByte(pc + 1, context);
+                                        opcode = Z80_ReadByte(state->pc + 1, context);
 
                                 } else {
 
-                                        opcode = Z80_ReadByte(pc, context);
-                                        pc++;
+                                        opcode = Z80_ReadByte(state->pc, context);
+                                        state->pc++;
 
                                 }
                                 instruction = CB_INSTRUCTION_TABLE[opcode];
@@ -2514,14 +2512,14 @@ emulate_next_instruction:
 
                                 if (state->cycles_emulated - start_cycles < number_cycles) {
 
-                                        opcode = Z80_ReadByte(pc, context);
-                                        pc++;
+                                        opcode = Z80_ReadByte(state->pc, context);
+                                        state->pc++;
                                         goto emulate_next_opcode;
 
                                 } else {
 
 					state->status = Z80_STATUS_PREFIX;
-                                        pc--;
+                                        state->pc--;
                                         state->cycles_emulated -= 4;
                                         goto stop_emulation;
 
@@ -2529,8 +2527,8 @@ emulate_next_instruction:
 
 #else
 
-                                opcode = Z80_ReadByte(pc, context);
-                                pc++;
+                                opcode = Z80_ReadByte(state->pc, context);
+                                state->pc++;
                                 goto emulate_next_opcode;
 
 #endif                          
@@ -2545,14 +2543,14 @@ emulate_next_instruction:
 
                                 if (state->cycles_emulated - start_cycles < number_cycles) {
 
-                                        opcode = Z80_ReadByte(pc, context);
-                                        pc++;
+                                        opcode = Z80_ReadByte(state->pc, context);
+                                        state->pc++;
                                         goto emulate_next_opcode;
 
                                 } else {
 
 					state->status = Z80_STATUS_PREFIX;
-                                        pc--;
+                                        state->pc--;
                                         state->cycles_emulated -= 4;
                                         goto stop_emulation;
 
@@ -2560,8 +2558,8 @@ emulate_next_instruction:
 
 #else
         
-                                opcode = Z80_ReadByte(pc, context);
-                                pc++;
+                                opcode = Z80_ReadByte(state->pc, context);
+                                state->pc++;
                                 goto emulate_next_opcode;
 
 #endif                          
@@ -2571,8 +2569,8 @@ emulate_next_instruction:
                         case ED_PREFIX: {
 
                                 registers = state->register_table;
-                                opcode = Z80_ReadByte(pc, context);
-                                pc++;
+                                opcode = Z80_ReadByte(state->pc, context);
+                                state->pc++;
                                 instruction = ED_INSTRUCTION_TABLE[opcode];
 
                                 goto emulate_next_instruction;
@@ -2586,7 +2584,7 @@ emulate_next_instruction:
 #ifdef Z80_CATCH_ED_UNDEFINED
 
                                 state->status = Z80_STATUS_FLAG_ED_UNDEFINED;
-                                pc -= 2;
+                                state->pc -= 2;
                                 goto stop_emulation;
 
 #else
@@ -2608,7 +2606,6 @@ emulate_next_instruction:
 stop_emulation:
 
         state->r = (state->r & 0x80) | (r & 0x7f);
-        state->pc = pc & 0xffff;
 
         return state->cycles_emulated - start_cycles;
 }

@@ -55,23 +55,23 @@
 
 #define READ_N(n)                                                       \
 {                                                                       \
-        (n) = Z80_ReadByte(pc, context);                                \
-        pc++;                                                           \
+        (n) = Z80_ReadByte(state->pc, context);                         \
+        state->pc++;                                                    \
         state->cycles_emulated += 3;                                    \
 }
 
 #define READ_NN(nn)                                                     \
 {                                                                       \
-        (nn) = Z80_ReadWord(pc, context);                               \
-        pc += 2;                                                        \
+        (nn) = Z80_ReadWord(state->pc, context);                        \
+        state->pc += 2;                                                 \
         state->cycles_emulated += 6;                                    \
 }
 
 #define READ_D(d)                                                       \
 {                                                                       \
-        (d) = Z80_ReadByte(pc, context);                                \
+        (d) = Z80_ReadByte(state->pc, context);                         \
         (d) = (signed char) (d);					\
-        pc++;                                                           \
+        state->pc++;                                                    \
         state->cycles_emulated += 3;                                    \
 }
 
