@@ -144,8 +144,8 @@ PCMLoop_NormalPhase:
 
 	; Handle "read-ahead" buffer
 	di							; 4
-	ldi							; 16
-	ldi							; 16
+	ldi							; 16+*
+	ldi							; 16+*
 	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
 	jp	po, .ReadAheadExhausted_DI			; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
 
@@ -154,16 +154,17 @@ PCMLoop_NormalPhase:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 21
-	; Total "PCMLoop_NormalPhase" cycles: 138-139
+	; Total "PCMLoop_NormalPhase" cycles: 138-139+*
+	; *) additional cycles lost due to M68K bus access
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
 	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
 
 	; Waste 53 cycles (we cannot handle "read-ahead" now)
-	ld	a, (ROMWindow)					; 13	idle read from ROM keeps timings accurate
+	ld	a, (ROMWindow)					; 13+*	idle read from ROM keeps timings accurate
 	ld	a, 0h						; 7	''
-	ld	a, (ROMWindow)					; 13	''
+	ld	a, (ROMWindow)					; 13+*	''
 	nop							; 4
 	di							; 4
 	jr	.Playback_DI					; 12
@@ -196,14 +197,15 @@ PCMLoop_DrainPhase:
 	ei								; 4
 
 	; Waste 59 cycles (instead of handling readahead)
-	ld	a, (ROMWindow)						; 13	idle read from ROM keeps timings accurate
+	ld	a, (ROMWindow)						; 13*	idle read from ROM keeps timings accurate
 	ld	c, 0FFh							; 7
-	ld	a, (ROMWindow)						; 13
+	ld	a, (ROMWindow)						; 13*
 	dec	bc							; 6
 	nop								; 4
 	nop								; 4
 	jr	PCMLoop_DrainPhase					; 12
-	; Total "PCMLoop_DrainPhase" cycles: 138-139
+	; Total "PCMLoop_DrainPhase" cycles: 138-139+*
+	; *) additional cycles lost due to M68K bus access
 
 ; --------------------------------------------------------------
 .Drained_EXX_DI:
@@ -247,11 +249,12 @@ PCMLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 48 cycles
+	; Waste 48 + 7* cycles
 	exx						; 4
 	nop						; 4
 	inc	bc					; 6
 	dec	bc					; 6
+	ld	a, 00h					; 7*	emulate M68K bus access delay
 	inc	bc					; 6
 	dec	bc					; 6
 	nop						; 4
@@ -278,12 +281,14 @@ PCMLoop_VBlankPhase_Sync:
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste 47 cycles
+	; Waste 47 + 7* cycles
 	push	bc					; 11
 	ld	(VBlankActive), a			; 13	wasteful write
+	ld	a, 00h					; 7*	emulate M68K bus access delay
 	pop	bc					; 10
 	djnz	PCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 138-139
+	; Total "PCMLoop_VBlankPhase" cycles: 138-139 + 7*
+	; *) emulated lost cycles on M68K bus access
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
@@ -321,9 +326,6 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28
-
-	; ###
-	Playback_VBlank_ReportBufferHealth e, (BufferHealth)	; 29
 
 	pop	bc					; 10
 	pop	af					; 10

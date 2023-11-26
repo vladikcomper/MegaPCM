@@ -135,29 +135,27 @@ PCMTurboLoop_NormalPhase:
 
 	; Fill read-ahead buffer
 	di							; 4
-	ldi							; 16
-	ldi							; 16
+	ldi							; 16+*
+	ldi							; 16+*
 	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
 	jp	po, .ReadAheadExhausted_DI			; 10	if bc == 0, branch (WARNING: this requires everything to be word-aligned)
-	; Total cycles: 49
 
 	; Handle playback
 .Playback_DI:
 	PlaybackTurbo_Run_DI					; 34	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	PlaybackTurbo_ChkReadaheadOk	e, PCMTurboLoop_NormalPhase	; 14
-	; Total cycles: 56
-
-	; Total "PCMTurboLoop_NormalPhase" cycles: 105
+	; Total "PCMTurboLoop_NormalPhase" cycles: 105+*
+	; *) additional cycles lost due to M68K bus access	
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
 	DebugMsg "PCMTurboLoop_NormalPhase_ReadAheadFull iteration"
 
 	; Waste 53 cycles (we cannot handle "read-ahead" now)
-	ld	a, (ROMWindow)					; 13	idle read from ROM keeps timings accurate
+	ld	a, (ROMWindow)					; 13+*	idle read from ROM keeps timings accurate
 	ld	a, 0h						; 7	''
-	ld	a, (ROMWindow)					; 13	''
+	ld	a, (ROMWindow)					; 13+*	''
 	nop							; 4
 	di							; 4
 	jr	.Playback_DI					; 12
@@ -190,14 +188,15 @@ PCMTurboLoop_DrainPhase:
 	ei							; 4
 
 	; Waste 56 cycles (instead of handling readahead)
-	ld	a, (ROMWindow)					; 13
+	ld	a, (ROMWindow)					; 13+*
 	nop							; 4
-	ld	a, (ROMWindow)					; 13
+	ld	a, (ROMWindow)					; 13+*
 	nop							; 4
 	inc	bc						; 6
 	dec	bc						; 6
 	jp	PCMTurboLoop_DrainPhase				; 10
-	; Total "PCMTurboLoop_DrainPhase" cycles: 105
+	; Total "PCMTurboLoop_DrainPhase" cycles: 105+*
+	; *) additional cycles lost due to M68K bus access	
 
 ; --------------------------------------------------------------
 .Drained_EXX_DI:
@@ -240,9 +239,10 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 21 cycles
+	; Waste 21 + 7* cycles
 	exx						; 4
 	ld	a, 00h					; 7
+	ld	a, 00h					; 7*	emulate M68K bus access delay
 	jp	PCMTurboLoop_VBlankPhase.FetchWindow	; 10
 
 ; --------------------------------------------------------------
@@ -269,12 +269,14 @@ PCMTurboLoop_VBlankPhase:
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste 44 cycles (simulate fetching samples)
+	; Waste 44 + 7* cycles (simulate fetching samples)
+	ld	a, 00h					; 7*	emulate M68K bus access delay
 	push	bc					; 11
 	ld	bc, 00h					; 10
 	pop	bc					; 10
 	djnz	PCMTurboLoop_VBlankPhase		; 8/13
-	; Total "PCMTurboLoop_VBlankPhase" cycles: 105
+	; Total "PCMTurboLoop_VBlankPhase" cycles: 105 + 7*
+	; *) emulated lost cycles on M68K bus access
 
 .LastIteration:
 	; Handle sample playback in the last iteration
@@ -298,9 +300,6 @@ PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
 
 .ChkCommandOrSample_Done:
 	ld	(VBlankActive), a			; 13	report we're out of VBlank
-
-	; ###
-	Playback_VBlank_ReportBufferHealth e, (BufferHealth)	; 29
 
 	pop	bc
 	pop	af
