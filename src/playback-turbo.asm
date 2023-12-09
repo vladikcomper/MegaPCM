@@ -15,14 +15,12 @@
 ;	readaheadPtr	- Initial readahead buffer pointer
 ; 
 ; OUTPUT:
-;	c'	= Value of: `readaheadCount + 1`
 ;	de'	= YM Port 0 data
 ;	hl'	= Playback position (in SampleBuffer)
 ; -----------------------------------------------------------------------------
 
 	macro	PlaybackTurbo_Init_DI readaheadPtr
 	exx
-	ld	c, 3h				; c = readaheadCount + 1 (constant)
 	ld	hl, readaheadPtr		; hl = readaheadPtr
 	ld	de, YM_Port0_Data
 	exx
@@ -43,28 +41,31 @@
 	ld	(de), a				; 7	send it to YM
 	inc	l				; 4	advance playback pointer
 	ld	a, l				; 4	a = buffer position
-	sub	c				; 4	a = buffer position - 3
 	exx					; 4
-	; Cycles: 34 (playback)
+	; Cycles: 30 (playback)
 	endm
 
 ; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
 ; Should be used after `PlaybackTurbo_Run_DI`
 ; -----------------------------------------------------------------------------
+; ARGUMENTS:
+;	regReadAheadPtrLow - Low byte of readahead position (c, e, l)
+;	regValue04h - register that contains value of 04h
+;	locReadaheadOk - location to jump if readahead isn't full
+;
 ; INPUT:
-;	af	= buffer position - 3
+;	af	= buffer position
 ;
 ; USES:
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, procReadaheadOk
-	; WARNING! The current implementation limits buffer health to 128-3 samples
-	; due to signed check.
-	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow - 3
-	jp	m, procReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow - 3 > 0), then read ahead is ok
-	; Cycles: 14
+	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, regValue04h, locReadaheadOk
+	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
+	sub	regValue04h			; 4	a = buffer position - regReadAheadPtrLow - 4
+	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 4), then read ahead is ok
+	; Cycles: 18
 	endm
 
 ; -----------------------------------------------------------------------------

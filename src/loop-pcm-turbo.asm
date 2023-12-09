@@ -142,9 +142,9 @@ PCMTurboLoop_NormalPhase:
 
 	; Handle playback
 .Playback_DI:
-	PlaybackTurbo_Run_DI					; 34	playback a buffered sample
+	PlaybackTurbo_Run_DI					; 30	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
-	PlaybackTurbo_ChkReadaheadOk	e, PCMTurboLoop_NormalPhase	; 14
+	PlaybackTurbo_ChkReadaheadOk	e, d, PCMTurboLoop_NormalPhase	; 18
 	; Total "PCMTurboLoop_NormalPhase" cycles: 105+*
 	; *) additional cycles lost due to M68K bus access	
 
@@ -252,9 +252,7 @@ PCMTurboLoop_VBlank:
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~50930 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 191 samples to survive VBlank.
-	; However, due to "readahead full" check optimization, buffer capacity is capped
-	; at ~128-3 samples currently. Using 120 samples to have a small overhead.
-	ld	b, 120
+	ld	b, 191-1+1
 
 ; --------------------------------------------------------------
 PCMTurboLoop_VBlankPhase:

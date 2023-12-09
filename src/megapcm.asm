@@ -65,6 +65,10 @@ VoidInterrupt:
 SampleBuffer:
 	ds	100h, 0
 
+	; `PCMTurboLoop` the high byte of `SampleBuffer` offset for insane optimization,
+	; so it should be between 02h and 08h
+	assert	((SampleBuffer>>8) > 2) && ((SampleBuffer>>8) < 8)
+
 ; --------------------------------------------------------------
 VolumeTables:
 	include	'volume-tables.asm'
