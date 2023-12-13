@@ -50,8 +50,9 @@ PCMTurboLoop_Init:
 	push	hl				; (ActiveSample+sActiveSample.startOffset) = hl
 
 	ld	a, d
-	and	7Eh
-	ld	d, a				; de = end offset * 7FFEh
+	and	7Fh
+	ld	d, a				; de = end offset & 7FFFh
+	res	0, e				; de = end offset & 7FFEh
 	or	e				; (de & 7FFEh) == 0?
 	jr	nz, .lengthOk
 	dec	b				; b = endBank - 1 (use previous bank)
@@ -125,7 +126,7 @@ PCMTurboLoop_Reload:
 ; PCM: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
-;	bc	= Length + 0FFh (so b = 0, c = -overshoot)
+;	bc	= Remaining length in ROM bank
 ;	de 	= Sample buffer pos (read-ahead)
 ;	hl	= ROM pos
 ; --------------------------------------------------------------

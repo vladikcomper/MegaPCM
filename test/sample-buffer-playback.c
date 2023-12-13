@@ -258,6 +258,8 @@ int main(int argc, char * argv[]) {
 	runTest(context, 'T', sample_8, sizeof(sample_8), 0);
 	runTest(context, 'T', sample_254, sizeof(sample_254), 0);
 
+	runTest(context, 'P', sample_8, sizeof(sample_8), 0x7F00);
+
 	/* With bankswitching */
 	runTest(context, 'P', sample_2, sizeof(sample_2), 0x7FFE);
 	runTest(context, 'P', sample_8, sizeof(sample_8), 0x7FFE);
