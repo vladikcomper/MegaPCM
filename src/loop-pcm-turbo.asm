@@ -123,7 +123,7 @@ PCMTurboLoop_Reload:
 
 
 ; --------------------------------------------------------------
-; PCM: Main playback loop (readahead & playback)
+; PCM-Tubro: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
 ;	bc	= Remaining length in ROM bank
@@ -177,7 +177,7 @@ PCMTurboLoop_NormalPhase:
 	; TODO: Make sure we waste as many cycles as half of the drain iteration
 
 ; --------------------------------------------------------------
-; PCM: Draining loop (playback only)
+; PCM-Tubro: Draining loop (playback only)
 ; --------------------------------------------------------------
 
 PCMTurboLoop_DrainPhase:
@@ -236,7 +236,7 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 	jp	PCMTurboLoop_NormalPhase
 
 ; --------------------------------------------------------------
-;
+; PCM-Tubro: VBlank loop (playback only)
 ; --------------------------------------------------------------
 
 PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:

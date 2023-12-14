@@ -245,7 +245,7 @@ PCMLoop_NormalPhase_LoadNextBank:
 
 
 ; --------------------------------------------------------------
-;
+; PCM: VBlank loop (playback only)
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
