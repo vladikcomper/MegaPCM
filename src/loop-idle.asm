@@ -71,6 +71,8 @@ PlaySample:
 	jp	z, PCMLoop_Init		; if yes, jump to PCM loop
 	cp	'T'			; is type 'T' (PCM-Turbo)?
 	jp	z, PCMTurboLoop_Init	; if yes, jump to PCM-Tubro loop
+	cp	'D'			; is type 'D' (DPCM)?
+	jp	z, DPCMLoop_Init	; if yes, jump to DPCM loop
 
 	ifdef __DEBUG__
 		; Error out on illegal sample

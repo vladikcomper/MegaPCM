@@ -70,6 +70,12 @@ SampleBuffer:
 	assert	((SampleBuffer>>8) > 2) && ((SampleBuffer>>8) < 8)
 
 ; --------------------------------------------------------------
+
+	include	'loop-dpcm.asm'
+
+; --------------------------------------------------------------
+	align	100h
+
 VolumeTables:
 	include	'volume-tables.asm'
 

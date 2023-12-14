@@ -43,7 +43,7 @@ Converts a number to Z80 byte
 """
 def valueToZ80Byte(value: int) -> str:
 	if value < 0:
-		value = -value
+		value = 0x100+value
 	if value < 0 or value > 255:
 		raise Exception(f'Expected a byte. Got: {value:d}')
 	return f'0{value:02X}h'
