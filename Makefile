@@ -8,10 +8,11 @@ SRC_DIR := src
 
 SYMTOH := $(TOOLCHAIN_DIR)/symtoh.py
 MKVOLUME := $(TOOLCHAIN_DIR)/mkvolume.py
+MKDPCMTBL := $(TOOLCHAIN_DIR)/mkdpcmtbl.py
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
-.PHONY:	all release debug volume-tables test clean
+.PHONY:	all release debug volume-tables dpcm-tables test clean
 
 all: debug release
 
@@ -27,8 +28,13 @@ $(BUILD_DIR)/megapcm.debug.bin $(BUILD_DIR)/megapcm.debug.sym &:	$(SRC_FILES)
 
 volume-tables:	$(SRC_DIR)/volume-tables.asm
 
+dpcm-tables: $(SRC_DIR)/dpcm-tables.asm
+
 $(SRC_DIR)/volume-tables.asm:
-	$(MKVOLUME) -n 16 $<
+	$(MKVOLUME) -n 16 $@
+
+$(SRC_DIR)/dpcm-tables.asm:
+	$(MKDPCMTBL) $@
 
 %.h: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --sort $< $@

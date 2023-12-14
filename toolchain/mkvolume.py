@@ -45,7 +45,7 @@ def getArgs():
 		help='Number of volume level to generate'
 	)
 	parser.add_argument('-l', '--bytesPerLine', type=int, default=16,
-		help='Number of volume level to generate'
+		help='Number of byts per line in the output file'
 	)
 	args = parser.parse_args()
 

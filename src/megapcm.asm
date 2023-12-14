@@ -73,6 +73,9 @@ SampleBuffer:
 VolumeTables:
 	include	'volume-tables.asm'
 
+DPCMTables:
+	include	'dpcm-tables.asm'
+
 ; --------------------------------------------------------------
 SampleTable:
 	; samples from 81h onwards go here
