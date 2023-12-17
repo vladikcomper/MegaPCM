@@ -58,11 +58,11 @@ DPCMLoop_Init:
 	ld	d, 7Fh				; de = 7FFFh (use max end length)
 .lengthOk:
 	; WARNING! This value is incorrect for single-bank samples; luckily, it's ignored
-	inc d ; ###
-	inc e ; ###
+ 	inc	d				; increment `d` by one so Z flag means borrow on decrement
+ 	inc	e				; increment 'e' by one so Z flag means borrow on decrement
 	push	de				; (ActiveSample+sActiveSample.endLength) = de
-	dec d
-	dec e
+	dec	d
+	dec	e
 
 	ld	a, b				; a = endBank
 	cp	c				; endBank == startBank?
@@ -85,8 +85,8 @@ DPCMLoop_Init:
 	dec	hl
 
 .setFirstBankLen:
- 	inc h ; ###
- 	inc l ; ###
+ 	inc	h				; increment `h` by one so Z flag means borrow on decrement
+ 	inc	l				; increment 'l' by one so Z flag means borrow on decrement
 	push	hl				; (ActiveSample+sActiveSample.startLength) = hl
 	push	bc				; (ActiveSample+sActiveSample.startBank) = c
 						; (ActiveSample+sActiveSample.endBank) = b
@@ -136,9 +136,10 @@ DPCMLoop_Reload:
 	; Init playback registers ...
 	Playback_Init_DI	SampleBuffer
 
-	dec	e ;##
-	ld	a, 80h
-	ld	(de), a
+	ei
+	dec	e
+	ld	a, 80h				; set initial sample to zero (80h)
+	ld	(de), a				; ''
 
 ; --------------------------------------------------------------
 ; DPCM: Main playback loop (readahead & playback)
@@ -147,14 +148,13 @@ DPCMLoop_Reload:
 ;	bc	= ROM pos
 ;	de 	= Sample buffer pos (read-ahead)
 ;	hl	= Remaining length in ROM bank - 1
-	; ### WARNING! SHOULD BE -1 DUE TO OVERFLOW NATURE OF CHECK!
 ; --------------------------------------------------------------
 
 DPCMLoop_NormalPhase:
 	DebugMsg "DPCMLoop_NormalPhase iteration"
 
 	; Handle "read-ahead" buffer
-	ld	a, (bc)				; 7+*	read two samples
+	ld	a, (bc)				; 7+3.3*
 	inc	bc				; 6	increment dest pointer
 	push	hl				; 11
 	ld	h, DPCMTables>>8		; 7	select DPCM table for the first nibble
@@ -170,7 +170,7 @@ DPCMLoop_NormalPhase:
 	ld	(de), a				; 7	send to buffer
 	pop	hl				; 10
 	dec	l				; 4	decrement low byte of length
-	jr	z, .ChkReadAheadExhausted_DI	; 7/12	### if borrow from a high byte, branch
+	jr	z, .ChkReadAheadExhausted_DI	; 7/12	if borrow from a high byte, branch
 
 	; Handle playback
 .Playback_DI:
@@ -179,22 +179,31 @@ DPCMLoop_NormalPhase:
 	Playback_ChkReadaheadOk	e, DPCMLoop_NormalPhase		; 21
 	; Total cycles: 49
 
-	; Total "DPCMLoop_NormalPhase" cycles: ~192.07-193.07 + *
-	; *) additional cycles lost due to M68K bus access
+	; Total "DPCMLoop_NormalPhase" cycles: ~192-193 + 3.3*
+	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
 	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
 
-	; Waste 107.07421875 + * cycles (we cannot handle "read-ahead" now)
-	; TODO ###
+	; Waste 107 + 3* cycles (we cannot handle "read-ahead" now)
+	push	af						; 11
+	pop	af						; 10
+	push	af						; 11
+	pop	af						; 10
+	push	af						; 11
+	pop	af						; 10
+	push	bc						; 11
+	dec	bc						; 6
+	pop	bc						; 10
+	nop							; 4
 	di							; 4
 	jr	.Playback_DI					; 12
 
 ; --------------------------------------------------------------
 .ChkReadAheadExhausted_DI:
 	dec	h				; 4	decrement high byte of length
-	jp	nz, .Playback_DI		; 10	### if no borrow, back to playback
+	jp	nz, .Playback_DI		; 10	if no borrow, back to playback
 
 .ReadAheadExhausted_DI:
 	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
@@ -218,15 +227,26 @@ DPCMLoop_DrainPhase:
 	DebugMsg "DPCMLoop_DrainPhase iteration"
 
 	; Handle playback in draining mode
-	di								; 4
-	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
-	ei								; 4
+	di							; 4
+	Playback_Run_Draining	e, .Drained_EXX_DI		; 71-72
+	ei							; 4
 
-	; Waste
-	; TODO
-	jr	DPCMLoop_DrainPhase					; 12
-	; Total "DPCMLoop_DrainPhase" cycles: ???+*
-	; *) additional cycles lost due to M68K bus access
+	; Waste 113 + 3* cycles
+	push	af						; 11
+	pop	af						; 10
+	push	af						; 11
+	pop	af						; 10
+	push	af						; 11
+	pop	af						; 10
+	push	bc						; 11
+	dec	bc						; 6
+	inc	bc						; 6
+	pop	bc						; 10
+	nop							; 4
+	nop							; 4
+	jr	DPCMLoop_DrainPhase				; 12
+	; Total "DPCMLoop_DrainPhase" cycles: ~192-193 + 3*
+	; *) additional cycles lost due to M68K bus access on average
 
 
 ; --------------------------------------------------------------
@@ -253,7 +273,8 @@ DPCMLoop_NormalPhase_LoadNextBank:
 
 	; Setup sample source and length
 	ld	bc, ROMWindow			; bc = 8000h (alt: ld b, ROMWindow<<8)
-	ld	hl, 8000h;7FFFh			; hl = 7FFFh ###
+	ld	h, b				; hl = 8000h (7Fh+1, FFh+1)
+	ld	l, c				; ''
 	cp	(ix+sActiveSample.endBank)	; current bank is the last one?
 	jr	nz, .lengh_ok			; if not, branch
 	ld	hl, (ActiveSample+sActiveSample.endLength)
@@ -271,8 +292,14 @@ DPCMLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 DPCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste ?? cycles
+	; Waste 48 cycles
 	exx						; 4
+	nop						; 4
+	inc	bc					; 6
+	dec	bc					; 6
+	inc	bc					; 6
+	dec	bc					; 6
+	nop						; 4
 	jr	DPCMLoop_VBlankPhase_Sync		; 12
 
 ; --------------------------------------------------------------
@@ -282,7 +309,7 @@ DPCMLoop_VBlank:
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~50930 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play ?? samples to survive VBlank.
-	ld	b, 1h
+	ld	b, 40h
 
 ; --------------------------------------------------------------
 DPCMLoop_VBlankPhase:
@@ -296,28 +323,30 @@ DPCMLoop_VBlankPhase_Sync:
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste ?? cycles
+	; Waste 101 + 3* cycles
+	ld	a, 00h					; 7
 	push	bc					; 11
-	ld	(VBlankActive), a			; 13	wasteful write
-	ld	a, 00h					; 7*	emulate M68K bus access delay
+	pop	bc					; 10
+	push	bc					; 11
+	pop	bc					; 10
+	push	bc					; 11
+	pop	bc					; 10
+	push	bc					; 11
 	pop	bc					; 10
 	djnz	DPCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: ?? + 7*
-	; *) emulated lost cycles on M68K bus access
+	; Total "PCMLoop_VBlankPhase" cycles: 192-193 + 3*
+	; *) emulated lost cycles on M68K bus access on average
 
 ; --------------------------------------------------------------
 DPCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback and reload volume
 	Playback_Run_Draining_NoSync	e		; 71-72/28
-	nop						; 4
 	exx						; 4
 	Playback_LoadVolume_EXX				; 51
 	exx						; 4
-	nop						; 4
-
-	; Handle sample playback and reload pitch
-	Playback_Run_Draining_NoSync	e		; 71-72/28
 	Playback_LoadPitch				; 21	reload pitch
+	push	bc					; 11
+	pop	bc					; 10
 
 DPCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	a, (CommandInput)			; 13	a = command
@@ -337,7 +366,6 @@ DPCMLoop_VBlankPhase_CheckCommandOrSample:
 .ChkCommandOrSample_Done:
 	; Slightly early, but report we're out of VBlank
 	ld	(VBlankActive), a			; 13
-	nop						; 4
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28
