@@ -267,12 +267,11 @@ PCMLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 48 + 7* cycles
+	; Waste 48 cycles
 	exx						; 4
 	nop						; 4
 	inc	bc					; 6
 	dec	bc					; 6
-	ld	a, 00h					; 7*	emulate M68K bus access delay
 	inc	bc					; 6
 	dec	bc					; 6
 	nop						; 4

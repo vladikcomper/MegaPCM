@@ -240,10 +240,9 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 21 + 7* cycles
+	; Waste 21 cycles
 	exx						; 4
 	ld	a, 00h					; 7
-	ld	a, 00h					; 7*	emulate M68K bus access delay
 	jp	PCMTurboLoop_VBlankPhase.FetchWindow	; 10
 
 ; --------------------------------------------------------------
