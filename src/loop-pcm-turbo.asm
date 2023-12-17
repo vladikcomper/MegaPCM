@@ -250,7 +250,7 @@ PCMTurboLoop_VBlank:
 	push	af
 	push	bc
 
-	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~50930 on PAL (V28 mode).
+	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 191 samples to survive VBlank.
 	ld	b, 191-1+1
 
