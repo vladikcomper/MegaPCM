@@ -120,15 +120,26 @@ PCMLoop_Reload:
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
-	di
+	di							; 4
 
 	; Init read ahead registers ...
-	ld	de, SampleBuffer
-	ld	hl, (ActiveSample+sActiveSample.startOffset)
-	ld	bc, (ActiveSample+sActiveSample.startLength)
+	ld	hl, (ActiveSample+sActiveSample.startOffset)	; 16
+	ld	bc, (ActiveSample+sActiveSample.startLength)	; 20
+	ld	de, SampleBuffer				; 10
 
 	; Init playback registers ...
-	Playback_Init_DI	SampleBuffer
+	Playback_Init_DI	SampleBuffer			; 112
+
+	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
+	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
+	; interrupts for longer than that. Missing VBlank may mess up
+	; "DMA protection" (avoiding ROM access during VBlank)
+	ei							; 4
+
+	; NOTE: Interrupts may still be disabled here because EI's effect
+	; isn't immediate. We must make sure the next instruction following
+	; EI *isn't* DI, otherwise it won't enable interrupts at all.
+	nop							; 4
 
 ; --------------------------------------------------------------
 ; PCM: Main playback loop (readahead & playback)
@@ -139,13 +150,17 @@ PCMLoop_Reload:
 ;	hl	= ROM pos
 ; --------------------------------------------------------------
 
+PCMLoop_NormalPhase_NoCycleStealing:
+	ld	a, 0h						; +7*	used as entry point to the loop for poor emulators
+								;	... that don't emulate cycle-stealing
+
 PCMLoop_NormalPhase:
 	DebugMsg "PCMLoop_NormalPhase iteration"
 
 	; Handle "read-ahead" buffer
 	di							; 4
-	ldi							; 16+*
-	ldi							; 16+*
+	ldi							; 16+3.3*
+	ldi							; 16+3.3*
 	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
 	jp	po, .ReadAheadExhausted_DI			; 10	if bc != 0, branch (WARNING: this requires everything to be word-aligned)
 
@@ -154,18 +169,21 @@ PCMLoop_NormalPhase:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 21
-	; Total "PCMLoop_NormalPhase" cycles: 138-139+*
-	; *) additional cycles lost due to M68K bus access
+	; Total "PCMLoop_NormalPhase" cycles: 138-139 + 6.6*
+	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
 	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
 
-	; Waste 53 cycles (we cannot handle "read-ahead" now)
-	ld	a, (ROMWindow)					; 13+*	idle read from ROM keeps timings accurate
-	ld	a, 0h						; 7	''
-	ld	a, (ROMWindow)					; 13+*	''
+	; Waste 53+7* cycles (we cannot handle "read-ahead" now)
+	push	af						; 11
+	ld	a, 00h						; 7
 	nop							; 4
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	pop	af						; 10
 	di							; 4
 	jr	.Playback_DI					; 12
 
@@ -196,16 +214,16 @@ PCMLoop_DrainPhase:
 	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
 	ei								; 4
 
-	; Waste 59 cycles (instead of handling readahead)
-	ld	a, (ROMWindow)						; 13*	idle read from ROM keeps timings accurate
-	ld	c, 0FFh							; 7
-	ld	a, (ROMWindow)						; 13*
+	; Waste 59+7* cycles (instead of handling readahead)
+	push	af							; 11
+	inc	bc							; 6
+	pop	af							; 10
+	push	af							; 11
 	dec	bc							; 6
-	nop								; 4
-	nop								; 4
+	pop	af							; 10
 	jr	PCMLoop_DrainPhase					; 12
-	; Total "PCMLoop_DrainPhase" cycles: 138-139+*
-	; *) additional cycles lost due to M68K bus access
+	; Total "PCMLoop_DrainPhase" cycles: 138-139 + 7*
+	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
 .Drained_EXX_DI:

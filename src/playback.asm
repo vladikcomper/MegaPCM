@@ -26,15 +26,16 @@
 ; -----------------------------------------------------------------------------
 
 	macro	Playback_Init_DI readaheadPtr
-	exx
-	ex	af, af'
-	xor	a				; a' = 0
-	ex	af, af'
-	Playback_LoadVolume_EXX			; bc = volume table
-	Playback_LoadPitch			; iyl = pitch
-	ld	hl, readaheadPtr		; hl = readaheadPtr
-	ld	de, YM_Port0_Data
-	exx
+	exx					; 4
+	ex	af, af'				; 4
+	xor	a				; 4	a' = 0
+	ex	af, af'				; 4
+	Playback_LoadVolume_EXX			; 51	bc = volume table
+	Playback_LoadPitch			; 21	iyl = pitch
+	ld	hl, readaheadPtr		; 10	hl = readaheadPtr
+	ld	de, YM_Port0_Data		; 10	de = YM_Port0_Data
+	exx					; 4
+	; Cycles: 112
 	endm
 
 ; -----------------------------------------------------------------------------
