@@ -131,6 +131,10 @@ PCMTurboLoop_Reload:
 ;	hl	= ROM pos
 ; --------------------------------------------------------------
 
+PCMTurboLoop_NormalPhase_NoCycleStealing:
+	ld	a, 0h						; +7*	used as entry point to the loop for poor emulators
+								;	... that don't emulate cycle-stealing
+
 PCMTurboLoop_NormalPhase:
 	DebugMsg "PCMTurboLoop_NormalPhase iteration"
 
@@ -234,6 +238,20 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 
 	; Ready to continue playback!
 	jp	PCMTurboLoop_NormalPhase
+
+; --------------------------------------------------------------
+; PCM-Turbo: Apply calibration for inaccurate emulators
+; --------------------------------------------------------------
+; NOTE: This is when finishing `CalibrationLoop`, only if
+; calibration is required. Calibration cannot be reverted.
+; --------------------------------------------------------------
+
+PCMTurboLoop_ApplyCalibration:
+	ld	hl, PCMTurboLoop_NormalPhase.chkReadahead_sm1+1
+	ld	(hl), PCMTurboLoop_NormalPhase_NoCycleStealing&0FFh
+	inc	hl
+	ld	(hl), PCMTurboLoop_NormalPhase_NoCycleStealing>>8
+	ret
 
 ; --------------------------------------------------------------
 ; PCM-Tubro: VBlank loop (playback only)

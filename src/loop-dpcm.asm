@@ -141,6 +141,7 @@ DPCMLoop_Reload:
 	ld	a, 80h				; set initial sample to zero (80h)
 	ld	(de), a				; ''
 
+
 ; --------------------------------------------------------------
 ; DPCM: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
@@ -149,6 +150,10 @@ DPCMLoop_Reload:
 ;	de 	= Sample buffer pos (read-ahead)
 ;	hl	= Remaining length in ROM bank - 1
 ; --------------------------------------------------------------
+
+DPCMLoop_NormalPhase_NoCycleStealing:
+	nop					; +4*	used as entry point to the loop for poor emulators
+						;	... that don't emulate cycle-stealing
 
 DPCMLoop_NormalPhase:
 	DebugMsg "DPCMLoop_NormalPhase iteration"
@@ -286,9 +291,22 @@ DPCMLoop_NormalPhase_LoadNextBank:
 	; Ready to continue playback!
 	jp	DPCMLoop_NormalPhase
 
+; --------------------------------------------------------------
+; DPCM: Apply calibration for inaccurate emulators
+; --------------------------------------------------------------
+; NOTE: This is when finishing `CalibrationLoop`, only if
+; calibration is required. Calibration cannot be reverted.
+; --------------------------------------------------------------
+
+DPCMLoop_ApplyCalibration:
+	ld	hl, DPCMLoop_NormalPhase.chkReadahead_sm1+1
+	ld	(hl), DPCMLoop_NormalPhase_NoCycleStealing&0FFh
+	inc	hl
+	ld	(hl), DPCMLoop_NormalPhase_NoCycleStealing>>8
+	ret
 
 ; --------------------------------------------------------------
-; PCM: VBlank loop (playback only)
+; DPCM: VBlank loop (playback only)
 ; --------------------------------------------------------------
 
 DPCMLoop_VBlank_Loop_DrainDoneSync_EXX:

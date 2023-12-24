@@ -261,6 +261,19 @@ PCMLoop_NormalPhase_LoadNextBank:
 	; Ready to continue playback!
 	jp	PCMLoop_NormalPhase
 
+; --------------------------------------------------------------
+; PCM: Apply calibration for inaccurate emulators
+; --------------------------------------------------------------
+; NOTE: This is when finishing `CalibrationLoop`, only if
+; calibration is required. Calibration cannot be reverted.
+; --------------------------------------------------------------
+
+PCMLoop_ApplyCalibration:
+	ld	hl, PCMLoop_NormalPhase.chkReadahead_sm1+1
+	ld	(hl), PCMLoop_NormalPhase_NoCycleStealing&0FFh
+	inc	hl
+	ld	(hl), PCMLoop_NormalPhase_NoCycleStealing>>8
+	ret
 
 ; --------------------------------------------------------------
 ; PCM: VBlank loop (playback only)

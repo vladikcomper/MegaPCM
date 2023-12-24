@@ -133,6 +133,7 @@
 	macro	Playback_ChkReadaheadOk	regReadAheadPtrLow, locReadaheadOk
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
 	sub	3h				; 7	a = buffer position - regReadAheadPtrLow - 3
+@.chkReadahead_sm1:		; points to self-modifying code (allows to overwrite `locReadaheadOk` for cycle calibration)
 	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 3), then read ahead is full
 	; Cycles: 21
 	endm

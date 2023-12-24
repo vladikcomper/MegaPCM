@@ -35,7 +35,7 @@ FLAGS_PANL:	equ	7
 ; Z80 RAM
 ; ------------------------
 
-WorkRAM:		equ	1FC0h	; driver's working memory
+WorkRAM:		equ	1FA0h	; driver's working memory
 Stack_Boundary:		equ	1FE0h	; stack boundary
 Stack:			equ	2000h	; start of the stack
 
@@ -60,17 +60,18 @@ SampleInput:	ds	sSampleInput	; input sample data (used for sample 80h)
 ActiveSample:	ds	sActiveSample	; currently playing sample data
 
 LoopId:		ds	1		; id of the current loop
-LOOP_IDLE:	equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
-LOOP_PCM:	equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
-LOOP_PCM_TURBO:	equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
-LOOP_DPCM:	equ	04h		; - `DPCMLoop` (see `loop-dpcm.asm`)
+LOOP_IDLE:		equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
+LOOP_PCM:		equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
+LOOP_PCM_TURBO:		equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
+LOOP_DPCM:		equ	04h		; - `DPCMLoop` (see `loop-dpcm.asm`)
+LOOP_CALIBRATION:	equ	80h		; - `CalibrationLoop` (see `loop-calibration.asm`)
 
 StackCopy:	dw	1		; stores a copy of stack pointer
 
 VBlankActive:	ds	1		; set if inside VBlank
-; WARNING! Unused
-BufferHealth:	ds	1		; playback buffer health (number of samples it can play without ROM access)
-					; (00h - buffer is drained .. 0FFh - maximum health)
+CalibrationApplied:	ds	1		; set if callibration is applied for crappy emulators
+CalibrationScore_ROM:	dw	1		; ROM read count per frame reported by calibration loop
+CalibrationScore_RAM:	dw	1		; RAM read count per frame reported by calibration loop
 
 	ifdef __DEBUG__
 Debug_ErrorCode:	ds	1	; last error code
