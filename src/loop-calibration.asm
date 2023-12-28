@@ -27,39 +27,13 @@ CalibrationLoop_Init:
 	ld	c, 0				; c' = VBlank calibration routine
 	exx
 
+	; Wait for VBlank now (vertical synchronization) for perfect frame timing
 	ei
 
-; --------------------------------------------------------------
-; Calibration: Wait for the initial VBlank
-; --------------------------------------------------------------
-; NOTICE: We'd want to start benchmarking outside of VBlank
-; right away, but we cannot risk starting it mid-frame.
-; So we pull off "VSync" for perfect synchronization.
-; --------------------------------------------------------------
-
-CalibrationLoop_WaitVBlank:
+.waitVBlank:
 	nop
 	nop
-	jr	CalibrationLoop_WaitVBlank
-
-; --------------------------------------------------------------
-; Calibration: Benchmark ROM or RAM reads
-; --------------------------------------------------------------
-; INPUT:
-;	bc	= calibration score / read counter
-;	de	= ROM or RAM pointer for dummy reads
-;	hl	= `CalibrationLoop_BenchmarkReads` (for jp)
-; --------------------------------------------------------------
-
-CalibrationLoop_BenchmarkReads:
-	rept	8
-		ld	a, (de)				; 7+3.3	dummy ROM read
-		inc	bc				; 6	increment read counter
-	endr
-	jp	(hl)				; 4	jump to the beginning
-	; Estimated cycles per `bc` increment:
-	; - With bus delay: ((7 + 3.3 + 6) * 8 + 4) / 8 ~= 16.8 cyles
-	; - Without bus delay: ((7 + 6) * 8 + 4) / 8 ~= 13.5 cycles
+	jr	.waitVBlank
 
 ; --------------------------------------------------------------
 ; Calibration: VBlank phase
@@ -176,5 +150,30 @@ CalibrationLoop_VBlank:
 	ld	(CalibrationApplied), a
 
 .done:
-	; TODO: Implement
 	ret						; quit calibration loop
+
+; --------------------------------------------------------------
+; Calibration: Benchmark ROM or RAM reads
+; --------------------------------------------------------------
+; INPUT:
+;	bc	= calibration score / read counter
+;	de	= ROM or RAM pointer for dummy reads
+;	hl	= `CalibrationLoop_BenchmarkReads` (for jp)
+; --------------------------------------------------------------
+
+CalibrationLoop_BenchmarkReads:
+	rept	8
+		ld	a, (de)				; 7+3.3* dummy read (ROM reads add +3.3* cycles)
+		inc	bc				; 6	increment read counter
+	endr
+	jp	(hl)				; 4	jump to the beginning
+
+	; Estimated cycles per `bc` increment:
+	; - With bus delay: ((7 + 3.3 + 6) * 8 + 4) / 8 ~= 16.8 cyles
+	; - Without bus delay: ((7 + 6) * 8 + 4) / 8 ~= 13.5 cycles
+	;
+	; Expected scores (without Z80 stops):
+	; - **NTSC**: 59659 - 20008 = 39651 cycles outside of VBlank
+	;   - With bus delay: 39651 / 16.8 ~= 2360
+	;   - Without bus delay: 39651 / 13.5 ~= 2937
+	;
