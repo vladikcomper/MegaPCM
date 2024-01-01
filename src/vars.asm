@@ -73,12 +73,10 @@ CalibrationApplied:	ds	1		; set if callibration is applied for crappy emulators
 CalibrationScore_ROM:	dw	1		; ROM read count per frame reported by calibration loop
 CalibrationScore_RAM:	dw	1		; RAM read count per frame reported by calibration loop
 
-	ifdef __DEBUG__
-Debug_ErrorCode:	ds	1	; last error code
-ERROR__BAD_SAMPLE_TYPE:	equ	01h
+LastErrorCode:		ds	1	; last error code
 ERROR__BAD_INTERRUPT:	equ	02h
-ERROR__NOT_SUPPORTED:	equ	80h
-	endif
+ERROR__BAD_SAMPLE_TYPE:	equ	01h
+ERROR__UNKNOWN_COMMAND:	equ	80h
 
 	align	2
 	assert	$ <= Stack_Boundary
@@ -97,9 +95,5 @@ YM_Port1_Reg:	equ	4002h
 YM_Port1_Data:	equ	4003h
 
 BankRegister:	equ	6000h
-
-	ifdef __DEBUG__
-VMConsole:	equ	7000h
-	endif
 
 ROMWindow:	equ	8000h

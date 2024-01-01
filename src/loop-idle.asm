@@ -11,74 +11,59 @@
 IdleLoop_Init:
 	di					; don't want VBlank during idle loop
 
-	DebugMsg "Entering IdleLoop"
+	TraceMsg "Entering IdleLoop"
 
 	ld	a, LOOP_IDLE
 	ld	(LoopId), a
 
-	ifdef __DEBUG__
-		ld	hl, VoidInterrupt
-		ld	(VBlankRoutine), hl
-	endif
+	ld	hl, IdleLoop_VBlank
+	ld	(VBlankRoutine), hl
+
+	; Wait for VBlank now
+	ei
+
+.waitVBlank:
+	; TODO: Break out of loop in case if VBlank is disabled for good
+	nop
+	nop
+	jr	.waitVBlank
 
 ; --------------------------------------------------------------
-IdleLoop_Main:
-	ld	hl, CommandInput
+; Idle loop: VBlank phase
+; --------------------------------------------------------------
+
+IdleLoop_VBlank:
+	; WARNING! Reused code from `CalibrationLoop`
+	; Alter cycles to your liking
+
+	; We need to spend total of 20008 cycles in VBlank
+	; Jump code below takes 89 cycles and each routine takes 62 cycles
+	; Thus, we need to waste: 20008 - 89 - 62 = 19857
+	exx						; 4
+	push	bc					; 11
+	ld	b, 254					; 7
 
 .loop:
-	ld	a, (hl)			; read command
-	or	a
-	jp	p, .loop
+	push	af					; 11
+	pop	af					; 10
+	push	af					; 11
+	pop	af					; 10
+	add	hl, bc					; 15
+	nop						; 4
+	nop						; 4
+	djnz	.loop					; 8/13
+	; Cycles: (65 + 8) + ((65 + 13) * (b - 1)) = 19807
 
-; --------------------------------------------------------------
-LoadSample:
-	sub	80h			; is command a sample 80h?
-	jr	z, LoadFromSampleInput
+	inc	bc					; 6
+	inc	bc					; 6
+	inc	bc					; 6
+	pop	bc					; 10
 
-LoadFromSampleTable:
-	; Calculate sample's index (part 1)
-	add	a			; a = sampleIndex * 2
-	ld	c, a
-	ld	b, 0h			; bc = sampleIndex * 2
 
-	; Mark command as accepted
-	ld	(hl), b			; IN_command = 00h
-
-	; Calculate sample's index (part 2)
-	ld	h, b
-	ld	l, c			; hl = sampleIndex * 2
-	add	hl, hl			; hl = sampleIndex * 4
-	add	hl, hl			; hl = sampleIndex * 8
-	add	hl, bc			; hl = sampleIndex * 10
-	ld	ix, SampleTable-10
-	ex	de, hl
-	add	ix, de			; ix = SampleTable + (sampleIndex - 1) * 10
-
-	jp	PlaySample
-
-; --------------------------------------------------------------
-LoadFromSampleInput:
-	xor	a
-	ld	(hl), a			; CommandInput = 00h
-	ld	ix, SampleInput
-	; fallthrough
-
-; --------------------------------------------------------------
-PlaySample:
-	; Determine loop to run based on sample type
-	ld	a, (ix+sSampleInput.type)
-	cp	'P'			; is type 'P' (PCM)?
-	jp	z, PCMLoop_Init		; if yes, jump to PCM loop
-	cp	'T'			; is type 'T' (PCM-Turbo)?
-	jp	z, PCMTurboLoop_Init	; if yes, jump to PCM-Tubro loop
-	cp	'D'			; is type 'D' (DPCM)?
-	jp	z, DPCMLoop_Init	; if yes, jump to DPCM loop
-
-	ifdef __DEBUG__
-		; Error out on illegal sample
-		push	af			; remember A for analysis
-
-		DebugErrorTrap	ERROR__BAD_SAMPLE_TYPE
-	else
-		jp	IdleLoop_Main
-	endif
+	ld	hl, CommandInput	; 10	hl = CommandInput
+	ld	a, (hl)			; 7	read command
+	ld	(hl), 00h		; 10	clear command
+	or	a			; 4	is it a sample (>80h)?
+	jp	m, PlaySample		; 10	if yes, jump
+	ei				; 4	enable interrupts
+	ret				; 10	wait until next VBlank

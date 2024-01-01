@@ -18,7 +18,7 @@
 PCMLoop_Init:
 	di
 
-	DebugMsg "Entering PCMLoop"
+	TraceMsg "Entering PCMLoop"
 
 	ld	a, LOOP_PCM
 	ld	(LoopId), a
@@ -155,7 +155,7 @@ PCMLoop_NormalPhase_NoCycleStealing:
 								;	... that don't emulate cycle-stealing
 
 PCMLoop_NormalPhase:
-	DebugMsg "PCMLoop_NormalPhase iteration"
+	TraceMsg "PCMLoop_NormalPhase iteration"
 
 	; Handle "read-ahead" buffer
 	di							; 4
@@ -174,7 +174,7 @@ PCMLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	DebugMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
+	TraceMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
 
 	; Waste 53+7* cycles (we cannot handle "read-ahead" now)
 	push	af						; 11
@@ -207,7 +207,7 @@ PCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 PCMLoop_DrainPhase:
-	DebugMsg "PCMLoop_DrainPhase iteration"
+	TraceMsg "PCMLoop_DrainPhase iteration"
 
 	; Handle playback in draining mode
 	di								; 4
@@ -301,7 +301,7 @@ PCMLoop_VBlank:
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase:
-	DebugMsg "PCMLoop_VBlankPhase iteration"
+	TraceMsg "PCMLoop_VBlankPhase iteration"
 
 	; Handle sample playback in draining mode
 	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
@@ -342,7 +342,7 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 
 	; Only low-priority samples can be overriden
 	bit	FLAGS_SFX, (ix+sActiveSample.flags)	; is sample high priority?
-	jp	z, .ResetDriver_ToLoadSample		; if not, branch
+	jp	z, RequestSamplePlayback		; if not, branch
 
 .ChkCommandOrSample_ResetInput:
 	; Reset command
@@ -365,16 +365,9 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 ; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
 	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, .ResetDriver_ToIdleLoop		; if yes, branch
+	jp	z, StopSamplePlayback			; if yes, branch
 	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	ifdef __DEBUG__
-		jr	z, .PausePlayback			; if yes, branch
-
-		; other commands are considered invalid in DEBUG builds and cause error traps
-		DebugErrorTrap ERROR__NOT_SUPPORTED
-	else
-		jr	nz, .ChkCommandOrSample_ResetInput		; if unknown command, ignore
-	endif
+	jr	nz, .UnkownCommand			; if yes, branch
 
 .PausePlayback:
 	; There's a trick to it: While the "pause command" is set,
@@ -384,12 +377,8 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	jr	.ChkCommandOrSample_Done
 
 ; --------------------------------------------------------------
-.ResetDriver_ToIdleLoop:
-	ld	sp, Stack				; reset stack
-	jp	IdleLoop_Init				;
-
-; --------------------------------------------------------------
-.ResetDriver_ToLoadSample:
-	ld	sp, Stack				; reset stack
-	ld	hl, CommandInput
-	jp	LoadSample				; load sample stored in A
+.UnkownCommand:
+	TraceException	"Uknown command"
+	ld	a, ERROR__UNKNOWN_COMMAND
+	ld	(LastErrorCode), a
+	jr	.ChkCommandOrSample_ResetInput

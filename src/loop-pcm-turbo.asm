@@ -18,7 +18,7 @@
 PCMTurboLoop_Init:
 	di
 
-	DebugMsg "Entering PCMTurboLoop"
+	TraceMsg "Entering PCMTurboLoop"
 
 	ld	a, LOOP_PCM_TURBO
 	ld	(LoopId), a
@@ -136,7 +136,7 @@ PCMTurboLoop_NormalPhase_NoCycleStealing:
 								;	... that don't emulate cycle-stealing
 
 PCMTurboLoop_NormalPhase:
-	DebugMsg "PCMTurboLoop_NormalPhase iteration"
+	TraceMsg "PCMTurboLoop_NormalPhase iteration"
 
 	; Fill read-ahead buffer
 	di							; 4
@@ -155,7 +155,7 @@ PCMTurboLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	DebugMsg "PCMTurboLoop_NormalPhase_ReadAheadFull iteration"
+	TraceMsg "PCMTurboLoop_NormalPhase_ReadAheadFull iteration"
 
 	; Waste 53 cycles (we cannot handle "read-ahead" now)
 	ld	a, (ROMWindow)					; 13+*	idle read from ROM keeps timings accurate
@@ -185,7 +185,7 @@ PCMTurboLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 PCMTurboLoop_DrainPhase:
-	DebugMsg "PCMTurboLoop_DrainPhase iteration"
+	TraceMsg "PCMTurboLoop_DrainPhase iteration"
 
 	; Handle playback in draining mode
 	di							; 4
@@ -274,7 +274,7 @@ PCMTurboLoop_VBlank:
 
 ; --------------------------------------------------------------
 PCMTurboLoop_VBlankPhase:
-	DebugMsg "PCMTurboLoop_VBlankPhase iteration"
+	TraceMsg "PCMTurboLoop_VBlankPhase iteration"
 
 	; Handle sample playback in draining mode
 	PlaybackTurbo_Run_Draining	e, PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX	; 41/20
@@ -307,7 +307,7 @@ PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
 
 	; Only low-priority samples can be overriden
 	bit	FLAGS_SFX, (ix+sActiveSample.flags)	; is sample high priority?
-	jp	z, .ResetDriver_ToLoadSample		; if not, branch
+	jp	z, RequestSamplePlayback		; if not, branch
 
 .ChkCommandOrSample_ResetInput:
 	; Reset command
@@ -317,36 +317,25 @@ PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
 .ChkCommandOrSample_Done:
 	ld	(VBlankActive), a			; 13	report we're out of VBlank
 
-	pop	bc
-	pop	af
-	ei
-	ret
+	pop	bc					; 10
+	pop	af					; 10
+	ei						; 4
+	ret						; 10
 
 ; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
 	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, .ResetDriver_ToIdleLoop		; if yes, branch
+	jp	z, StopSamplePlayback			; if yes, branch
 	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	ifdef __DEBUG__
-		jr	z, .PausePlayback			; if yes, branch
-
-		; other commands are considered invalid in DEBUG builds and cause error traps
-		DebugErrorTrap ERROR__NOT_SUPPORTED
-	else
-		jr	nz, .ChkCommandOrSample_ResetInput		; if unknown command, ignore
-	endif
+	jr	nz, .UnkownCommand			; if yes, branch
 
 .PausePlayback:
 	; WARNING! Pause is currently not supported!
 	jr	.ChkCommandOrSample_Done
 
 ; --------------------------------------------------------------
-.ResetDriver_ToIdleLoop:
-	ld	sp, Stack				; reset stack
-	jp	IdleLoop_Init				;
-
-; --------------------------------------------------------------
-.ResetDriver_ToLoadSample:
-	ld	sp, Stack				; reset stack
-	ld	hl, CommandInput
-	jp	LoadSample				; load sample stored in A
+.UnkownCommand:
+	TraceException	"Uknown command"
+	ld	a, ERROR__UNKNOWN_COMMAND
+	ld	(LastErrorCode), a
+	jr	.ChkCommandOrSample_ResetInput

@@ -7,7 +7,7 @@
 ; --------------------------------------------------------------
 
 	include	'vars.asm'
-	include 'macros.asm'
+	include	'trace.asm'		; trace support for Z80VM
 
 ; --------------------------------------------------------------
 
@@ -38,11 +38,13 @@ VBlankRoutine:	equ	VBlank+1
 
 ; --------------------------------------------------------------
 VoidInterrupt:
-	ifdef __DEBUG__
-		DebugErrorTrap ERROR__BAD_INTERRUPT
-	else
-		ret
-	endif
+	TraceException	"Invalid interrupt"
+
+	push	af
+	ld	a, ERROR__BAD_INTERRUPT
+	ld	(LastErrorCode), a
+	pop	af
+	ret
 
 ; --------------------------------------------------------------
 
@@ -50,7 +52,6 @@ VoidInterrupt:
 
 ; --------------------------------------------------------------
 
-	include	'debug.asm'
 	include	'playback.asm'
 	include	'playback-turbo.asm'
 
@@ -73,6 +74,7 @@ SampleBuffer:
 
 	include	'loop-dpcm.asm'
 	include	'loop-calibration.asm'
+	include	'play-sample.asm'
 
 ; --------------------------------------------------------------
 	align	100h
@@ -93,3 +95,6 @@ Driver_End:
 
 	; Dumps final assembled code to the OUTPATH
 	savebin	OUTPATH, Driver_Start, Driver_End
+
+	; Dumps trace data to 
+	TraceDataSave TRACEPATH
