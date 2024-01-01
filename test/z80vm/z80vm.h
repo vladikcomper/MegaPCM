@@ -26,21 +26,17 @@ struct Z80VM_Context {
 	/* Z80 CPU state */
 	Z80_STATE z80State;
 
-	/* YM state */
+	/* Basic YM state */
 	uint8_t ymPort0Reg;
 	uint8_t ymPort1Reg;
 	uint8_t ymGlobalRegValues [0x10];	// regs 20h .. 2Fh
 	uint8_t ymPort0ChRegValues [0xB8 - 0xA0];	// regs 0xA0 .. 0xB8 (FM1-3)
 	uint8_t ymPort1ChRegValues [0xB8 - 0xA0];	// regs 0xA0 .. 0xB8 (FM4-6)
 
-	/* VM console */
-	union {
-		uint16_t asWord;
-		struct {
-			uint8_t low;
-			uint8_t high;
-		} asByte;
-	} vmConsoleStrAddr;
+	/* Basic VDP support */
+	size_t VDPFrame;
+	uint16_t VDPScanline;
+	enum { NTSC, PAL } VPDRegion;
 
 	/* ROM support */
 	const uint8_t* ROM;
@@ -62,6 +58,8 @@ Z80VM_Context * Z80VM_Init();
 void Z80VM_LoadProgram(Z80VM_Context * context, const uint8_t * buffer, size_t bufferSize);
 
 size_t Z80VM_Emulate(Z80VM_Context * context, size_t cycles);
+
+size_t Z80VM_EmulateTVFrame(Z80VM_Context * context, size_t prevFrameOvershootCycles);
 
 void Z80VM_Destroy(Z80VM_Context * context);
 
@@ -92,20 +90,10 @@ static inline uint8_t Z80VM_ReadROMByte(uint16_t address, Z80VM_Context * contex
 	}
 	const size_t absoluteAddress = (address & 0x7FFF) + context->ROMBankId * 0x8000;
 	if (absoluteAddress >= context->ROMsize) {
-		fprintf(stderr, "%s: Attempt to read outside of ROM: %08lX\n", __func__, absoluteAddress);
+		fprintf(stderr, "%s: Attempt to read outside of ROM: %08lX (pc=%04X)\n", __func__, absoluteAddress, context->z80State.pc);
 		abort();
 	}
 	return context->ROM[absoluteAddress];
-}
-
-
-static inline void Z80VM_LogDebugMessage(uint16_t msgAddress, Z80VM_Context * context) {
-	if (msgAddress >= 0x2000) {
-		fprintf(stderr, "%s: Logging strings outside of Z80 RAM is not supported: %04X\n", __func__, msgAddress);
-		abort();
-	}
-	const uint8_t * msg = &context->programRAM[msgAddress];
-	fprintf(stderr, "DEBUG MESSAGE: %s\n", msg);
 }
 
 
@@ -167,15 +155,6 @@ static inline void Z80_WriteByte(uint16_t address, uint8_t value, Z80VM_Context 
 	/* Bank register */
 	else if (address == 0x6000) {
 		context->ROMBankId = (context->ROMBankId >> 1 | value << 8) & 0x1FF;
-	}
-
-	/* VM console */
-	else if (address == 0x7000) {
-		context->vmConsoleStrAddr.asByte.low = value;
-	}
-	else if (address == 0x7001) {
-		context->vmConsoleStrAddr.asByte.high = value;
-		Z80VM_LogDebugMessage(context->vmConsoleStrAddr.asWord, context);
 	}
 
 	else {

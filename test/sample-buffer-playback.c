@@ -2,16 +2,13 @@
 #include "z80emu.h"
 #include "z80vm.h"
 
-#include "megapcm.debug.h"
+#include "megapcm.h"
 
 #include <assert.h>
 #include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-const size_t MAX_CYCLES = 100000;
-const size_t CYCLES_PER_ITERATION = 100;
 
 typedef struct {
 	uint8_t type;
@@ -90,21 +87,37 @@ void throwMegaPCMError(uint8_t errorCode, Z80VM_Context * context) {
 }
 
 void waitMegaPCMReady(Z80VM_Context * context) {
-	size_t cycles_emulated = 0;
-	uint8_t isReady = 0;
-	uint8_t errorCode = 0;
+	/* Mega PCM shouldn't take longer than this to initialize */
+	const size_t MAX_FRAMES_FOR_INIT = 4;
 
-	while (cycles_emulated < MAX_CYCLES && !isReady && !errorCode) {
-		cycles_emulated += Z80VM_Emulate(context, CYCLES_PER_ITERATION);
-		
+	/* We must substitute a small ROM so MegaPCM's calibration loop doesn't fail */
+	const uint8_t ROM[] = { 0x00 };
+	context->ROM = ROM;
+	context->ROMsize = sizeof(ROM);
+
+	uint8_t isReady = 0;
+	uint8_t lastErrorCode = 0;
+
+	size_t frame = 0;
+	size_t prevFrameOvershootCycles = 0;
+	for (; frame < MAX_FRAMES_FOR_INIT && !isReady && !lastErrorCode; ++frame) {
+		prevFrameOvershootCycles = Z80VM_EmulateTVFrame(context, prevFrameOvershootCycles);
+
 		isReady = Z80_ReadByte(Z_MPCM_DriverReady, context);
-		errorCode = Z80_ReadByte(Z_MPCM_Debug_ErrorCode, context);
+		lastErrorCode = Z80_ReadByte(Z_MPCM_LastErrorCode, context);
 	}
 
 	assert(isReady == 'R');
-	if (errorCode) {
-		throwMegaPCMError(errorCode, context);
+	if (lastErrorCode) {
+		throwMegaPCMError(lastErrorCode, context);
 	}
+
+	fprintf(stderr, "Mega PCM initialized after %ld frames\n", frame);
+	fprintf(stderr, "Calibration report: Calibrated=%d, ROMScore=%d, RAMScore=%d\n",
+		Z80_ReadByte(Z_MPCM_CalibrationApplied, context),
+		Z80_ReadWord(Z_MPCM_CalibrationScore_ROM, context),
+		Z80_ReadWord(Z_MPCM_CalibrationScore_RAM, context)
+	);
 }
 
 /* Lightweight emulator of Mega PCM's playback routine to ensure driver operates correctly */
@@ -200,9 +213,8 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 	context->stateExtension = &playbackState;
 
 	/* Start emulation */
-	const size_t MAX_CYCLES = 100000;
-	const size_t CYCLES_PER_ITERATION = 100;
-	size_t cycles_emulated = 0;
+	const size_t MAX_FRAMES = 10;
+	size_t frame = 0;
 
 	uint8_t errorCode = 0;
 
@@ -210,22 +222,20 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 	Z80_WriteByte(Z_MPCM_CommandInput, 0x80, context);
 
 	/* Emulate Mega PCM now */
-	size_t cycles_to_emulate = MAX_CYCLES;
-	while (cycles_emulated < cycles_to_emulate && !errorCode) {
-		cycles_emulated += Z80VM_Emulate(context, CYCLES_PER_ITERATION);
+	size_t prevFrameOvershootCycles = 0;
+	for (;
+		/* `playbackState` is updated by Z80 write-byte callbacks when YM DAC is written to */
+		frame < MAX_FRAMES && playbackState.length != 0 && !errorCode;
+		++frame
+	) {
+		prevFrameOvershootCycles = Z80VM_EmulateTVFrame(context, prevFrameOvershootCycles);
 
-		/* If playback is over, quit shortly */
-		if (playbackState.length == 0 && cycles_to_emulate == MAX_CYCLES) {
-			cycles_to_emulate = cycles_emulated + 1000;
-		}
-
-		errorCode = Z80_ReadByte(Z_MPCM_Debug_ErrorCode, context);
+		errorCode = Z80_ReadByte(Z_MPCM_LastErrorCode, context);
 	}
 
 	if (errorCode) {
 		throwMegaPCMError(errorCode, context);
 	}
-	assert(cycles_emulated < MAX_CYCLES);
 	assert(playbackState.length == 0);
 
 	/* 
@@ -242,7 +252,7 @@ int main(int argc, char * argv[]) {
 
 	uint8_t * buffer;
 	size_t bufferSize;
-	loadMegaPCM("../build/megapcm.debug.bin", &buffer, &bufferSize);
+	loadMegaPCM("../build/megapcm.bin", &buffer, &bufferSize);
 
 	Z80VM_LoadProgram(context, buffer, bufferSize);
 
