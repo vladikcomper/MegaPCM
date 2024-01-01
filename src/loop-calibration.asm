@@ -31,6 +31,7 @@ CalibrationLoop_Init:
 	ei
 
 .waitVBlank:
+	; TODO: Break out of loop in case if VBlank is disabled for good
 	nop
 	nop
 	jr	.waitVBlank
@@ -121,26 +122,23 @@ CalibrationLoop_VBlank:
 	ld	h, b					; 4	hl = RAM score
 	ld 	l, c					; 4	''
 	ld	de, (CalibrationScore_ROM)		; 20	de = ROM score
+	xor	a					; 4	reset Carry flag
 	sbc	hl, de					; 15	hl = RAM score - ROM score
-	ld	a, h
-	or	a
-	jp	p, .delta_positive
+	jp	m, .calibrate				; 10	if ROM score > RAM score, 
 
-	; Implements: hl = -hl
-	xor	a					; 	a = 0
-	sub	l					;	a = 0 - l
-	ld	l, a					;	l = 0 - l
-	sbc	h					;	a = 0 - h - l - carry
-	sub	l					;	a = 0 - h - l - (0 - l) - carry = 0 - h - carry
-	ld	h, a					;	h = 0 - h - carry
-	or	a
+	; Implements ROM score >>= 3
+	ld	a, e					; 4	
+	rept	3
+		sra	d					; 8	da >>= 1
+		rra						; 4	''
+	endr						; 12*3 = 36
+	ld	e, a					; 4
 
-.delta_positive:
-	jr	nz, .done				;	if delta is larger than 256, jump
-	ld	a, l					;
-	cp	180					;	if delta is larger than 180, jump
-	jr	nc, .done				;	''
+	xor	a					; 4	reset Carry flag
+	sbc	hl, de					; 15
+	jr	nc, .done				; 7/12
 
+.calibrate:
 	; For deltas smaller than 256 we likely detected an inaccurate emulator, callibrate
 	call	PCMLoop_ApplyCalibration
 	call	PCMTurboLoop_ApplyCalibration
@@ -176,4 +174,18 @@ CalibrationLoop_BenchmarkReads:
 	; - **NTSC**: 59659 - 20008 = 39651 cycles outside of VBlank
 	;   - With bus delay: 39651 / 16.8 ~= 2360
 	;   - Without bus delay: 39651 / 13.5 ~= 2937
+	; - **PAL**: 70938 - 20008 = 50930 cycles outside of VBlankv
+	;   - With bus delay: 50930 / 16.8 ~= 3032
+	;   - Without bus delay: 50930 / 13.5 ~= 3772
 	;
+	; Actual scores (without Z80 stops):
+	; - 2435 ROM / 3016 RAM (NTSC, real hardware, by Mask of Destiny)
+	; - 2468 ROM / 3016 RAM (NTSC, Blastem)
+	; - 3116 ROM / 3878 RAM (PAL, real hardware, by smds)
+	;
+	; Actual scores (with frequent Z80 stops, ~20 nop's on 68K):
+	; - 1053 ROM / 1168 RAM (NTSC, real hardware, by Mask of Destiny)
+	; - 1048 ROM / 1169 RAM (NTSC, real hardware, by Jet)
+	; - 1037 ROM / 1133 RAM (NTSC, real hardware, by Jet)
+	; Frequent Z80 stops contribute a systematic error to the measurements.
+
