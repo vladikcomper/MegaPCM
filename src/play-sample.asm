@@ -36,7 +36,7 @@ PlaySample:
 	ld	ix, SampleTable-9	; 14
 	ex	de, hl			; 4
 	add	ix, de			; 15	ix = SampleTable + (sampleIndex - 1) * 9
-	jp	PlaySample		; 10
+	jp	PlaySample2		; 10
 
 .loadFromSampleInput:
 	ld	ix, SampleInput		; 14
