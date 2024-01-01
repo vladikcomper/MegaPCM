@@ -192,13 +192,12 @@ PCMTurboLoop_DrainPhase:
 	PlaybackTurbo_Run_Draining	e, .Drained_EXX_DI	; 41/20
 	ei							; 4
 
-	; Waste 56 cycles (instead of handling readahead)
-	ld	a, (ROMWindow)					; 13+*
-	nop							; 4
-	ld	a, (ROMWindow)					; 13+*
-	nop							; 4
-	inc	bc						; 6
-	dec	bc						; 6
+	; Waste 56+7* cycles (instead of handling readahead)
+	push	hl						; 11
+	push	bc						; 11
+	add	hl, bc						; 11
+	pop	bc						; 10
+	pop	hl						; 10
 	jp	PCMTurboLoop_DrainPhase				; 10
 	; Total "PCMTurboLoop_DrainPhase" cycles: 105+*
 	; *) additional cycles lost due to M68K bus access	
