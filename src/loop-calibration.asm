@@ -182,10 +182,3 @@ CalibrationLoop_BenchmarkReads:
 	; - 2435 ROM / 3016 RAM (NTSC, real hardware, by Mask of Destiny)
 	; - 2468 ROM / 3016 RAM (NTSC, Blastem)
 	; - 3116 ROM / 3878 RAM (PAL, real hardware, by smds)
-	;
-	; Actual scores (with frequent Z80 stops, ~20 nop's on 68K):
-	; - 1053 ROM / 1168 RAM (NTSC, real hardware, by Mask of Destiny)
-	; - 1048 ROM / 1169 RAM (NTSC, real hardware, by Jet)
-	; - 1037 ROM / 1133 RAM (NTSC, real hardware, by Jet)
-	; Frequent Z80 stops contribute a systematic error to the measurements.
-
