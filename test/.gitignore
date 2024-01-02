@@ -1,6 +1,7 @@
 *
 
 !z80vm/
+!megapcm-emu/
 
 !.gitignore
 !.clangd

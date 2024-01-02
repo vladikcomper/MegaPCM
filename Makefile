@@ -30,7 +30,7 @@ $(SRC_DIR)/dpcm-tables.asm:
 	$(MKDPCMTBL) $@
 
 %.h: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --sort $< $@
+	$(SYMTOH) --prefix "Z_MPCM_" --locals --sort $< $@
 
 %.asm: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm --sort $< $@

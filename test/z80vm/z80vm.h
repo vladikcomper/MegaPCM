@@ -59,6 +59,8 @@ void Z80VM_LoadProgram(Z80VM_Context * context, const uint8_t * buffer, size_t b
 
 size_t Z80VM_Emulate(Z80VM_Context * context, size_t cycles);
 
+size_t Z80VM_EmulateSubroutine(Z80VM_Context *context, uint16_t pc, size_t maxCycles);
+
 size_t Z80VM_EmulateTVFrame(Z80VM_Context * context, size_t prevFrameOvershootCycles);
 
 void Z80VM_Destroy(Z80VM_Context * context);

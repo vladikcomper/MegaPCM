@@ -1,13 +1,14 @@
 
 CC := gcc
-CFLAGS := -I./z80vm -I../build -O2 -std=c99 -Wall -pedantic-errors
-LDFLAGS := -L../build/z80vm -lz80vm
+CFLAGS := -I./megapcm-emu -I./z80vm -I../build -O2 -std=c99 -Wall -pedantic-errors
+LDFLAGS := -L./megapcm-emu -L./z80vm -lz80vm -lmegapcm-emu
 
 BUILD_DIR ?= ../build/test
 
-MEGAPCM_H := ../build/megapcm.h
 LIBZ80VM_A := ./z80vm/libz80vm.a
-LIBFILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
+LIBZ80VM_FILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
+LIBMEGAPCM_EMU_A := ./megapcm-emu/libmegapcm-emu.a
+LIBMEGAPCM_EMU_FILES := $(wildcard megapcm-emu/*.c) $(wildcard megapcm-emu/*.h) ../build/megapcm.h
 
 SRC_FILES := $(wildcard *.c)
 EXE_FILES := $(SRC_FILES:%.c=%)
@@ -27,10 +28,13 @@ clean:
 
 $(EXE_FILES):	$(SRC_FILES)
 
-$(SRC_FILES):	$(LIBZ80VM_A) $(MEGAPCM_H)
+$(SRC_FILES):	$(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A)
 
-$(LIBZ80VM_A):	$(LIBFILES)
+$(LIBZ80VM_A):	$(LIBZ80VM_FILES)
 	make -C z80vm
 
-%: %.c $(LIBZ80VM_A) $(MEGAPCM_H)
+$(LIBMEGAPCM_EMU_A):	$(LIBMEGAPCM_EMU_FILES)
+	make -C megapcm-emu
+
+%: %.c $(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A)
 	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@

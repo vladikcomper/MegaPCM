@@ -1,8 +1,6 @@
 
-#include "z80emu.h"
-#include "z80vm.h"
-
-#include "megapcm.h"
+#include <z80vm.h>
+#include <megapcm-emu.h>
 
 #include <assert.h>
 #include <bits/stdint-uintn.h>
@@ -10,16 +8,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct {
-	uint8_t type;
-	uint8_t flags;
-	uint8_t pitch;
-	uint8_t startBank;
-	uint8_t endBank;
-	uint16_t startOffset;
-	uint16_t endOffset;
-} __attribute__((packed)) Sample;
-
+/**
+ * Simple state for emulating Mega PCM's playback
+ * 
+ * Used to track currently played sample and compare it against what real Mega PCM outputs to YM DAC
+ */
 typedef struct {
 	char sampleType;
 	uint32_t offset;
@@ -47,80 +40,9 @@ const uint8_t sample_254[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 							   229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 
 							   244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254 };
 
-void loadMegaPCM(const char * path, uint8_t ** buffer, size_t * bufferSize) {
-	FILE * stream = fopen(path, "rb");
-	if (!stream) {
-		fprintf(stderr, "Unable to open Mega PCM binary\n");
-		abort();
-	}
-
-	fseek(stream, 0, SEEK_END);
-	*bufferSize = ftell(stream);
-	fseek(stream, 0, SEEK_SET);
-
-	*buffer = malloc(*bufferSize);
-	if (!*buffer) {
-		fprintf(stderr, "Unable to allocate buffer for Mega PCM binary\n");
-		abort();		
-	}
-
-	if (fread(*buffer, *bufferSize, 1, stream) != 1) {
-		fprintf(stderr, "Unable to read Mega PCM binary\n");
-		abort();
-	}
-
-	fclose(stream);
-}
-
-void throwMegaPCMError(uint8_t errorCode, Z80VM_Context * context) {
-	fprintf(stderr, "errorCode = %d\n", errorCode);
-	fprintf(stderr, "af = %04X, bc = %04X\n", context->z80State.registers.word[Z80_AF], context->z80State.registers.word[Z80_BC]);
-	fprintf(stderr, "de = %04X, hl = %04X\n", context->z80State.registers.word[Z80_DE], context->z80State.registers.word[Z80_HL]);
-	fprintf(stderr, "ix = %04X, iy = %04X\n", context->z80State.registers.word[Z80_IX], context->z80State.registers.word[Z80_IY]);
-	fprintf(stderr, "sp = %04X\n", context->z80State.registers.word[Z80_SP]);
-	fprintf(stderr, "Stack: ");
-	for (size_t sp = context->z80State.registers.word[Z80_SP]; sp < Z_MPCM_Stack; sp += 2) {
-		fprintf(stderr, "%04X ", Z80_ReadWord(sp, context));
-	}
-	fputs("\n", stderr);
-	abort();
-}
-
-void waitMegaPCMReady(Z80VM_Context * context) {
-	/* Mega PCM shouldn't take longer than this to initialize */
-	const size_t MAX_FRAMES_FOR_INIT = 4;
-
-	/* We must substitute a small ROM so MegaPCM's calibration loop doesn't fail */
-	const uint8_t ROM[] = { 0x00 };
-	context->ROM = ROM;
-	context->ROMsize = sizeof(ROM);
-
-	uint8_t isReady = 0;
-	uint8_t lastErrorCode = 0;
-
-	size_t frame = 0;
-	size_t prevFrameOvershootCycles = 0;
-	for (; frame < MAX_FRAMES_FOR_INIT && !isReady && !lastErrorCode; ++frame) {
-		prevFrameOvershootCycles = Z80VM_EmulateTVFrame(context, prevFrameOvershootCycles);
-
-		isReady = Z80_ReadByte(Z_MPCM_DriverReady, context);
-		lastErrorCode = Z80_ReadByte(Z_MPCM_LastErrorCode, context);
-	}
-
-	assert(isReady == 'R');
-	if (lastErrorCode) {
-		throwMegaPCMError(lastErrorCode, context);
-	}
-
-	fprintf(stderr, "Mega PCM initialized after %ld frames\n", frame);
-	fprintf(stderr, "Calibration report: Calibrated=%d, ROMScore=%d, RAMScore=%d\n",
-		Z80_ReadByte(Z_MPCM_CalibrationApplied, context),
-		Z80_ReadWord(Z_MPCM_CalibrationScore_ROM, context),
-		Z80_ReadWord(Z_MPCM_CalibrationScore_RAM, context)
-	);
-}
 
 /* Lightweight emulator of Mega PCM's playback routine to ensure driver operates correctly */
+// TODO: Move this to `megapcm-emu`
 uint8_t emulateSamplePlayback(Z80VM_Context * context) {
 	EmulatedPlaybackState * playbackState = context->stateExtension;
 
@@ -194,7 +116,7 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 	context->ROMsize = 1024 * 1024;
 
 	/* Setup sample */
-	Sample * sampleInput = (Sample*) &context->programRAM[Z_MPCM_SampleInput];
+	MPCM_Sample * sampleInput = (MPCM_Sample*) &context->programRAM[Z_MPCM_SampleInput];
 	sampleInput->type = sampleType;
 	sampleInput->pitch = pitch;
 	sampleInput->startBank = startOffsetInROM >> 15;
@@ -234,7 +156,7 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 	}
 
 	if (errorCode) {
-		throwMegaPCMError(errorCode, context);
+		MPCM_ThrowLastErrorCode(context);
 	}
 	assert(playbackState.length == 0);
 
@@ -250,13 +172,8 @@ int main(int argc, char * argv[]) {
 
 	Z80VM_Context * context = Z80VM_Init();
 
-	uint8_t * buffer;
-	size_t bufferSize;
-	loadMegaPCM("../build/megapcm.bin", &buffer, &bufferSize);
-
-	Z80VM_LoadProgram(context, buffer, bufferSize);
-
-	waitMegaPCMReady(context);
+	MPCM_LoadDriver(context, "../build/megapcm.bin");
+	MPCM_WaitForInitialization(context);
 
 	/* Run actual tests */
 

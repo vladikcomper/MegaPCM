@@ -2,6 +2,7 @@
 #include "z80vm.h"
 #include "z80emu.h"
 
+#include <bits/stdint-uintn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,6 +40,35 @@ void Z80VM_LoadProgram(Z80VM_Context *context, const uint8_t *buffer, size_t buf
 
 size_t Z80VM_Emulate(Z80VM_Context *context, size_t cycles) {
 	return Z80Emulate(&context->z80State, cycles, context);
+}
+
+size_t Z80VM_EmulateSubroutine(Z80VM_Context *context, uint16_t pc, size_t maxCycles) {
+
+	/* Push previous PC to the stack (this emulates subroutine call) */
+	uint16_t * SP = &context->z80State.registers.word[Z80_SP];
+	*SP -= 2;
+	Z80_WriteWord(*SP, context->z80State.pc, context);
+
+	const uint16_t subroutine_sp = *SP;
+
+	/* Enter subroutine emulation now */
+	size_t cycles_emulated = 0;
+	context->z80State.pc = pc;
+
+	/* Emulation stops as soon as stack breaks out of `subroutine_sp` */
+	while (*SP <= subroutine_sp) {
+		cycles_emulated += Z80Emulate(&context->z80State, 1, context);
+
+		if (cycles_emulated >= maxCycles) {
+			fprintf(stderr, "Subroutine emulation failed: reached max cycles.\n");
+			abort();
+		}
+	}
+
+	/* Restore previous PC */
+	context->z80State.pc = Z80_ReadWord(*SP-2, context);
+
+	return cycles_emulated;
 }
 
 size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCycles) {
