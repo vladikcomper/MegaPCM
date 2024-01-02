@@ -3,7 +3,7 @@
 ; --------------------------------------------------------------
 ; Mega PCM 2.0
 ; --------------------------------------------------------------
-; (c) 2023, Vladikcomper
+; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
 
 	include	'vars.asm'
@@ -14,6 +14,32 @@
 	device	NOSLOT64K
 
 ; --------------------------------------------------------------
+; Exported symbols and equates
+; --------------------------------------------------------------
+
+	; Exported RAM variables
+	export	DriverReady
+	export	CommandInput
+	export	VolumeInput
+	export	SFXVolumeInput
+	export	ActiveSamplePitch
+	export	VBlankActive
+	export	CalibrationApplied
+	export	CalibrationScore_ROM
+	export	CalibrationScore_RAM
+	export	LastErrorCode
+
+	; Exported constants
+	export	COMMAND_STOP
+	export	COMMAND_PAUSE
+	export	ERROR__BAD_INTERRUPT
+	export	ERROR__BAD_SAMPLE_TYPE
+	export	ERROR__UNKNOWN_COMMAND
+
+; --------------------------------------------------------------
+; Driver's entry points
+; --------------------------------------------------------------
+
 	org	00h
 Driver_Start:
 	di				; disable interrupts
@@ -21,18 +47,28 @@ Driver_Start:
 	jp	InitDriver
 
 ; --------------------------------------------------------------
+; Bank-switch routines
+; --------------------------------------------------------------
+; NOTE: The must be stored at offset 08h to make use of RST
+; instruction for fast calls.
+; --------------------------------------------------------------
+
 	org	08h
 	include	'set-bank.asm'		; bank-switching routines
 
 ; --------------------------------------------------------------
+; Driver version magic string
+; --------------------------------------------------------------
 
-	; Driver version magic string
-	db	'MegaPCM v.2.0f', 0
+	db	'MegaPCM v.2.0', 0
 
 ; --------------------------------------------------------------
+; Vertical interrupts handler with dynamic jump
+; --------------------------------------------------------------
+
 	org	38h
 VBlank:
-	jp	VoidInterrupt
+	jp	VoidInterrupt	; NOTE: self-modifying code
 
 VBlankRoutine:	equ	VBlank+1
 
@@ -47,36 +83,35 @@ VoidInterrupt:
 	ret
 
 ; --------------------------------------------------------------
-
-	include	'init.asm'
-
+; Playback functions (macros only)
 ; --------------------------------------------------------------
 
 	include	'playback.asm'
 	include	'playback-turbo.asm'
 
 ; --------------------------------------------------------------
+; Mega PCM loops (Part 1)
+; --------------------------------------------------------------
 
-	include	'loop-idle.asm'
 	include	'loop-pcm.asm'
-	include	'loop-pcm-turbo.asm'
 
 ; --------------------------------------------------------------
+; 256-byte sample buffer used for playback
+; --------------------------------------------------------------
+
 	align	100h
+
 SampleBuffer:
 	ds	100h, 0
 
-	; `PCMTurboLoop` the high byte of `SampleBuffer` offset for insane optimization,
-	; so it should be between 02h and 08h
-	assert	((SampleBuffer>>8) > 2) && ((SampleBuffer>>8) < 8)
+	; `PCMTurboLoop` uses high byte of `SampleBuffer` offset
+	; for insane optimization, so it should be 02h
+	assert	(SampleBuffer>>8) == 2
 
 ; --------------------------------------------------------------
-
-	include	'loop-dpcm.asm'
-	include	'loop-calibration.asm'
-	include	'play-sample.asm'
-
+; Lookup tables (aligned on 256-byte boundary)
 ; --------------------------------------------------------------
+
 	align	100h
 
 VolumeTables:
@@ -86,15 +121,42 @@ DPCMTables:
 	include	'dpcm-tables.asm'
 
 ; --------------------------------------------------------------
+; Mega PCM loops (Part 2)
+; --------------------------------------------------------------
+
+	include	'loop-pcm-turbo.asm'
+	include	'loop-dpcm.asm'
+	include	'loop-calibration.asm'
+	include	'loop-idle.asm'
+
+; --------------------------------------------------------------
+; Misc. modules
+; --------------------------------------------------------------
+
+	include	'init.asm'
+	include	'play-sample.asm'
+
+; --------------------------------------------------------------
+; Sample table for sample ids >=81h
+; --------------------------------------------------------------
+; NOTE: Sample id 80h is considered "custom" and is read
+; from Work RAM instead (see `SampleInput` in `vars.asm`).
+;
+; This basically allows to bypass limitations of sample table
+; and generate pitches, start/end positions on the fly.
+; --------------------------------------------------------------
+
 SampleTable:
 	; samples from 81h onwards go here
 
 Driver_End:
 
 ; --------------------------------------------------------------
+; Dumping the data ...
+; --------------------------------------------------------------
 
 	; Dumps final assembled code to the OUTPATH
 	savebin	OUTPATH, Driver_Start, Driver_End
 
-	; Dumps trace data to 
+	; Dumps trace data to TRACEPATH
 	TraceDataSave TRACEPATH

@@ -14,10 +14,10 @@ SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
 .PHONY:	megapcm volume-tables dpcm-tables test clean
 
-megapcm: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.asm $(BUILD_DIR)/megapcm.h
+megapcm: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h
 
 $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES)
-	$(SJASMPLUS) -DOUTPATH=\"$(BUILD_DIR)/megapcm.bin\" -DTRACEPATH=\"$(BUILD_DIR)/megapcm.tracedata.txt\" --sym=$(BUILD_DIR)/megapcm.sym --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/megapcm.asm
+	$(SJASMPLUS) -DOUTPATH=\"$(BUILD_DIR)/megapcm.bin\" -DTRACEPATH=\"$(BUILD_DIR)/megapcm.tracedata.txt\" --exp=$(BUILD_DIR)/megapcm.exports.sym --sym=$(BUILD_DIR)/megapcm.symbols.sym --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/megapcm.asm
 
 volume-tables:	$(SRC_DIR)/volume-tables.asm
 
@@ -30,13 +30,14 @@ $(SRC_DIR)/dpcm-tables.asm:
 	$(MKDPCMTBL) $@
 
 %.h: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --locals --sort $< $@
+	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
 
 %.asm: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm --sort $< $@
+	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
 
 test:	megapcm
 	make -C test
 
 clean:
 	rm -f $(BUILD_DIR)/megapcm*
+	make -C test clean

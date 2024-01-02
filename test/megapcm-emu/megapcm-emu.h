@@ -7,7 +7,7 @@
 #include <z80vm.h>
 
 /* Include Mega PCM symbols */
-#include <megapcm.h>
+#include <megapcm.symbols.h>
 
 /**
  * Mega PCM 2.0 sample record format, as presented in Z80 definitions

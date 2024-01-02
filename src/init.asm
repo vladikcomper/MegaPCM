@@ -1,18 +1,28 @@
 
+; ==============================================================
+; --------------------------------------------------------------
+; Mega PCM 2.0
+; --------------------------------------------------------------
+; Driver initialization routine
+;
+; (c) 2023-2024, Vladikcomper
+; --------------------------------------------------------------
+
 InitDriver:
 	TraceMsg	"Mega PCM init start"
 
 	; Clear work RAM (uses Blast processing(tm))
 	ld	sp, WorkRAM_End
-	ld	bc, 0000h
-	rept	(WorkRAM_End-WorkRAM)/2
-		push	bc
-	endr
+	ld	hl, 0000h
+	ld	b, (WorkRAM_End-WorkRAM)/2
+.clearWorkRAM:
+	push	hl
+	djnz	.clearWorkRAM
 
 	; Initialize stack
 	ld	sp, Stack
 
-	; Enter calibration loop for 2-3 frames
+	; Enter calibration loop for 3-4 frames
 	call	CalibrationLoop_Init
 
 	; Mark driver as ready for operation

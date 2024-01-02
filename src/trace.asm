@@ -5,10 +5,13 @@
 ; --------------------------------------------------------------
 ; Trace data output module
 ;
-; (c) 2023, Vladikcomper
+; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
 
-	; Initialize trace table
+; --------------------------------------------------------------
+; Initialize trace data
+; --------------------------------------------------------------
+
 	lua
 		trace_msg_table = {}
 		trace_exception_table = {}
@@ -52,6 +55,9 @@
 	endlua
 
 ; --------------------------------------------------------------
+; Prints an info message in Z80VM at current address
+; --------------------------------------------------------------
+
 	macro	TraceMsg msg
 	lua
 		trace_msg_table[sj.current_address] = asStringLiteral(sj.get_define("msg", true))
@@ -59,6 +65,9 @@
 	endm
 
 ; --------------------------------------------------------------
+; Throws an error message in Z80VM at current address
+; --------------------------------------------------------------
+
 	macro	TraceException	msg
 	lua
 		trace_exception_table[sj.current_address] = asStringLiteral(sj.get_define("msg", true))
@@ -66,6 +75,9 @@
 	endm
 
 ; --------------------------------------------------------------
+; Dumps current trace data
+; --------------------------------------------------------------
+
 	macro	TraceDataSave path
 	lua
 		saveTraceData(
