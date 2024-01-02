@@ -2,7 +2,6 @@
 #include "z80vm.h"
 #include "z80emu.h"
 
-#include <bits/stdint-uintn.h>
 #include <stdio.h>
 #include <stdlib.h>
 

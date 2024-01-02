@@ -3,7 +3,6 @@
 
 #include "z80emu.h"
 
-#include <bits/stdint-uintn.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

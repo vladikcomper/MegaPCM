@@ -3,7 +3,6 @@
 #include "z80vm.h"
 
 #include <assert.h>
-#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
