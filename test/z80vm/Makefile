@@ -1,7 +1,7 @@
 
 AR := ar rcs
 RANLIB := ranlib
-CC := gcc
+CC := cc
 CFLAGS := -Wall -pedantic -O2 -fomit-frame-pointer
 
 LIBZ80VM_A := libz80vm.a

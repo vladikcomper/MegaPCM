@@ -1,5 +1,5 @@
 
-CC := gcc
+CC := cc
 CFLAGS := -I./megapcm-emu -I./z80vm -I../build -O2 -std=c99 -Wall -pedantic-errors
 LDFLAGS := -L./megapcm-emu -L./z80vm -lz80vm -lmegapcm-emu
 
@@ -32,10 +32,10 @@ $(EXE_FILES):	$(SRC_FILES)
 $(SRC_FILES):	$(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A) $(MEGAPCM_SYMBOLS_H)
 
 $(LIBZ80VM_A):	$(LIBZ80VM_FILES)
-	make -C z80vm
+	$(MAKE) -C z80vm
 
 $(LIBMEGAPCM_EMU_A):	$(LIBMEGAPCM_EMU_FILES)
-	make -C megapcm-emu
+	$(MAKE) -C megapcm-emu
 
 %: %.c $(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A)
 	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@

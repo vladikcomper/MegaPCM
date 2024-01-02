@@ -36,8 +36,8 @@ $(SRC_DIR)/dpcm-tables.asm:
 	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
 
 test:	megapcm
-	make -C test
+	$(MAKE) -C test
 
 clean:
 	rm -f $(BUILD_DIR)/megapcm*
-	make -C test clean
+	$(MAKE) -C test clean
