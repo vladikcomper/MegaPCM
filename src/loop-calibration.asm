@@ -12,7 +12,7 @@
 ; Loop initialization
 ; --------------------------------------------------------------
 
-CalibrationLoop_Init:
+CalibrationLoop:
 	di
 
 	ld	a, LOOP_CALIBRATION

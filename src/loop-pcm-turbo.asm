@@ -15,7 +15,7 @@
 ;	ix	Pointer to `sSampleInput` structure
 ; --------------------------------------------------------------
 
-PCMTurboLoop_Init:
+PCMTurboLoop:
 	di
 
 	TraceMsg "Entering PCMTurboLoop"
@@ -87,22 +87,6 @@ PCMTurboLoop_Init:
 
 	ld	sp, (StackCopy)			; restore stack
 	ld	ix, ActiveSample
-
-	; Setup YM for DAC playback
-	ld	iy, YM_Port0_Reg
-	xor	a
-	ld	(DriverReady), a		; cannot interrupt driver now ...
-	ld	(iy+0), 2Bh			; YM => Enable DAC
-	ld	(iy+1), 80h			; ''
-	ld	a, (ActiveSample+sActiveSample.flags)	; load flags
-	and	0C0h				; are pan bits set?
-	jr	z, .panDone			; if not, branch
-        ld	(iy+2), 0B6h			; YM => Set Pan
-	ld	(iy+3), a			; ''
-.panDone:
-	ld	a, 'R'
-	ld	(DriverReady), a		; ready to fetch inputs now
-	ld	(iy+0), 2Ah			; setup YM to fetch DAC bytes
 
 ; --------------------------------------------------------------
 PCMTurboLoop_Reload:
@@ -215,8 +199,8 @@ PCMTurboLoop_DrainPhase:
 	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
 	jp	nz, PCMTurboLoop_Reload				; re-enter playback loop
 
-	; Back to idle loop
-	jp	IdleLoop_Init
+	; Return from the playback loop
+	ret
 
 ; --------------------------------------------------------------
 PCMTurboLoop_NormalPhase_LoadNextBank:

@@ -8,7 +8,7 @@
 ; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
 
-IdleLoop_Init:
+IdleLoop:
 	di					; don't want VBlank during idle loop
 
 	TraceMsg "Entering IdleLoop"

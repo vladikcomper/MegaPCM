@@ -20,7 +20,9 @@ RequestSamplePlayback:
 	ld	sp, Stack
 	ld	hl, CommandInput
 	ld	(hl), 00h
-	; fallthrough
+	call	PlaySample
+	jp	IdleLoop		; back to idling
+
 
 ; --------------------------------------------------------------
 ; Plays a given sample by id
@@ -64,14 +66,62 @@ PlaySample:
 ; --------------------------------------------------------------
 
 PlaySample2:
+	; Load panning value for this sample
+	assert SFXPanInput == PanInput+1		; `PanInput` and `SFXPanInput` should follow each other in memory
+
+	ld	hl, PanInput
+	bit	FLAGS_SFX, (ix+sSampleInput.flags)	; are we playing SFX?
+	jr	z, .panInputReady			; if not, branch
+	inc	l					; if yes, use `SFXPanInput` instead of `PanInput`
+.panInputReady:
+	ld	c, (hl)					; c = panning
+
+	; Setup YM for DAC playback: enable DAC, set pan
+	assert (YM_Port0_Reg&0FFh) == 0
+
+	ld	hl, DriverReady				;	hl = DriverReady
+	ld	de, YM_Port0_Reg			;	de = YM_Port0_Reg
+	ld	b, e					;	b = 0
+	ld	a, 'R'					;	a = 'R'
+	ld	(hl), b					;	DriverReady = 0
+	ex	de, hl					; 4	de = DriverReady, hl = YM_Port0_Reg
+	ld	(hl), 2Bh				; 10	YM (Port 0) => Enable DAC / Disable FM6
+	inc	l					; 4	''
+	ld	(hl), 80h				; 10	''
+	inc	l					; 4	YM (Port 1) => Set panning
+	ld	(hl), 0B6h				; 10	''
+	inc	l					; 4	''
+	ld	(hl), c					; 7	''
+	ld	l, b					; 4	back to Port 0
+	ld	(hl), 2Ah				; 10	YM (Port 0) => prepare DAC output
+	ld	(de), a					; 7	DriverReady = 'R'
+
+	; Start actual sample playback now
+	call	EnterPlaybackLoop
+
+DisableDAC:
+	; Playback's done, disable DAC
+	ld	hl, DriverReady				;	de = DriverReady
+	ld	de, YM_Port0_Reg			;	hl = YM_Port0_Reg
+	ld	a, 'R'					;	a = 'R'
+	ld	(hl), e					; 	DriverReady = 0
+	ex	de, hl					; 4	de = DriverReady, hl = YM_Port0_Reg
+	ld	(hl), 2Bh				; 10	YM (Port 0) => Disable DAC / Enable FM6
+	inc	l					; 4	''
+	ld	(hl), 00h				; 10	''
+	ld	(de), a					; 7	DriverReady = 'R'
+	ret
+
+; --------------------------------------------------------------
+EnterPlaybackLoop:
 	; Determine loop to run based on sample type
 	ld	a, (ix+sSampleInput.type)
 	cp	'P'			; is type 'P' (PCM)?
-	jp	z, PCMLoop_Init		; if yes, jump to PCM loop
+	jp	z, PCMLoop		; if yes, jump to PCM loop
 	cp	'T'			; is type 'T' (PCM-Turbo)?
-	jp	z, PCMTurboLoop_Init	; if yes, jump to PCM-Tubro loop
+	jp	z, PCMTurboLoop		; if yes, jump to PCM-Tubro loop
 	cp	'D'			; is type 'D' (DPCM)?
-	jp	z, DPCMLoop_Init	; if yes, jump to DPCM loop
+	jp	z, DPCMLoop		; if yes, jump to DPCM loop
 
 	; Other type values are considered unknown
 	; We set and error code and execute `StopSamplePlayback`
@@ -90,4 +140,5 @@ StopSamplePlayback:
 	xor	a
 	ld	(CommandInput), a
 	ld	sp, Stack
-	jp	IdleLoop_Init
+	call	DisableDAC
+	jp	IdleLoop

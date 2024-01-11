@@ -29,6 +29,9 @@
 	export	CalibrationScore_RAM
 	export	LastErrorCode
 
+	; Exported program locations
+	export	SampleTable
+
 	; Exported constants
 	export	COMMAND_STOP
 	export	COMMAND_PAUSE
@@ -147,7 +150,7 @@ DPCMTables:
 ; --------------------------------------------------------------
 
 SampleTable:
-	; samples from 81h onwards go here
+	; This table must be appended by the driver loader.
 
 Driver_End:
 

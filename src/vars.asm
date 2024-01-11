@@ -36,19 +36,17 @@ pitch:		byte			; pitch of the sample
 
 FLAGS_SFX:	equ	0
 FLAGS_LOOP:	equ	1
-FLAGS_PANR:	equ	6
-FLAGS_PANL:	equ	7
 
 
 ; ------------------------
 ; Z80 RAM
 ; ------------------------
 
-WorkRAM:		equ	1FA0h	; driver's working memory
-Stack_Boundary:		equ	1FE0h	; stack boundary
-Stack:			equ	2000h	; start of the stack
+Stack:			equ	1FC0h		; start of the stack
+WorkRAM:		equ	1FC0h		; driver's working memory
 
 		phase	WorkRAM
+StackFailsafe:		dw	1		; set to 0000h, failsafe return value in unlikely case of stack corruption
 CommandInput:		ds	1		; command input byte (written by the main CPU):
 						; - 00h - nothing
 COMMAND_STOP:		equ	01h		; - 01h - STOP playback
@@ -60,6 +58,8 @@ DriverReady:		ds	1		; flag to indicate that the driver is ready for operation
 						; - 00h or anything else - still initializing
 VolumeInput:		ds	1		; normal samples volume (00h = max, 0Fh = min)
 SFXVolumeInput:		ds	1		; SFX samples volume (00h = max, 0Fh = min)
+PanInput:		ds	1		; panning of normal samples (40h, 80h or C0h)
+SFXPanInput:		ds	1		; panning of SFX samples (40h, 80h or C0h)
 
 		; `VolumeInput` and `SFXVolumeInput` should be within the same 256-byte block
 		; for some optimizations to work
@@ -89,10 +89,11 @@ ERROR__BAD_INTERRUPT:	equ	02h
 ERROR__BAD_SAMPLE_TYPE:	equ	01h
 ERROR__UNKNOWN_COMMAND:	equ	80h
 
-		align	2
-		assert	$ <= Stack_Boundary
-
+			align	2
 WorkRAM_End:		equ	$
+	
+		assert	WorkRAM_End <= 2000h			; WorkRAM should overflow past Z80 RAM
+		assert	(WorkRAM>>8)==((WorkRAM_End-1)>>8)	; WorkRAM shouldn't cross 256-byte boundary for some optimizations to work
 
 		dephase
 

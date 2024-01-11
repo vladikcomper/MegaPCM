@@ -22,8 +22,18 @@ InitDriver:
 	; Initialize stack
 	ld	sp, Stack
 
-	; Enter calibration loop for 3-4 frames
-	call	CalibrationLoop_Init
+	; Enter calibration loop, which lasts 3-4 frames
+	call	CalibrationLoop
+
+	; Initialize panning
+	assert SFXPanInput == PanInput+1		; `PanInput` and `SFXPanInput` should follow each other in memory
+	assert (SFXPanInput>>8) == (PanInput>>8)	; both should be in the same 256-byte block for the code below to work
+
+	ld	hl, PanInput
+	ld	a, 0C0h
+	ld	(hl), a
+	inc	l
+	ld	(hl), a
 
 	; Mark driver as ready for operation
 	ld	a, 'R'
@@ -31,4 +41,4 @@ InitDriver:
 
 	TraceMsg	"Mega PCM init finish"
 
-	jr	IdleLoop_Init
+	jr	IdleLoop
