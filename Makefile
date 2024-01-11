@@ -14,9 +14,9 @@ SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
 .PHONY:	megapcm volume-tables dpcm-tables test clean
 
-megapcm: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h
+megapcm: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h | $(BUILD_DIR)
 
-$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES)
+$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) | $(BUILD_DIR)
 	$(SJASMPLUS) -DOUTPATH=\"$(BUILD_DIR)/megapcm.bin\" -DTRACEPATH=\"$(BUILD_DIR)/megapcm.tracedata.txt\" --exp=$(BUILD_DIR)/megapcm.exports.sym --sym=$(BUILD_DIR)/megapcm.symbols.sym --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/megapcm.asm
 
 volume-tables:	$(SRC_DIR)/volume-tables.asm
@@ -28,6 +28,9 @@ $(SRC_DIR)/volume-tables.asm:
 
 $(SRC_DIR)/dpcm-tables.asm:
 	$(MKDPCMTBL) $@
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 %.h: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
