@@ -67,7 +67,7 @@ DPCMLoop_Init:
 	ld	a, b				; a = endBank
 	cp	c				; endBank == startBank?
 	jr	nz, .isMultibank		; if not, branch
-	jp	c, IdleLoop_Init		; if endBank < startBank, abort playback
+	jp	c, StopSamplePlayback		; if endBank < startBank, abort playback
 	res	7, h
 	ex	de, hl				; hl = end length - 1, de = start length
 	sbc	hl, de				; hl = length - 1
