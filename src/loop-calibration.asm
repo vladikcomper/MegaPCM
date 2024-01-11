@@ -41,9 +41,6 @@ CalibrationLoop_Init:
 ; --------------------------------------------------------------
 ; Registers:
 ;	c'	= Current routine/frame
-;	bc	= ROM read counter
-;	de	= ROM pointer for dummy reads
-;	hl	= `CalibrationLoop_BenchmarkROMAccess` (for jp)
 ; --------------------------------------------------------------
 
 CalibrationLoop_VBlank:
@@ -124,7 +121,7 @@ CalibrationLoop_VBlank:
 	ld	de, (CalibrationScore_ROM)		; 20	de = ROM score
 	xor	a					; 4	reset Carry flag
 	sbc	hl, de					; 15	hl = RAM score - ROM score
-	jp	m, .calibrate				; 10	if ROM score > RAM score, 
+	jp	m, .calibrate				; 10	if ROM score > RAM score, always calibrate
 
 	; Implements ROM score >>= 3
 	ld	a, e					; 4	
@@ -135,11 +132,11 @@ CalibrationLoop_VBlank:
 	ld	e, a					; 4
 
 	xor	a					; 4	reset Carry flag
-	sbc	hl, de					; 15
-	jr	nc, .done				; 7/12
+	sbc	hl, de					; 15	hl = (RAM score - ROM score) >= (ROM score >> 3)?
+	jr	nc, .done				; 7/12	if yes, no calibration needed
 
 .calibrate:
-	; For deltas smaller than 256 we likely detected an inaccurate emulator, callibrate
+	; We detected an inaccurate emulator at this point, callibrate
 	call	PCMLoop_ApplyCalibration
 	call	PCMTurboLoop_ApplyCalibration
 	call	DPCMLoop_ApplyCalibration
