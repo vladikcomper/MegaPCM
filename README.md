@@ -1,7 +1,10 @@
 
 # Features
 
-- Crystal clear PCM playback at up to 24 kHz;
+- Crystal-clear PCM playback;
+- PCM playback up to 24 kHz with dynamic pitch and volume;
+- Turbo PCM playback mode at 32 kHz (fixed) without pitch and volume control;
+- DPCM playback up to 18 kHz;
 - Auto-bankswitching;
 
 Planned:

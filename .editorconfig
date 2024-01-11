@@ -8,7 +8,7 @@ root = true
 [*]
 end_of_line = lf
 
-# 4 space indentation for source code files
+# 8 space indentation for assembly files
 [*.asm]
 indent_style = tab
 indent_size = 8
