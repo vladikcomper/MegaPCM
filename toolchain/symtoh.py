@@ -68,7 +68,7 @@ def main():
 	if args.sort:
 		symbols = sorted(symbols, key=attrgetter('offset'))
 
-	# Step 3: Output `symbols` to .h file ...
+	# Step 3: Output `symbols` to .h or .asm file ...
 	with open(args.outputFilename, 'w') as outputFilename:
 		for symbol in symbols:
 			if args.outputFormat == 'h':

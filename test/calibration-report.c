@@ -49,7 +49,7 @@ int main(int argc, char * argv[]) {
 	/* Synthetic tests */
 	runTest(1000, 1000, 1, context);
 	runTest(1000, 1100, 1, context);
-	runTest(1000, 1250, 0, context);	// calibration won't trigger if ROM/RAM is roughly 12.5%
+	runTest(1000, 1250, 0, context);	// calibration won't trigger if ROM/RAM are roughly 12.5% different
 	runTest(1000, 9999, 0, context);	// measure error: RAM score is much higher
 	runTest(1000, 999, 1, context);		// measure error: RAM score is lower
 	runTest(1000, 100, 1, context);		// measure error: RAM score is much lower
