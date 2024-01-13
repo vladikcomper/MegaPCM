@@ -51,7 +51,7 @@
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
 ;	regReadAheadPtrLow - Low byte of readahead position (c, e, l)
-;	regValue04h - register that contains value of 04h
+;	regValue03h - register that contains value of 03h
 ;	locReadaheadOk - location to jump if readahead isn't full
 ;
 ; INPUT:
@@ -61,11 +61,11 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, regValue04h, locReadaheadOk
+	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, regValue03h, locReadaheadOk
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
-	sub	regValue04h			; 4	a = buffer position - regReadAheadPtrLow - 4
+	sub	regValue03h			; 4	a = buffer position - regReadAheadPtrLow - 2
 @.chkReadahead_sm1:		; points to self-modifying code (allows to overwrite `locReadaheadOk` for cycle calibration)
-	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 4), then read ahead is ok
+	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 2), then read ahead is ok
 	; Cycles: 18
 	endm
 

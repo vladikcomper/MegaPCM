@@ -152,8 +152,8 @@ PCMLoop_NormalPhase:
 .Playback_DI:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
-	Playback_ChkReadaheadOk	e, PCMLoop_NormalPhase		; 21
-	; Total "PCMLoop_NormalPhase" cycles: 138-139 + 6.6*
+	Playback_ChkReadaheadOk	e, d, PCMLoop_NormalPhase	; 18
+	; Total "PCMLoop_NormalPhase" cycles: 135-136 + 6.6*
 	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
@@ -198,15 +198,16 @@ PCMLoop_DrainPhase:
 	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
 	ei								; 4
 
-	; Waste 59+7* cycles (instead of handling readahead)
-	push	af							; 11
+	; Waste 56+7* cycles (instead of handling readahead)
+	push	bc							; 11
 	inc	bc							; 6
-	pop	af							; 10
-	push	af							; 11
-	dec	bc							; 6
-	pop	af							; 10
+	inc	bc							; 6
+	inc	bc							; 6
+	inc	bc							; 6
+	inc	bc							; 6
+	pop	bc							; 10
 	jr	PCMLoop_DrainPhase					; 12
-	; Total "PCMLoop_DrainPhase" cycles: 138-139 + 7*
+	; Total "PCMLoop_DrainPhase" cycles: 135-136 + 7*
 	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
@@ -295,24 +296,24 @@ PCMLoop_VBlankPhase_Sync:
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste 47 + 7* cycles
-	push	bc					; 11
-	ld	(VBlankActive), a			; 13	wasteful write
-	ld	a, 00h					; 7*	emulate M68K bus access delay
-	pop	bc					; 10
+	; Waste 44 + 7* cycles
+	push	hl					; 11
+	inc	hl					; 6
+	add	hl, hl					; 11
+	pop	hl					; 10
 	djnz	PCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 138-139 + 7*
+	; Total "PCMLoop_VBlankPhase" cycles: 135-136 + 7*
 	; *) emulated lost cycles on M68K bus access
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback and reload volume
 	Playback_Run_Draining_NoSync	e		; 71-72/28
-	nop						; 4
 	exx						; 4
 	Playback_LoadVolume_EXX				; 51
 	exx						; 4
 	nop						; 4
+	; WARNING! This should've wasted 1 more cycle!
 
 	; Handle sample playback and reload pitch
 	Playback_Run_Draining_NoSync	e		; 71-72/28
@@ -336,7 +337,6 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 .ChkCommandOrSample_Done:
 	; Slightly early, but report we're out of VBlank
 	ld	(VBlankActive), a			; 13
-	nop						; 4
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28

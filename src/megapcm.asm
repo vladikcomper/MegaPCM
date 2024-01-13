@@ -97,6 +97,7 @@ VoidInterrupt:
 ; --------------------------------------------------------------
 
 	include	'loop-pcm.asm'
+	include	'loop-pcm-turbo.asm'
 
 ; --------------------------------------------------------------
 ; 256-byte sample buffer used for playback
@@ -108,8 +109,8 @@ SampleBuffer:
 	ds	100h, 0
 
 	; `PCMTurboLoop` uses high byte of `SampleBuffer` offset
-	; for insane optimization, so it should be 02h
-	assert	(SampleBuffer>>8) == 2
+	; for an insane optimization, so it should be 03h
+	assert	(SampleBuffer>>8) == 3
 
 ; --------------------------------------------------------------
 ; Lookup tables (aligned on 256-byte boundary)
@@ -127,7 +128,6 @@ DPCMTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
-	include	'loop-pcm-turbo.asm'
 	include	'loop-dpcm.asm'
 	include	'loop-calibration.asm'
 	include	'loop-idle.asm'

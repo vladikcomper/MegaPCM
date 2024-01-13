@@ -17,11 +17,11 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 	dc.b	\type					; $00	- type
 
 	if \type=TYPE_PCM
-		if \sampleRate>24500
+		if \sampleRate>25100
 			inform 0, "Invalid sample rate. TYPE_PCM only supports sample rates <= 24500 Hz"
 		endif
 		dc.b	\flags+0				; $01	- flags
-		dc.b	(\sampleRate)*256/24686			; $02	- pitch
+		dc.b	(\sampleRate)*256/25208			; $02	- pitch
 		dc.b	0					; $03	- <RESERVED>
 		dc.l	\samplePtr				; $04	- start offset
 		dc.l	\samplePtr\_End				; $08	- end offset
@@ -37,11 +37,11 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 		dc.l	\samplePtr\_End				; $08	- end offset
 
 	elseif \type=TYPE_DPCM
-		if \sampleRate>18250
+		if \sampleRate>18550
 			inform 0, "Invalid sample rate. TYPE_DPCM only supports sample rates <= 18250 Hz"
 		endif
 		dc.b	\flags+0				; $01	- flags
-		dc.b	(\sampleRate)*256/18328			; $02	- pitch
+		dc.b	(\sampleRate)*256/18643			; $02	- pitch
 		dc.b	0					; $03	- <RESERVED>
 		dc.l	\samplePtr				; $04	- start offset
 		dc.l	\samplePtr\_End				; $08	- end offset

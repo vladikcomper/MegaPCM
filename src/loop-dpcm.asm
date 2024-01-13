@@ -165,10 +165,10 @@ DPCMLoop_NormalPhase:
 .Playback_DI:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
-	Playback_ChkReadaheadOk	e, DPCMLoop_NormalPhase		; 21
-	; Total cycles: 49
+	Playback_ChkReadaheadOk	e, d, DPCMLoop_NormalPhase	; 18
+	; Total cycles: 46
 
-	; Total "DPCMLoop_NormalPhase" cycles: ~192-193 + 3.3*
+	; Total "DPCMLoop_NormalPhase" cycles: ~189-190 + 3.3*
 	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
@@ -220,21 +220,19 @@ DPCMLoop_DrainPhase:
 	Playback_Run_Draining	e, .Drained_EXX_DI		; 71-72
 	ei							; 4
 
-	; Waste 113 + 3* cycles
+	; Waste 110 + 3* cycles
 	push	af						; 11
 	pop	af						; 10
 	push	af						; 11
 	pop	af						; 10
 	push	af						; 11
 	pop	af						; 10
-	push	bc						; 11
-	dec	bc						; 6
-	inc	bc						; 6
-	pop	bc						; 10
-	nop							; 4
-	nop							; 4
+	push	hl						; 11
+	inc	hl						; 6
+	add	hl, hl						; 11
+	pop	hl						; 10
 	jr	DPCMLoop_DrainPhase				; 12
-	; Total "DPCMLoop_DrainPhase" cycles: ~192-193 + 3*
+	; Total "DPCMLoop_DrainPhase" cycles: ~189-190 + 3*
 	; *) additional cycles lost due to M68K bus access on average
 
 
@@ -325,8 +323,7 @@ DPCMLoop_VBlankPhase_Sync:
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste 101 + 3* cycles
-	ld	a, 00h					; 7
+	; Waste 98 + 3* cycles
 	push	bc					; 11
 	pop	bc					; 10
 	push	bc					; 11
@@ -335,8 +332,9 @@ DPCMLoop_VBlankPhase_Sync:
 	pop	bc					; 10
 	push	bc					; 11
 	pop	bc					; 10
+	nop						; 4
 	djnz	DPCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 192-193 + 3*
+	; Total "PCMLoop_VBlankPhase" cycles: 189-190 + 3*
 	; *) emulated lost cycles on M68K bus access on average
 
 ; --------------------------------------------------------------
@@ -347,8 +345,6 @@ DPCMLoop_VBlankPhase_LastIteration:
 	Playback_LoadVolume_EXX				; 51
 	exx						; 4
 	Playback_LoadPitch				; 21	reload pitch
-	push	bc					; 11
-	pop	bc					; 10
 
 DPCMLoop_VBlankPhase_CheckCommandOrSample:
 	ld	a, (CommandInput)			; 13	a = command
