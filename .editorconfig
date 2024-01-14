@@ -8,7 +8,12 @@ root = true
 [*]
 end_of_line = lf
 
-# 8 space indentation for assembly files
-[*.asm]
+# 4 space indentation for 68k assembly files
+[src/*.asm]
+indent_style = tab
+indent_size = 4
+
+# 8 space indentation for Z80 assembly files
+[src/*.asm]
 indent_style = tab
 indent_size = 8
