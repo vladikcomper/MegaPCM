@@ -22,6 +22,8 @@
 	export	CommandInput
 	export	VolumeInput
 	export	SFXVolumeInput
+	export	PanInput
+	export	SFXPanInput
 	export	ActiveSamplePitch
 	export	VBlankActive
 	export	CalibrationApplied

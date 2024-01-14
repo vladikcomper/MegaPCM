@@ -2,7 +2,7 @@
 AR := ar rcs
 RANLIB := ranlib
 CC := cc
-CFLAGS := -I../../build -I../z80vm -Wall -pedantic -O2 -fomit-frame-pointer
+CFLAGS := -I../../build/z80 -I../z80vm -Wall -pedantic -O2 -fomit-frame-pointer
 
 LIBMEGAPCM_EMU_A := libmegapcm-emu.a
 MEGAPCM_EMU_O := megapcm-emu.o

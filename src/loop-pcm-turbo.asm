@@ -261,7 +261,6 @@ PCMTurboLoop_VBlankPhase:
 
 	; Handle sample playback in draining mode
 	PlaybackTurbo_Run_Draining	e, PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX	; 41/20
-	; Total cycles: 64-65 (playback ok), 24 (drained)
 
 .FetchWindow:
 	; Slightly late, but report we're in VBlank

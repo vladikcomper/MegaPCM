@@ -1,2 +1,2 @@
 CompileFlags:
-	Add: [-std=c99, -Wall, -pedantic-errors, -I./megapcm-emu, -I./z80vm, -I../z80vm, -I../build, -I../../build]
+	Add: [-std=c99, -Wall, -pedantic-errors, -I./megapcm-emu, -I./z80vm, -I../z80vm, -I../build/z80, -I../../build/z80]

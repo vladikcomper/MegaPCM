@@ -1,11 +1,11 @@
 
 CC := cc
-CFLAGS := -I./megapcm-emu -I./z80vm -I../build -O2 -std=c99 -Wall -pedantic-errors
+CFLAGS := -I./megapcm-emu -I./z80vm -I../build/z80 -O2 -std=c99 -Wall -pedantic-errors
 LDFLAGS := -L./megapcm-emu -L./z80vm -lz80vm -lmegapcm-emu
 
 BUILD_DIR ?= ../build/test
 
-MEGAPCM_SYMBOLS_H := ../build/megapcm.symbols.h
+MEGAPCM_SYMBOLS_H := ../build/z80/megapcm.symbols.h
 LIBZ80VM_A := ./z80vm/libz80vm.a
 LIBZ80VM_FILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
 LIBMEGAPCM_EMU_A := ./megapcm-emu/libmegapcm-emu.a
@@ -15,9 +15,12 @@ SRC_FILES := $(wildcard *.c)
 EXE_FILES := $(SRC_FILES:%.c=%)
 
 
-.PHONY:	all run build clean
+.PHONY:	all megapcm-z80 run build clean
 
-all:	run build
+all:	megapcm-z80 run build
+
+megapcm-z80:
+	$(MAKE) -C ../src
 
 run:	$(EXE_FILES)
 	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... " && ./$(executable) 2>$(executable).log)

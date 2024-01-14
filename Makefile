@@ -1,46 +1,20 @@
 
-# Executables
-SJASMPLUS ?= sjasmplus
+.PHONY:	megapcm megapcm-68k megapcm-z80 test clean
 
-TOOLCHAIN_DIR := toolchain
-BUILD_DIR := build
-SRC_DIR := src
+megapcm:
+	$(MAKE) -C src-bundle
 
-SYMTOH := $(TOOLCHAIN_DIR)/symtoh.py
-MKVOLUME := $(TOOLCHAIN_DIR)/mkvolume.py
-MKDPCMTBL := $(TOOLCHAIN_DIR)/mkdpcmtbl.py
+megapcm-68k:
+	$(MAKE) -C src-68k
 
-SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
+megapcm-z80:
+	$(MAKE) -C src
 
-.PHONY:	megapcm volume-tables dpcm-tables test clean
-
-megapcm: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h | $(BUILD_DIR)
-
-$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) | $(BUILD_DIR)
-	$(SJASMPLUS) -DOUTPATH=\"$(BUILD_DIR)/megapcm.bin\" -DTRACEPATH=\"$(BUILD_DIR)/megapcm.tracedata.txt\" --exp=$(BUILD_DIR)/megapcm.exports.sym --sym=$(BUILD_DIR)/megapcm.symbols.sym --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/megapcm.asm
-
-volume-tables:	$(SRC_DIR)/volume-tables.asm
-
-dpcm-tables: $(SRC_DIR)/dpcm-tables.asm
-
-$(SRC_DIR)/volume-tables.asm:
-	$(MKVOLUME) -n 16 $@
-
-$(SRC_DIR)/dpcm-tables.asm:
-	$(MKDPCMTBL) $@
-
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
-%.h: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
-
-%.asm: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
-
-test:	megapcm
+test:	megapcm-z80
 	$(MAKE) -C test
 
 clean:
-	rm -f $(BUILD_DIR)/megapcm*
+	$(MAKE) -C src clean
+	$(MAKE) -C src-68k clean
+	$(MAKE) -C src-bundle clean
 	$(MAKE) -C test clean
