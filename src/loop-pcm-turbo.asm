@@ -124,8 +124,8 @@ PCMTurboLoop_NormalPhase:
 
 	; Fill read-ahead buffer
 	di							; 4
-	ldi							; 16+*
-	ldi							; 16+*
+	ldi							; 16+3.3*
+	ldi							; 16+3.3*
 	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
 	jp	po, .ReadAheadExhausted_DI			; 10	if bc == 0, branch (WARNING: this requires everything to be word-aligned)
 
@@ -141,11 +141,12 @@ PCMTurboLoop_NormalPhase:
 .ReadAheadFull:
 	TraceMsg "PCMTurboLoop_NormalPhase_ReadAheadFull iteration"
 
-	; Waste 53 cycles (we cannot handle "read-ahead" now)
-	ld	a, (ROMWindow)					; 13+*	idle read from ROM keeps timings accurate
-	ld	a, 0h						; 7	''
-	ld	a, (ROMWindow)					; 13+*	''
-	nop							; 4
+	; Waste 53 + 7* cycles (we cannot handle "read-ahead" now)
+	push	hl						; 11
+	inc	hl						; 6
+	inc	hl						; 6
+	add	hl, bc						; 11
+	pop	hl						; 10
 	di							; 4
 	jr	.Playback_DI					; 12
 
