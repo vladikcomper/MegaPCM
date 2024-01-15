@@ -1,6 +1,7 @@
 
 TOOLCHAIN_DIR := ../toolchain
 BUILD_DIR := ../build/68k
+Z80_BUILD_DIR := ../build/z80
 SRC_DIR := .
 
 # Tools
@@ -9,6 +10,7 @@ BLOBTOASM := $(TOOLCHAIN_DIR)/blobtoasm.py
 CONVSYM := convsym
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
+Z80_FILES := $(Z80_BUILD_DIR)/megapcm.bin $(Z80_BUILD_DIR)/megapcm.exports.asm
 
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 
@@ -25,14 +27,16 @@ megapcm-linkable:	megapcm-z80 $(BUILD_DIR)/megapcm.obj
 
 megapcm-debug-linkable:	megapcm-z80 $(BUILD_DIR)/megapcm.debug.obj
 
-$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) | $(BUILD_DIR)
+$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 	$(ASM68K) $(ASMFLAGS) /p $(SRC_DIR)/megapcm.asm,$@,$(BUILD_DIR)/megapcm.sym
 
-$(BUILD_DIR)/megapcm.obj:	$(SRC_FILES) | $(BUILD_DIR)
+$(BUILD_DIR)/megapcm.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 	$(ASM68K) $(ASMFLAGS) /l $(SRC_DIR)/megapcm.asm,$@
 
-$(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) | $(BUILD_DIR)
+$(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /l $(SRC_DIR)/megapcm.asm,$@
+
+$(Z80_FILES):	megapcm-z80
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
