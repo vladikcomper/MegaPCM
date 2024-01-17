@@ -3,6 +3,7 @@ TOOLCHAIN_DIR := ../toolchain
 BUILD_DIR := ../build/bundle
 LIB_BUILD_DIR := ../build/68k
 SRC_DIR := .
+LIB_SRC_DIR := ../src-68k
 
 # Tools
 BLOBTOASM := $(TOOLCHAIN_DIR)/blobtoasm.py
@@ -18,9 +19,9 @@ all:	asm68k asm68k-linkable
 megapcm-68k:
 	$(MAKE) -C ../src-68k
 
-asm68k:	megapcm-68k $(BUILD_DIR)/asm68k/MegaPCM.asm
+asm68k:	$(BUILD_DIR)/asm68k/MegaPCM.asm
 
-asm68k-linkable:	megapcm-68k $(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
+asm68k-linkable:	$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
 
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) | $(BUILD_DIR)/asm68k-linkable
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -def LINKABLE -out $@
@@ -48,6 +49,8 @@ $(BUILD_DIR)/asm68k:
 
 $(BUILD_DIR)/asm68k-linkable:
 	mkdir -p $@
+
+$(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	megapcm-68k
 
 clean:
 	rm -rf $(BUILD_DIR)/*
