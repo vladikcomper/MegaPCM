@@ -1,16 +1,21 @@
 
-# Features
+# Mega PCM 2
+
+Mega PCM 2 is a DAC sound driver for Sega Mega-Drive / Genesis.
+
+## Features
 
 - Crystal-clear PCM playback;
-- PCM playback up to 24 kHz with dynamic pitch and volume;
-- Turbo PCM playback mode at 32 kHz (fixed) without pitch and volume control;
-- DPCM playback up to 18 kHz;
-- Auto-bankswitching;
-
-Planned:
-- DPCM playback;
-- 2-channel mixer?
-- Volume control?
+- Volume control and smooth pitch control;
+	- 16 volume levels;
+	- 256 pitch levels;
+- Several supported sample formats:
+	- WAVE file 8-bit unsigned PCM (playback rate can be detected from header);
+	- Raw 8-bit unsigned PCM (headless);
+	- Raw 4-bit DPCM (headless);
+- High quality PCM playback up to 25 kHz with 256-step pitch and volume control;
+- High quality DPCM playback up to 18.5 kHz with 256-step pitch and volume control;
+- Turbo mode! PCM playback at 32 kHz, but without volume and pitch control;
 
 # Architecture
 
