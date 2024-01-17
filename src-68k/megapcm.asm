@@ -16,7 +16,7 @@
 		include	'../lib-68k/debugger.asm'		; MD Debugger external library
 	else
 		include '../lib-68k/debugger-stub.asm'	; dummy debug macros
-	endc
+	endif
 
 ; ------------------------------------------------------------------------------
 

@@ -99,7 +99,7 @@ MegaPCM_LoadSampleTable:
 
 		KDebug.WriteLine "Detected WAVE header"
 
-		lea	$C(@sample_start), @sample_start	; locate "fmt" chunk
+		lea		$C(@sample_start), @sample_start; locate "fmt" chunk
 		cmp.l	#'fmt ', (@sample_start)
 		bne.w	@Err_WAVE_InvalidHeaderFormat
 		cmp.w	#$0100, 8(@sample_start)		; is sample type uncompressed PCM ($0001 Little-endian)?
@@ -150,32 +150,32 @@ MegaPCM_LoadSampleTable:
 		; Round end offset to even address boundary if needed ...
 		move.w	@sample_end, @var0
 		and.w	#1, @var0
-		suba.w	@var0, @sample_end				; this subtracts 1 if address was ODD, so it gets EVEN
+		suba.w	@var0, @sample_end					; this subtracts 1 if address was ODD, so it gets EVEN
 
 	@WriteSampleData:
 		tst.b	@sample_pitch
-		beq.w	@Err_PitchNotSet				; pitch can't be zero
+		beq.w	@Err_PitchNotSet					; pitch can't be zero
 
 		; Convert absolute start/end offsets to Z80 banks and window addresses ...
 		move.l	@sample_start, @var0
 		add.l	@var0, @var0
-		addq.w	#1, @var0					; bit 0 is always zero, so we just set it
-		ror.w	#1, @var0					; @var0 LOW  = start offset | $8000
-		move.w	@var0, (sp)					; stack @00  = start offset | $8000
-		swap	@var0						; @var0 HIGH = start bank
+		addq.w	#1, @var0							; bit 0 is always zero, so we just set it
+		ror.w	#1, @var0							; @var0 LOW  = start offset | $8000
+		move.w	@var0, (sp)							; stack @00  = start offset | $8000
+		swap	@var0								; @var0 HIGH = start bank
 
 		move.l	@sample_end, @var1
 		add.l	@var1, @var1
-		addq.w	#1, @var1					; bit 0 is always zero, so we just set it
-		ror.w	#1, @var1					; @var1 LOW  = end offset | $8000
-		move.w	@var1, 2(sp)					; stack @02  = end offset | $8000
-		swap	@var1						; @var1 HIGH = end bank
+		addq.w	#1, @var1							; bit 0 is always zero, so we just set it
+		ror.w	#1, @var1							; @var1 LOW  = end offset | $8000
+		move.w	@var1, 2(sp)						; stack @02  = end offset | $8000
+		swap	@var1								; @var1 HIGH = end bank
 
 		; We can send processed data to Mega PCM's sample table now ...
 		stopZ80	(@z80_busreq)
-		move.b	@sample_type, (@z80_sample_tbl)+		; 00h	- sample type
-		move.b	@sample_flags, (@z80_sample_tbl)+		; 01h	- sample flags
-		move.b	@sample_pitch, (@z80_sample_tbl)+		; 02h	- pitch
+		move.b	@sample_type, (@z80_sample_tbl)+	; 00h	- sample type
+		move.b	@sample_flags, (@z80_sample_tbl)+	; 01h	- sample flags
+		move.b	@sample_pitch, (@z80_sample_tbl)+	; 02h	- pitch
 		move.b	@var0, (@z80_sample_tbl)+			; 03h	- start bank
 		move.b	@var1, (@z80_sample_tbl)+			; 04h	- end bank
 		move.b	1(sp), (@z80_sample_tbl)+			; 05h	- start offset LOW
@@ -189,13 +189,13 @@ MegaPCM_LoadSampleTable:
 
 ; ----------------------------------------------------------------------
 @SampleTableDone:
-	subq.w	#1, @sample_tbl				; seek the end of previous record
-	moveq	#0, @error_code				; no errors to report
+	subq.w	#1, @sample_tbl					; seek the end of previous record
+	moveq	#0, @error_code					; no errors to report
 
 @Quit:
-	lea	-$C(@sample_tbl), @sample_tbl		; seek the start of sample record (helps to investiage erros, if any)
-	addq.w	#4, sp					; release stack variables
-	movem.l	(sp)+, d2-d5/a2-a4			; release additional registers
+	lea		-$C(@sample_tbl), @sample_tbl	; seek the start of sample record (helps to investiage erros, if any)
+	addq.w	#4, sp							; release stack variables
+	movem.l	(sp)+, d2-d5/a2-a4				; release additional registers
 	rts
 
 	; ----------------------------------------------------------------------
