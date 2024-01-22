@@ -112,7 +112,7 @@ PCMLoop_Reload:
 	ld	de, SampleBuffer				; 10
 
 	; Init playback registers ...
-	Playback_Init_DI	SampleBuffer			; 112
+	Playback_Init_DI	SampleBuffer			; 106
 
 	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
 	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
@@ -310,7 +310,7 @@ PCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback and reload volume
 	Playback_Run_Draining_NoSync	e		; 71-72/28
 	exx						; 4
-	Playback_LoadVolume_EXX				; 51
+	Playback_LoadVolume_EXX				; 45
 	exx						; 4
 	nop						; 4
 	; WARNING! This should've wasted 1 more cycle!

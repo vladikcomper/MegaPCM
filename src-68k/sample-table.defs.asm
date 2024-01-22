@@ -15,10 +15,10 @@ TYPE_DPCM:		equ	'D'
 ; Maximum playback rates:
 TYPE_PCM_TURBO_MAX_RATE:	equ	32000 ; Hz
 TYPE_PCM_MAX_RATE:			equ	25100 ; Hz
-TYPE_DPCM_MAX_RATE:			equ	18550 ; Hz
+TYPE_DPCM_MAX_RATE:			equ	20600 ; Hz
 
 ; Internal driver's base rates for pitched playback.
-; NOTICE: They are slightly lower than max rates,
-; because the highest pitch is 256/256, not 256/256.
+; NOTICE: Actual max rates are slightly lower,
+; because the highest pitch is 255/256, not 256/256.
 TYPE_PCM_BASE_RATE:			equ	25208 ; Hz
-TYPE_DPCM_BASE_RATE:		equ	18643 ; Hz
+TYPE_DPCM_BASE_RATE:		equ	20691 ; Hz

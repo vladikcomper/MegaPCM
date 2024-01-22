@@ -30,12 +30,12 @@
 	ex	af, af'				; 4
 	xor	a				; 4	a' = 0
 	ex	af, af'				; 4
-	Playback_LoadVolume_EXX			; 51	bc = volume table
+	Playback_LoadVolume_EXX			; 45	bc = volume table
 	Playback_LoadPitch			; 21	iyl = pitch
 	ld	hl, readaheadPtr		; 10	hl = readaheadPtr
 	ld	de, YM_Port0_Data		; 10	de = YM_Port0_Data
 	exx					; 4
-	; Cycles: 112
+	; Cycles: 106
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -79,11 +79,11 @@
 
 	macro	Playback_LoadVolume_EXX
 	ld	bc, (ActiveSample+sActiveSample.volumeInputPtr)	; 20
-	ld	a, (bc)						; 13
+	ld	a, (bc)						; 7
 	and	0Fh						; 7
 	add	VolumeTables>>8					; 7
 	ld	b, a						; 4	bc = volume table
-	; Cycles: 51
+	; Cycles: 45
 	endm
 
 ; -----------------------------------------------------------------------------

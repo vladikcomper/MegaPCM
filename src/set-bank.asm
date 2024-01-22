@@ -15,10 +15,10 @@ CurrentBank:	equ	SetBank.sm1+1
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank
 ; -----------------------------------------------------------------------------
-; WARNING: Avoid using `de` here, even if pushed to the stack!
+; WARNING: Avoid using `de`/`bc` here, even if pushed to the stack!
 ;
-; `de` is a "global" playback buffer pointer shared between VBlank and normal
-; routines. If VBlank occurs in the middle of this routine, `de` shouldn't
+; These reigsters are shared between VBlank and normal routines in PCM and DPCM
+; playback. If VBlank occurs in the middle of this routine, `de`/`bc` shouldn't
 ; be tampered with! It's unwanted to disable interrupts for longer than 171
 ; cycles either, as we may miss Vlank and mess up "DMA protection".
 ; -----------------------------------------------------------------------------
