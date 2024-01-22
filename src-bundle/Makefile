@@ -23,7 +23,7 @@ asm68k:	$(BUILD_DIR)/asm68k/MegaPCM.asm
 
 asm68k-linkable:	$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
 
-$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) | $(BUILD_DIR)/asm68k-linkable
+$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm | $(BUILD_DIR)/asm68k-linkable
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -def LINKABLE -out $@
 
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj:	$(LIB_BUILD_DIR)/megapcm.obj | $(BUILD_DIR)/asm68k-linkable
@@ -32,7 +32,7 @@ $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj:	$(LIB_BUILD_DIR)/megapcm.obj | $(BUILD
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj:	$(LIB_BUILD_DIR)/megapcm.debug.obj | $(BUILD_DIR)/asm68k-linkable
 	cp $^ $@
 
-$(BUILD_DIR)/asm68k/MegaPCM.asm:	$(SRC_FILES) $(BUILD_DIR)/MegaPCM.Blob.asm $(BUILD_DIR)/MegaPCM.Symbols.asm | $(BUILD_DIR)/asm68k
+$(BUILD_DIR)/asm68k/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm $(BUILD_DIR)/MegaPCM.Blob.asm $(BUILD_DIR)/MegaPCM.Symbols.asm | $(BUILD_DIR)/asm68k
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -out $@
 
 $(BUILD_DIR)/MegaPCM.Blob.asm:	$(LIB_BUILD_DIR)/megapcm.bin | $(BUILD_DIR)
