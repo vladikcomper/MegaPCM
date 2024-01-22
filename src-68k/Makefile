@@ -4,14 +4,10 @@ BUILD_DIR := ../build/68k
 Z80_BUILD_DIR := ../build/z80
 SRC_DIR := .
 
-# Tools
-ASM68K := wine $(TOOLCHAIN_DIR)/asm68k.exe
-BLOBTOASM := $(TOOLCHAIN_DIR)/blobtoasm.py
-CONVSYM := convsym
-
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 Z80_FILES := $(Z80_BUILD_DIR)/megapcm.bin $(Z80_BUILD_DIR)/megapcm.exports.asm
 
+ASM68K := wine $(TOOLCHAIN_DIR)/asm68k.exe
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 
 .PHONY:	all megapcm-blob megapcm-linkable megapcm-debug-linkable megapcm-z80 clean
