@@ -24,7 +24,7 @@ default_deltas = [
 ]
 
 def deltatable(rawtable: str):
-	table = list(map(lambda n: int(n, 16), rawtable.split(',')))
+	table = list(map(lambda n: int(n), rawtable.split(';')))
 	if len(table) != 16:
 		raise ValueError('Delta table should specify 16 elements.')
 	return table
@@ -57,8 +57,8 @@ def getArgs():
 		description='Generates DPCM delta tables.'
 	)
 	parser.add_argument('outputFilename', type=str)
-	parser.add_argument('-t', '--table', type=deltatable, default=default_deltas,
-		help='Custom delta table to use (hex numbers, comma-separated)'
+	parser.add_argument('-t', '--table', nargs=16, type=int, default=default_deltas,
+		help='Custom delta table to use (decimal numbers, comma-separated)'
 	)
 	parser.add_argument('-l', '--bytesPerLine', type=int, default=16,
 		help='Number of byts per line in the output file'
