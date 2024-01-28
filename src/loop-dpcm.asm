@@ -306,8 +306,8 @@ DPCMLoop_VBlank:
 	push	bc
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
-	; This means in worst-case scenario, we must play 104 samples to survive VBlank.
-	ld	b, 104-2
+	; This means in worst-case scenario, we must play 116 samples to survive VBlank.
+	ld	b, 116-2
 
 ; --------------------------------------------------------------
 DPCMLoop_VBlankPhase:

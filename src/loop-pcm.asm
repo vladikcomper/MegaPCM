@@ -126,7 +126,7 @@ PCMLoop_Reload:
 	nop							; 4
 
 ; --------------------------------------------------------------
-; PCM: Main playback loop (readahead & playback)
+; PCM: Normal playback phase (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
 ;	bc	= Remaining length in ROM bank
@@ -187,7 +187,7 @@ PCMLoop_NormalPhase:
 	; TODO: Make sure we waste as many cycles as half of the drain iteration
 
 ; --------------------------------------------------------------
-; PCM: Draining loop (playback only)
+; PCM: Draining phase (playback only)
 ; --------------------------------------------------------------
 
 PCMLoop_DrainPhase:
@@ -261,7 +261,7 @@ PCMLoop_ApplyCalibration:
 	ret
 
 ; --------------------------------------------------------------
-; PCM: VBlank loop (playback only)
+; PCM: VBlank phase (playback only)
 ; --------------------------------------------------------------
 
 PCMLoop_VBlank_Loop_DrainDoneSync_EXX:
