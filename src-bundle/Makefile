@@ -39,13 +39,16 @@ $(BUILD_DIR)/MegaPCM.Symbols.asm: $(LIB_BUILD_DIR)/megapcm.sym | $(BUILD_DIR)
 	$(CONVSYM) $(LIB_BUILD_DIR)/megapcm.sym $@ -out asm -outopt "%s:	equ	MegaPCMLibraryBlob+$$%X"
 
 $(BUILD_DIR):
-	$(MKDIR) $@
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$@"
 
 $(BUILD_DIR)/asm68k:
-	$(MKDIR) $@
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$@"
 
 $(BUILD_DIR)/asm68k-linkable:
-	$(MKDIR) $@
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$@"
 
 $(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	megapcm-68k
 

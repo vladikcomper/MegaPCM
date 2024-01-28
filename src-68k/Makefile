@@ -37,7 +37,8 @@ $(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 $(Z80_FILES):	megapcm-z80
 
 $(BUILD_DIR):
-	$(MKDIR) $(BUILD_DIR)
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$(BUILD_DIR)"
 
 clean:
 	$(RM) $(BUILD_DIR)/*
