@@ -1,13 +1,10 @@
 
+# Include toolchain file for $(SJASMPLUS), $(MKVOLUME) $(MKDIR) etc
 TOOLCHAIN_DIR := ../toolchain
+include ../toolchain.mk
+
 BUILD_DIR := ../build/z80
 SRC_DIR := .
-
-# Tools
-SJASMPLUS ?= sjasmplus
-SYMTOH := $(TOOLCHAIN_DIR)/symtoh.py
-MKVOLUME := $(TOOLCHAIN_DIR)/mkvolume.py
-MKDPCMTBL := $(TOOLCHAIN_DIR)/mkdpcmtbl.py
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
@@ -32,7 +29,7 @@ $(SRC_DIR)/dpcm-tables.asm:
 	$(MKDPCMTBL) $@
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	$(MKDIR) $(BUILD_DIR)
 
 %.h: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
@@ -41,4 +38,4 @@ $(BUILD_DIR):
 	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
 
 clean:
-	rm -f $(BUILD_DIR)/*
+	$(RM) $(BUILD_DIR)/*

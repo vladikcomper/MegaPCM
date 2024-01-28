@@ -1,5 +1,8 @@
 
+# Include toolchain file for $(ASM68K), $(MKDIR) etc
 TOOLCHAIN_DIR := ../toolchain
+include ../toolchain.mk
+
 BUILD_DIR := ../build/68k
 Z80_BUILD_DIR := ../build/z80
 SRC_DIR := .
@@ -7,7 +10,6 @@ SRC_DIR := .
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 Z80_FILES := $(Z80_BUILD_DIR)/megapcm.bin $(Z80_BUILD_DIR)/megapcm.exports.asm
 
-ASM68K := wine $(TOOLCHAIN_DIR)/asm68k.exe
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 
 .PHONY:	all megapcm-blob megapcm-linkable megapcm-debug-linkable megapcm-z80 clean
@@ -35,7 +37,7 @@ $(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 $(Z80_FILES):	megapcm-z80
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	$(MKDIR) $(BUILD_DIR)
 
 clean:
-	rm -f $(BUILD_DIR)/*
+	$(RM) $(BUILD_DIR)/*

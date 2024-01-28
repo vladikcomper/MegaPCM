@@ -23,7 +23,8 @@ megapcm-z80:
 	$(MAKE) -C ../src
 
 run:	$(EXE_FILES)
-	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... " && ./$(executable) 2>$(executable).log)
+	# TODO: Windows version
+	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... " && ./$(executable) 2>$(executable).log &&) echo "ALL DONE"
 
 build:	$(EXE_FILES)
 
