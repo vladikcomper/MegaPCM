@@ -21,7 +21,7 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 		dc.l	\samplePtr\_End							; $08	- end offset
 
 	elseif \type=TYPE_PCM_TURBO
-		if \sampleRate<>TYPE_PCM_TURBO_MAX_RATE
+		if (\sampleRate+0<>TYPE_PCM_TURBO_MAX_RATE)|(\sampleRate+0<>0)
 			inform 0, "Invalid sample rate. TYPE_PCM_TURBO only supports sample rate of \#TYPE_PCM_TURBO_MAX_RATE Hz"
 		endif
 		dc.b	\flags+0								; $01	- flags (optional)
