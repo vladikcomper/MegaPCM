@@ -353,7 +353,7 @@ DPCMLoop_VBlankPhase_CheckCommandOrSample:
 
 	ld	a, (ActiveSample+sActiveSample.flags)
 	rrca						; push `FLAGS_SFX` to Carry
-	jp	nc, RequestSamplePlayback		; if not SFX, branch
+	jr	nc, .PlaySample				; if not SFX, branch
 
 .ChkCommandOrSample_ResetInput:
 	; Reset command
@@ -386,6 +386,10 @@ DPCMLoop_VBlankPhase_CheckCommandOrSample:
 	; As soon as this command is unset, the pitch reload will restore it.
 	Playback_ResetPitch				; set pitch to 00h
 	jr	.ChkCommandOrSample_Done
+
+.PlaySample:
+	ld	a, (CommandInput)			; a = sample
+	jp	RequestSamplePlayback
 
 ; --------------------------------------------------------------
 .UnkownCommand:
