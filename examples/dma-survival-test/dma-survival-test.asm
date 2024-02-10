@@ -39,8 +39,8 @@ VDP_Ctrl:				equ 	$C00004
 ; ------------------------------------------------------------------------------
 Main:
 	Console.SetXY #1, #1
-	Console.WriteLine "Mega PCM 2.0 - DMA Test"
-	Console.WriteLine "(c) 2024, Vladikcomper%<endl>"
+	Console.WriteLine "%<pal1>Mega PCM 2.0 - DMA Test"
+	Console.WriteLine "(c) 2024, Vladikcomper"
 
 	jsr		MegaPCM_LoadDriver
 	lea		SampleTable(pc), a0
@@ -53,12 +53,20 @@ Main:
 	; Display sample info
 	lea		SampleTable+0(pc), a0
 	jsr		GetSampleRate					; d0 = rate
-	Console.WriteLine "Sample Info:"
-	Console.WriteLine "       Type: %<.b (a0)>"
-	Console.WriteLine "      Flags: %<.b 1(a0)>"
-	Console.WriteLine "       Rate: %<.w d0 dec> Hz"
-	Console.WriteLine "      Start: %<.l 4(a0) sym>"
-	Console.WriteLine "        End: %<.l 8(a0) sym>%<endl>"
+	Console.SetXY #1, #5
+	Console.Write "%<pal1>Sample Info:%<endl>%<endl>"
+	Console.WriteLine "%<pal2>   Type: %<pal0>%<.b (a0)>"
+	Console.WriteLine "%<pal2>  Flags: %<pal0>%<.b 1(a0)>"
+	Console.WriteLine "%<pal2>   Rate: %<pal0>%<.w d0 dec> Hz"
+	Console.WriteLine "%<pal2>  Start: %<pal0>%<.l 4(a0) sym>"
+	Console.WriteLine "%<pal2>    End: %<pal0>%<.l 8(a0) sym>%<endl>"
+
+	; Display controls
+	Console.SetXY #1, #21
+	Console.Write "%<pal1>Controls:%<endl>%<endl>"
+	Console.WriteLine "%<pal2>   [Up/Down] %<pal0>Change selection"
+	Console.WriteLine "%<pal2>[Left/Right] %<pal0>Change value (Hold)"
+	Console.Write "%<pal2>[A] %<pal0>Restart, %<pal2>[B] %<pal0>Pause, %<pal2>[C] %<pal0>Stop"
 
 	; Start playback
 	move.b	#$81, d0
@@ -150,13 +158,32 @@ InitConfig:
 ; ------------------------------------------------------------------------------
 GetSampleRate:
 	cmp.b	#TYPE_PCM_TURBO, (a0)
-	beq.s	@sample_32khz
+	bne.s	@chk_pcm
+	move.w	#32000, d0
+	rts
+
+@chk_pcm:
+	cmp.b	#TYPE_PCM, (a0)
+	bne.s	@chk_dpcm
+	moveq	#0, d0
+	move.b	2(a0), d0						; d0 = pitch (00..FF)
+	mulu.w	#TYPE_PCM_BASE_RATE, d0			; d0 = pitch * base_rate
+	lsr.l	#8, d0
+	rts
+
+@chk_dpcm:
+	cmp.b	#TYPE_DPCM, (a0)
+	bne.s	@unknown
+	moveq	#0, d0
+	move.b	2(a0), d0						; d0 = pitch (00..FF)
+	mulu.w	#TYPE_DPCM_BASE_RATE, d0		; d0 = pitch * base_rate
+	lsr.l	#8, d0
+	rts
+
+@unknown:
 	moveq	#0, d0			; NOT SUPPORTED
 	rts
 
-@sample_32khz:
-	move.w	#32000, d0
-	rts
 
 ; ------------------------------------------------------------------------------
 
@@ -165,7 +192,7 @@ GetSampleRate:
 ; ------------------------------------------------------------------------------
 InputConfig:
 	;		Start		A			C			B
-	dc.l	0,			0,			0,			0
+	dc.l	0,			0,			0,			@PauseToggle
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
@@ -174,6 +201,23 @@ InputConfig:
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
+; ------------------------------------------------------------------------------
+@PauseToggle:
+	lea		Z80_RAM+Z_MPCM_CommandInput, a0
+	stopZ80
+	move.b	(a0), d0
+	subq.b	#Z_MPCM_COMMAND_PAUSE, d0
+	beq.s	@unpause
+	moveq	#Z_MPCM_COMMAND_PAUSE, d0
+
+@unpause:
+	move.b	d0, (a0)
+	startZ80
+	rts
+
+; ------------------------------------------------------------------------------
+@Stop:
+	jmp		MegaPCM_StopPlayback
 
 ; ------------------------------------------------------------------------------
 @NextItem:
@@ -250,27 +294,28 @@ InputConfig:
 	bra		@setredraw
 
 @VBlankSamplesInc:
-	cmp.b	#$F8, VBlank_PCM_Samples
+	cmp.b	#$FF, VBlank_PCM_Samples
 	beq		@done
 	add.b	#1, VBlank_PCM_Samples
 	bra.s	@setsamples
 
 ; ------------------------------------------------------------------------------
 MenuBase:
-	dc.b	'DMA Protection: ', endl
-	dc.b	'DMA Length: ???? bytes', endl
-	dc.b	'VBlank PCM Samples: ', endl
+	dc.b	pal1, 'Test settings:', endl, endl
+	dc.b	pal2, '  DMA Protection: ', endl
+	dc.b	pal2, '      DMA Length: ', pal0, '     bytes', endl
+	dc.b	pal2, '  VBlank Samples: ', endl
 	dc.b	0
 
 MenuCursors:
-	dc.b	'>', endl, ' ', endl, ' ', 0, $FF, $FF	; $00
-	dc.b	' ', endl, '>', endl, ' ', 0, $FF, $FF	; $08
-	dc.b	' ', endl, ' ', endl, '>', 0, $FF, $FF	; $10
+	dc.b	pal2, '>', endl, ' ', endl, ' ', pal0, 0	; $00
+	dc.b	pal2, ' ', endl, '>', endl, ' ', pal0, 0	; $08
+	dc.b	pal2, ' ', endl, ' ', endl, '>', pal0, 0	; $10
 	even
 
 ; ------------------------------------------------------------------------------
 RenderMenu:
-	Console.SetXY #3, #12
+	Console.SetXY #1, #14
 	lea		MenuBase(pc), a0
 	jsr		MDDBG__Console_Write
 	;fallthrough
@@ -280,7 +325,7 @@ UpdateMenu:
 	sf.b	MenuRedrawFlag
 
 	; Draw selected menu item
-	Console.SetXY #1, #12
+	Console.SetXY #1, #16
 	moveq	#3, d0
 	and.w	SelectedMenuItem, d0
 	lsl.w	#3, d0
@@ -288,17 +333,17 @@ UpdateMenu:
 	jsr		MDDBG__Console_Write
 
 	; Redraw "VBlank PCM Samples:" value
-	Console.SetXY #3+20, #14
+	Console.SetXY #3+16, #18
 	Console.Write "%<.b VBlank_PCM_Samples>"
 
 	; Redraw "DMA Length:" value (convert words to bytes)
-	Console.SetXY #3+12, #13
+	Console.SetXY #3+16, #17
 	move.w	DMA_Length, d0
 	add.w	d0, d0
 	Console.Write "%<.w d0>"
 
 	; Redraw "DMA protection:" value
-	Console.SetXY #3+16, #12
+	Console.SetXY #3+16, #16
 	tst.b	DMA_Protection
 	beq.s	@DMA_Protection_Off
 	Console.Write "ON "

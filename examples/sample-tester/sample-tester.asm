@@ -58,7 +58,7 @@ Main:
 
 SampleTable:
 	;			type			pointer		Hz		flags			  id
-	dcSample	TYPE_PCM_TURBO, SampleLoop, ,	FLAGS_LOOP		; $81
+	dcSample	TYPE_PCM_TURBO, SampleLoop, 32000,	FLAGS_LOOP		; $81
 	dc.w	-1	; end marker
 
 ; ------------------------------------------------------------------------------
