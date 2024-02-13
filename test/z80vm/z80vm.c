@@ -2,6 +2,7 @@
 #include "z80vm.h"
 #include "z80emu.h"
 
+#include <bits/stdint-uintn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -35,6 +36,62 @@ void Z80VM_LoadProgram(Z80VM_Context *context, const uint8_t *buffer, size_t buf
 	for (size_t i = 0; i < bufferSize; ++i) {
 		context->programRAM[i] = buffer[i];
 	}
+}
+
+uint8_t Z80VM_LoadTraceData(Z80VM_Context *context, FILE * input) {
+	/* Read trace tables */
+	uint16_t (*traceMessageTbl)[0x2000] = malloc(sizeof(uint16_t)*0x2000);
+	uint16_t (*traceExceptionTbl)[0x2000] = malloc(sizeof(uint16_t)*0x2000);
+	if (fread(traceMessageTbl, 2, 0x2000, input) != 0x2000) {
+		goto freeTables;
+	}
+	if (fread(traceExceptionTbl, 2, 0x2000, input) != 0x2000) {
+		goto freeTables;
+	}
+
+	/* Read trace text buffer size */
+	uint32_t traceTextBufferSize = 0;
+	if ((fread(&traceTextBufferSize, 2, 1, input) != 1) || (traceTextBufferSize == 0)) {
+		goto freeTables;
+	}
+
+	/* Read trace text buffer itself */
+	char * traceTextBuffer = malloc(traceTextBufferSize);
+	if (fread(traceTextBuffer, traceTextBufferSize, 1, input) != 1) {
+		goto freeTablesAndTextBuffer;
+	}
+
+	context->traceEnabled = 1;
+	context->traceMessageTbl = traceMessageTbl;
+	context->traceExceptionTbl = traceExceptionTbl;
+	context->traceTextBuffer = traceTextBuffer;
+
+	return 0;
+
+freeTablesAndTextBuffer:
+	free(traceTextBuffer);
+
+freeTables:
+	free(traceMessageTbl);
+	free(traceExceptionTbl);
+
+	return 1;
+}
+
+void Z80VM_DestroyTraceData(Z80VM_Context *context) {
+	if (context->traceTextBuffer) {
+		free(context->traceTextBuffer);
+		context->traceTextBuffer = NULL;
+	}
+	if (context->traceMessageTbl) {
+		free(context->traceMessageTbl);
+		context->traceMessageTbl = NULL;
+	}
+	if (context->traceExceptionTbl) {
+		free(context->traceExceptionTbl);
+		context->traceExceptionTbl = NULL;
+	}
+	context->traceEnabled = 0;
 }
 
 size_t Z80VM_Emulate(Z80VM_Context *context, size_t cycles) {
@@ -110,5 +167,6 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 
 
 void Z80VM_Destroy(Z80VM_Context *context) {
+	Z80VM_DestroyTraceData(context);
 	free(context);
 }
