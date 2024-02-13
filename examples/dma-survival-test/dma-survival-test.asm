@@ -11,6 +11,7 @@
 	xref	MegaPCM_LoadDriver
 	xref	MegaPCM_LoadSampleTable
 	xref	MegaPCM_PlaySample
+	xref	MegaPCM_StopPlayback
 
 ; ------------------------------------------------------------------------------
 
@@ -192,7 +193,7 @@ GetSampleRate:
 ; ------------------------------------------------------------------------------
 InputConfig:
 	;		Start		A			C			B
-	dc.l	0,			0,			0,			@PauseToggle
+	dc.l	0,			@Play,		@Stop,		@PauseToggle
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
@@ -213,7 +214,13 @@ InputConfig:
 @unpause:
 	move.b	d0, (a0)
 	startZ80
+	KDebug.WriteLine "Pause state = %<.b d0>"
 	rts
+
+; ------------------------------------------------------------------------------
+@Play:
+	move.b	#$81, d0
+	jmp		MegaPCM_PlaySample
 
 ; ------------------------------------------------------------------------------
 @Stop:
