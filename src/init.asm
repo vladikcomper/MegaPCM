@@ -9,7 +9,7 @@
 ; --------------------------------------------------------------
 
 InitDriver:
-	TraceMsg	"Mega PCM init start"
+	TraceMsg "Mega PCM init start"
 
 	; Clear work RAM (uses Blast processing(tm))
 	ld	sp, WorkRAM_End
@@ -39,6 +39,6 @@ InitDriver:
 	ld	a, 'R'
 	ld	(DriverReady), a
 
-	TraceMsg	"Mega PCM init finish"
+	TraceMsg "Mega PCM init finish"
 
 	jr	IdleLoop

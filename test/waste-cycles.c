@@ -48,7 +48,6 @@ int main(int argc, char * argv[]) {
 	runTest(256+7, 256+8, context);
 
 	/* Arbitrary tests */
-
 	runTest(19856, 19856, context);
 
 	Z80VM_Destroy(context);
