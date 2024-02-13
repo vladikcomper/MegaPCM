@@ -141,6 +141,7 @@ DPCMTables:
 
 	include	'loop-dpcm.asm'
 	include	'loop-calibration.asm'
+	include	'loop-pause.asm'
 	include	'loop-idle.asm'
 
 ; --------------------------------------------------------------

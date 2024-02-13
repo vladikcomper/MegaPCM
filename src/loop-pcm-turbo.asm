@@ -313,7 +313,9 @@ PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
 	jr	nz, .UnkownCommand			; if yes, branch
 
 .PausePlayback:
-	; WARNING! Pause is currently not supported!
+	; TODO: Reset VBlankActive flag
+	call	PauseLoop				; enter pause loop until cancelled
+	xor	a
 	jr	.ChkCommandOrSample_Done
 
 ; --------------------------------------------------------------

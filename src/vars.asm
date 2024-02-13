@@ -72,12 +72,14 @@ ActiveSamplePitch:	equ	ActiveSample+sActiveSample.pitch	; pointer to the pitch o
 
 LoopId:			ds	1		; id of the current loop
 LOOP_IDLE:		equ	01h		; - `IdleLoop` (see `loop-idle.asm`)
-LOOP_PCM:		equ	02h		; - `PCMLoop` (see `loop-pcm.asm`)
-LOOP_PCM_TURBO:		equ	03h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
-LOOP_DPCM:		equ	04h		; - `DPCMLoop` (see `loop-dpcm.asm`)
+LOOP_PAUSE:		equ	02h		; - `PauseLoop` (see `loop-pause.asm`)
+LOOP_PCM:		equ	10h		; - `PCMLoop` (see `loop-pcm.asm`)
+LOOP_PCM_TURBO:		equ	18h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
+LOOP_DPCM:		equ	20h		; - `DPCMLoop` (see `loop-dpcm.asm`)
 LOOP_CALIBRATION:	equ	80h		; - `CalibrationLoop` (see `loop-calibration.asm`)
 
 StackCopy:		dw	1		; stores a copy of stack pointer
+VBlankRoutineCopy:	dw	1		; stores previous VBlank routine for nested loops
 
 VBlankActive:		ds	1		; set if inside VBlank
 CalibrationApplied:	ds	1		; set if callibration is applied for crappy emulators
