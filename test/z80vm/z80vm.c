@@ -58,7 +58,7 @@ size_t Z80VM_EmulateSubroutine(Z80VM_Context *context, uint16_t pc, size_t maxCy
 	while (*SP <= subroutine_sp) {
 		cycles_emulated += Z80Emulate(&context->z80State, 1, context);
 
-		if (cycles_emulated >= maxCycles) {
+		if (cycles_emulated > maxCycles) {
 			fprintf(stderr, "Subroutine emulation failed: reached max cycles.\n");
 			abort();
 		}

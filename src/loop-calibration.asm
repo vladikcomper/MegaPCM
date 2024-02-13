@@ -47,25 +47,9 @@ CalibrationLoop_VBlank:
 	; We need to spend total of 20008 cycles in VBlank
 	; Jump code below takes 89 cycles and each routine takes 62 cycles
 	; Thus, we need to waste: 20008 - 89 - 62 = 19857
-	exx						; 4
-	push	bc					; 11
-	ld	b, 254					; 7
-
-.loop:
-	push	af					; 11
-	pop	af					; 10
-	push	af					; 11
-	pop	af					; 10
-	add	hl, bc					; 15
-	nop						; 4
-	nop						; 4
-	djnz	.loop					; 8/13
-	; Cycles: (65 + 8) + ((65 + 13) * (b - 1)) = 19807
-
-	inc	bc					; 6
-	inc	bc					; 6
-	inc	bc					; 6
-	pop	bc					; 10
+	exx
+	ld	hl, 19857-14				; 10
+	call	WasteCycles				; 19857-14
 
 	; Jump to the appropriate routine
 	ld	hl, .Calibration_Routines		; 10	hl' = .Calibration_Routines
