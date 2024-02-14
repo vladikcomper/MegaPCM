@@ -2,7 +2,6 @@
 #include "z80vm.h"
 #include "z80emu.h"
 
-#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -74,8 +73,6 @@ void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
 			continue;
 		}
 
-		fprintf(stderr, "%s: Got line: \"%s\"\n", __func__, lineBuffer);
-
 		// Line marks the section
 		if (lineBuffer[0] == '[') {
 			if (strcmp(lineBuffer, "[TraceMsg]") == 0) {
@@ -98,11 +95,9 @@ void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
 			}
 			if (section == TraceMsg) {
 				(*traceMessageTbl)[offset] = traceTextBufferPos - traceTextBuffer;
-				fprintf(stderr, "Offset %d: pointer = %ld\n", offset, traceTextBufferPos - traceTextBuffer);
 			}
 			else if (section == TraceException) {
 				(*traceExceptionTbl)[offset] = traceTextBufferPos - traceTextBuffer;
-				fprintf(stderr, "Offset %d: pointer = %ld\n", offset, traceTextBufferPos - traceTextBuffer);
 			}
 			else {
 				fprintf(stderr, "%s: Trace entry before any section definition: \"%s\"\n", __func__, lineBuffer);
