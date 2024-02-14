@@ -124,7 +124,7 @@ EnterPlaybackLoop:
 	jp	z, DPCMLoop		; if yes, jump to DPCM loop
 
 	; Other type values are considered unknown
-	; We set and error code and execute `StopSamplePlayback`
+	; We set an error code and execute `StopSamplePlayback`
 	; as a fallback.
 	TraceException	"Unknown sample type"
 

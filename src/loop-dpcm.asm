@@ -152,7 +152,7 @@ DPCMLoop_NormalPhase:
 	inc	c				; 4	increment buffer pointer
 	add	a, (hl)				; 7	a = first sample (decoded)
 	inc	h				; 4	select DPCM table for the second nibble
-	di					; 4	-- don't move this too far away
+	di					; 4	-- don't move this too far away from `ei` below
 	ld	(bc), a				; 7	store first sample
 	inc	c				; 4	increment buffer pointer
 	add	a, (hl)				; 7	a = second sample (decoded)
