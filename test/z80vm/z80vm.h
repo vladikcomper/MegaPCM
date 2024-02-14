@@ -62,7 +62,7 @@ Z80VM_Context * Z80VM_Init();
 
 void Z80VM_LoadProgram(Z80VM_Context * context, const uint8_t * buffer, size_t bufferSize);
 
-uint8_t Z80VM_LoadTraceData(Z80VM_Context *context, FILE * input);
+void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath);
 
 void Z80VM_DestroyTraceData(Z80VM_Context *context);
 
@@ -119,13 +119,13 @@ static inline uint8_t Z80_ReadByte(uint16_t address, Z80VM_Context * context) {
 
 	if (address < 0x2000) {
 		if (context->traceEnabled && context->traceTextBuffer) {
-			if (context->traceMessageTbl && *context->traceMessageTbl[address]) {
-				const char * message = context->traceTextBuffer + (*context->traceMessageTbl[address]);
-				fprintf(stdout, "MESSAGE @%04X: %s", address, message);
+			if (context->traceMessageTbl && (*context->traceMessageTbl)[address]) {
+				const char * message = context->traceTextBuffer + (*context->traceMessageTbl)[address];
+				fprintf(stderr, "MESSAGE @%04X: %s\n", address, message);
 			}
-			if (context->traceExceptionTbl && *context->traceExceptionTbl[address]) {
-				const char * message = context->traceTextBuffer + (*context->traceExceptionTbl[address]);
-				fprintf(stderr, "EXCEPTION @%04X: %s", address, message);
+			if (context->traceExceptionTbl && (*context->traceExceptionTbl)[address]) {
+				const char * message = context->traceTextBuffer + (*context->traceExceptionTbl)[address];
+				fprintf(stderr, "EXCEPTION @%04X: %s\n", address, message);
 				abort();
 			}
 		}

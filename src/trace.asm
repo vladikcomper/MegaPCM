@@ -35,7 +35,7 @@
 			end
 
 			local fp
-			fp = assert(io.open(path, 'w'))
+			fp = assert(io.open(path, 'wb'))
 			
 			-- Trace messages section
 			fp:write('[TraceMsg]\n')

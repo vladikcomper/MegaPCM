@@ -170,6 +170,7 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 int main(int argc, char * argv[]) {
 
 	Z80VM_Context * context = Z80VM_Init();
+	Z80VM_LoadTraceData(context, "../build/z80/megapcm.tracedata.txt");
 
 	MPCM_LoadDriver(context, "../build/z80/megapcm.bin");
 	MPCM_WaitForInitialization(context);

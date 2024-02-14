@@ -3,6 +3,8 @@
 #include "z80emu.h"
 
 #include <bits/stdint-uintn.h>
+#include <stdint.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,27 +40,77 @@ void Z80VM_LoadProgram(Z80VM_Context *context, const uint8_t *buffer, size_t buf
 	}
 }
 
-uint8_t Z80VM_LoadTraceData(Z80VM_Context *context, FILE * input) {
+void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
+	FILE * textInput = fopen(traceFilePath, "r");
+	
 	/* Read trace tables */
-	uint16_t (*traceMessageTbl)[0x2000] = malloc(sizeof(uint16_t)*0x2000);
-	uint16_t (*traceExceptionTbl)[0x2000] = malloc(sizeof(uint16_t)*0x2000);
-	if (fread(traceMessageTbl, 2, 0x2000, input) != 0x2000) {
-		goto freeTables;
-	}
-	if (fread(traceExceptionTbl, 2, 0x2000, input) != 0x2000) {
-		goto freeTables;
+	const size_t LINE_BUFFER_SIZE = 4096;			// 4 KB
+	const size_t MAX_TEXT_BUFFER_SIZE = 0x10000;	// 64 KB
+
+	uint16_t (*traceMessageTbl)[0x2000] = calloc(0x2000, sizeof(uint16_t));
+	uint16_t (*traceExceptionTbl)[0x2000] = calloc(0x2000, sizeof(uint16_t));
+	char * traceTextBuffer = calloc(MAX_TEXT_BUFFER_SIZE, 1);
+
+	if (!traceMessageTbl || !traceExceptionTbl || !traceTextBuffer) {
+		fprintf(stderr, "%s: Memory allocation failed\n", __func__);
+		abort();
 	}
 
-	/* Read trace text buffer size */
-	uint32_t traceTextBufferSize = 0;
-	if ((fread(&traceTextBufferSize, 2, 1, input) != 1) || (traceTextBufferSize == 0)) {
-		goto freeTables;
-	}
+	char * traceTextBufferPos = traceTextBuffer;
 
-	/* Read trace text buffer itself */
-	char * traceTextBuffer = malloc(traceTextBufferSize);
-	if (fread(traceTextBuffer, traceTextBufferSize, 1, input) != 1) {
-		goto freeTablesAndTextBuffer;
+	char lineBuffer[LINE_BUFFER_SIZE];
+	enum  { None, TraceMsg, TraceException } section;
+
+	*traceTextBufferPos++ = 0x00;		// The offset 0000 in text buffer is unused
+
+	while (fgets(lineBuffer, LINE_BUFFER_SIZE, textInput)) {
+		// Cut newline character if present
+		size_t lineLength = strlen(lineBuffer);
+		if (lineLength && lineBuffer[lineLength-1] == '\n') {
+			lineBuffer[lineLength-1] = 0x00;
+			lineLength -= 1;
+		}
+		if (lineLength == 0) {
+			continue;
+		}
+
+		fprintf(stderr, "%s: Got line: \"%s\"\n", __func__, lineBuffer);
+
+		// Line marks the section
+		if (lineBuffer[0] == '[') {
+			if (strcmp(lineBuffer, "[TraceMsg]") == 0) {
+				section = TraceMsg;
+			}
+			else if (strcmp(lineBuffer, "[TraceException]") == 0) {
+				section = TraceException;
+			}
+			else {
+				fprintf(stderr, "%s: Unknown or unsupported section: \"%s\"\n", __func__, lineBuffer);
+				abort();
+			}
+		}
+		// If line isn't a comment, parse it as a trace entry
+		else if (lineBuffer[0] != '#') {
+			uint16_t offset;
+			if (sscanf(lineBuffer, "%hd: \"%[^\"]\"", &offset, traceTextBufferPos) != 2) {
+				fprintf(stderr, "%s: Failed to parse line: \"%s\"\n", __func__, lineBuffer);
+				abort();
+			}
+			if (section == TraceMsg) {
+				(*traceMessageTbl)[offset] = traceTextBufferPos - traceTextBuffer;
+				fprintf(stderr, "Offset %d: pointer = %ld\n", offset, traceTextBufferPos - traceTextBuffer);
+			}
+			else if (section == TraceException) {
+				(*traceExceptionTbl)[offset] = traceTextBufferPos - traceTextBuffer;
+				fprintf(stderr, "Offset %d: pointer = %ld\n", offset, traceTextBufferPos - traceTextBuffer);
+			}
+			else {
+				fprintf(stderr, "%s: Trace entry before any section definition: \"%s\"\n", __func__, lineBuffer);
+				abort();
+			}
+			traceTextBufferPos += strlen(traceTextBufferPos);
+			*traceTextBufferPos++ = 0x00;
+		}
 	}
 
 	context->traceEnabled = 1;
@@ -66,16 +118,7 @@ uint8_t Z80VM_LoadTraceData(Z80VM_Context *context, FILE * input) {
 	context->traceExceptionTbl = traceExceptionTbl;
 	context->traceTextBuffer = traceTextBuffer;
 
-	return 0;
-
-freeTablesAndTextBuffer:
-	free(traceTextBuffer);
-
-freeTables:
-	free(traceMessageTbl);
-	free(traceExceptionTbl);
-
-	return 1;
+	fclose(textInput);
 }
 
 void Z80VM_DestroyTraceData(Z80VM_Context *context) {
