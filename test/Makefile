@@ -9,7 +9,7 @@ MEGAPCM_SYMBOLS_H := ../build/z80/megapcm.symbols.h
 LIBZ80VM_A := ./z80vm/libz80vm.a
 LIBZ80VM_FILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
 LIBMEGAPCM_EMU_A := ./megapcm-emu/libmegapcm-emu.a
-LIBMEGAPCM_EMU_FILES := $(wildcard megapcm-emu/*.c) $(wildcard megapcm-emu/*.h) $(MEGAPCM_SYMBOLS_H)
+LIBMEGAPCM_EMU_FILES := $(wildcard megapcm-emu/*.c) $(wildcard megapcm-emu/*.h) z80vm/z80vm.h $(MEGAPCM_SYMBOLS_H)
 
 SRC_FILES := $(wildcard *.c)
 EXE_FILES := $(SRC_FILES:%.c=%)
