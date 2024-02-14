@@ -1,10 +1,10 @@
 
 # Include toolchain file for $(ASM68K), $(MKDIR) etc
-TOOLCHAIN_DIR := ../toolchain
-include ../toolchain.mk
+TOOLCHAIN_DIR := ../../toolchain
+include ../../toolchain.mk
 
-BUILD_DIR := ../build/68k
-Z80_BUILD_DIR := ../build/z80
+BUILD_DIR := ../../build/68k
+Z80_BUILD_DIR := ../../build/z80
 SRC_DIR := .
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
@@ -17,7 +17,7 @@ ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 all:	megapcm-blob megapcm-linkable megapcm-debug-linkable
 
 megapcm-z80:
-	$(MAKE) -C ../src
+	$(MAKE) -C ../z80
 
 megapcm-blob:	megapcm-z80 $(BUILD_DIR)/megapcm.bin
 
@@ -41,4 +41,5 @@ $(BUILD_DIR):
 	$(MKDIR) "$(BUILD_DIR)"
 
 clean:
+	$(MAKE) -C ../z80 clean
 	$(RM) $(BUILD_DIR)/*

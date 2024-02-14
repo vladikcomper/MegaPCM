@@ -13,15 +13,15 @@
 ; ------------------------------------------------------------------------------
 
 	if def(__DEBUG__)
-		include	'../lib-68k/debugger.asm'		; MD Debugger external library
+		include	'../../lib-68k/debugger.asm'		; MD Debugger external library
 	else
-		include '../lib-68k/debugger-stub.asm'	; dummy debug macros
+		include '../../lib-68k/debugger-stub.asm'	; dummy debug macros
 	endif
 
 ; ------------------------------------------------------------------------------
 
 	; Import Z80 symbols
-	include	'../build/z80/megapcm.exports.asm'
+	include	'../../build/z80/megapcm.exports.asm'
 
 ; ------------------------------------------------------------------------------
 
@@ -46,6 +46,6 @@
 ; ------------------------------------------------------------------------------
 
 MegaPCM:
-	incbin	"../build/z80/megapcm.bin"
+	incbin	"../../build/z80/megapcm.bin"
 MegaPCM_End:
 	even

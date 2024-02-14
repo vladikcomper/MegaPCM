@@ -6,7 +6,7 @@ include ../toolchain.mk
 LIBS := ../lib-68k/mdshell.obj ../build/68k/megapcm.debug.obj
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-,v+ /g /l
 
-.PHONY: all dma-survival-test sample-tester s1-smps-integration
+.PHONY: all dma-survival-test sample-tester s1-smps-integration clean
 
 all:	dma-survival-test sample-tester s1-smps-integration
 
@@ -29,3 +29,6 @@ s1-smps-integration/s1-smps-integration.gen: $(wildcard s1-smps-integration/*.as
 	$(PSYLINK) /q /p $(LIBS) $<,$@,$@.sym
 	$(CONVSYM) $@.sym $@ -ref 200 -a
 	$(RM) $@.sym
+
+clean:
+	$(RM) **/*.gen **/*.obj

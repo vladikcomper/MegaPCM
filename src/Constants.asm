@@ -3,9 +3,9 @@
 ; Constants
 ; ------------------------------------------------------------------------------
 
-#include ../src-68k/sample-table.defs.asm
+#include 68k/sample-table.defs.asm
 
-#include ../src-68k/load-sample-table.defs.asm
+#include 68k/load-sample-table.defs.asm
 
 ; ------------------------------------------------------------------------------
 ; Z80 equates

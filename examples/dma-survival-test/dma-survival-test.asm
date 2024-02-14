@@ -3,8 +3,8 @@
 
 	include	'../build/z80/megapcm.symbols.asm'	; import Mega PCM debug symbols for tricks
 
-	include	'../src-68k/macros.asm'		; for startZ80, stopZ80
-	include	'../src-68k/vars.asm'		; for Z80_RAM etc
+	include	'../src/68k/macros.asm'		; for startZ80, stopZ80
+	include	'../src/68k/vars.asm'		; for Z80_RAM etc
 
 ; ------------------------------------------------------------------------------
 
@@ -364,8 +364,8 @@ UpdateMenu:
 ; Default sample table
 ; ------------------------------------------------------------------------------
 
-	include	'../src-68k/sample-table.defs.asm'	; for constants
-	include	'../src-bundle/Macros.ASM68K.asm'	; for dcSample, incdac
+	include	'../src/68k/sample-table.defs.asm'	; for constants
+	include	'../src/Macros.ASM68K.asm'			; for dcSample, incdac
 
 SampleTable:
 	;			type			pointer		 Hz		flags			  id

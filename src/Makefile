@@ -1,42 +1,57 @@
-
-# Include toolchain file for $(SJASMPLUS), $(MKVOLUME) $(MKDIR) etc
+# Include toolchain file for $(BLOBTOASM), $(CBUNDLE), $(CONVSYM) etc
 TOOLCHAIN_DIR := ../toolchain
 include ../toolchain.mk
 
-BUILD_DIR := ../build/z80
+BUILD_DIR := ../build/bundle
+LIB_BUILD_DIR := ../build/68k
 SRC_DIR := .
+LIB_SRC_DIR := ./68k
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
-.PHONY:	megapcm-z80 volume-tables dpcm-tables clean
+.PHONY:	all asm68k asm68k-linkable megapcm-68k
 
-megapcm-z80: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.exports.h $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h | $(BUILD_DIR)
+all:	asm68k asm68k-linkable
 
-$(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) | $(BUILD_DIR)
-	$(SJASMPLUS) -DOUTPATH=\"$(BUILD_DIR)/megapcm.bin\" -DTRACEPATH=\"$(BUILD_DIR)/megapcm.tracedata.txt\" --exp=$(BUILD_DIR)/megapcm.exports.sym --sym=$(BUILD_DIR)/megapcm.symbols.sym --lst=$(BUILD_DIR)/megapcm.lst $(SRC_DIR)/megapcm.asm
+megapcm-68k:
+	$(MAKE) -C 68k
 
-volume-tables:	$(SRC_DIR)/volume-tables.asm
+asm68k:	$(BUILD_DIR)/asm68k/MegaPCM.asm
 
-dpcm-tables: $(SRC_DIR)/dpcm-tables.asm
+asm68k-linkable:	$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
 
-$(SRC_DIR)/volume-tables.asm:
-	$(MKVOLUME) -n 16 $@
+$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm | $(BUILD_DIR)/asm68k-linkable
+	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -def LINKABLE -out $@
 
-$(SRC_DIR)/dpcm-hq-tables.asm:
-	$(MKDPCMTBL) --table -34 -21 -13 -8 -5 -3 -2 -1 0 1 2 3 5 8 13 21 $@
+$(BUILD_DIR)/asm68k-linkable/MegaPCM.obj:	$(LIB_BUILD_DIR)/megapcm.obj | $(BUILD_DIR)/asm68k-linkable
+	$(CP) $^ $@
 
-$(SRC_DIR)/dpcm-tables.asm:
-	$(MKDPCMTBL) $@
+$(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj:	$(LIB_BUILD_DIR)/megapcm.debug.obj | $(BUILD_DIR)/asm68k-linkable
+	$(CP) $^ $@
+
+$(BUILD_DIR)/asm68k/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm $(BUILD_DIR)/MegaPCM.Blob.asm $(BUILD_DIR)/MegaPCM.Symbols.asm | $(BUILD_DIR)/asm68k
+	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -out $@
+
+$(BUILD_DIR)/MegaPCM.Blob.asm:	$(LIB_BUILD_DIR)/megapcm.bin | $(BUILD_DIR)
+	$(BLOBTOASM) $^ $@
+
+$(BUILD_DIR)/MegaPCM.Symbols.asm: $(LIB_BUILD_DIR)/megapcm.sym | $(BUILD_DIR)
+	$(CONVSYM) $(LIB_BUILD_DIR)/megapcm.sym $@ -out asm -outopt "%s:	equ	MegaPCMLibraryBlob+$$%X"
 
 $(BUILD_DIR):
 	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$(BUILD_DIR)"
+	$(MKDIR) "$@"
 
-%.h: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
+$(BUILD_DIR)/asm68k:
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$@"
 
-%.asm: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
+$(BUILD_DIR)/asm68k-linkable:
+	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
+	$(MKDIR) "$@"
+
+$(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	megapcm-68k
 
 clean:
+	$(MAKE) -C 68k clean
 	$(RM) $(BUILD_DIR)/*
