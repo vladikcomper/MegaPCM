@@ -14,6 +14,6 @@ indent_style = tab
 indent_size = 4
 
 # 8 space indentation for Z80 assembly files
-[src/*.asm]
+[src/z80/*.asm]
 indent_style = tab
 indent_size = 8

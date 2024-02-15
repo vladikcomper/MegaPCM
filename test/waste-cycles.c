@@ -12,7 +12,9 @@ void runTest(uint16_t cycles, uint16_t expectedCycles, Z80VM_Context* context) {
 	// This emulates `ld hl, CYCLES`
 	context->z80State.registers.word[Z80_HL] = cycles;
 
-	const size_t cyclesEmulated = Z80VM_EmulateSubroutine(context, Z_MPCM_WasteCycles, cycles * 2) + 17;
+	const size_t MAX_EMULATED_CYCLES = cycles * 2;
+	// Add +17 cycles to the final result to emulate `call WasteCycles`
+	const size_t cyclesEmulated = Z80VM_EmulateSubroutine(context, Z_MPCM_WasteCycles, MAX_EMULATED_CYCLES) + 17;
 
 	if (cyclesEmulated != expectedCycles) {
 		fprintf(stderr, "Test failed: Emulated %ld cycles, expected %d\n", cyclesEmulated, expectedCycles);

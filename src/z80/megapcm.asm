@@ -110,7 +110,7 @@ VoidInterrupt:
 SampleBuffer:
 	ds	100h, 0
 
-	; `PCMTurboLoop` uses high byte of `SampleBuffer` offset
+	; Playback loops use high byte of `SampleBuffer` offset
 	; for an insane optimization, so it should be 03h
 	assert	(SampleBuffer>>8) == 3
 
