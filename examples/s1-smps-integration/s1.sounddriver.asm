@@ -2,10 +2,12 @@
 ; ---------------------------------------------------------------------------
 ; Vladikcomper:
 ; This is native Sonic 1 sound driver from Github disassembly with a few
-; modifications to be used with Mega PCM:
+; modifications to be used with Mega PCM 2:
 ; - Replaced ASM versions and BGM and SFX with binary files for simplicity;
 ; - Greatly reduced number of Z80 stops;
-; - 
+; - Fully support Mega PCM 2 features: DAC fade in and fade out, panning;
+; - Don't cut SFX when playing new BGM or during fade in/out;
+; - Fixed numerous bugs.
 ; ---------------------------------------------------------------------------
 
 ; ---------------------------------------------------------------------------

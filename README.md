@@ -1,6 +1,10 @@
 
 # Mega PCM 2
 
+> [!WARNING]
+>
+> The development of Mega PCM 2 is 99.99% complete, but documentation, integrations and cross-platform build systems are still pending. For proper installation instructions and support, **please wait until documentation is finalized and release is officially announced.**
+
 **Mega PCM 2** is a DAC sound driver for Sega Mega-Drive / Genesis. It offers the highest quality playback possible on the hardware, high sample rate (up to 32 kHz), pitch/volume effects and supports several sample formats (WAVE, raw PCM, compressed DPCM).
 
 Unlike the majority of DAC drivers on the Mega-Drive with the infamous "scratchy" playback many games are known for, Mega PCM 2 outputs cleanest sounding samples on the hardware thanks to its buffering / DMA protection system.
@@ -33,3 +37,30 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 	- 8-bit PCM playback up to 25.1 kHz with pitch and volume effects;
 	- 4-bit DPCM playback up to 20.5 kHz with pitch and volume effects;
 	- **Turbo mode!** 8-bit PCM playback at 32 kHz (without pitch and volume effects);
+
+# Documentation and integrations (Work in progress)
+
+- [API Documentation](docs/API.md)
+- For Sonic 1 SMPS integration, see `examples/s1-smps-integration`
+
+# Building from source code
+
+## Linux
+
+Make sure Wine is installed. Use the following commands to build:
+
+```
+make
+make examples
+```
+
+## Windows
+
+Windows is semi-supported. If you have GNU Make and GCC installed, you should be able to run the same commands as on Linux.
+
+## FreeBSD
+
+Almost the same as Linux, with a few extra steps:
+
+- Install GNU Make; use `gmake` command instead of `make`;
+- Make sure `python` is symlinked to `python3`
