@@ -18,7 +18,9 @@ JoypadHeldTimers:		rs.b	8
 Menu.SelectedItem:		rs.b	1
 Menu.SelectedBGM:		rs.b	1
 Menu.SelectedSFX:		rs.b	1
+Menu.SelectedCMD:		rs.b	1
 Menu.RedrawFlag:		rs.b	1
+						rs.b	1
 
 v_snddriver_ram:		rs.b	$600
 
@@ -135,6 +137,11 @@ Menu.Items:
 	dc.l	@Draw_SelectedSFX		; draw function
 	dc.l	PlaySound				; execute function
 
+	dc.w	Menu.SelectedCMD		; address
+	dc.b	$E0, $E4				; min, max
+	dc.l	@Draw_SelectedCMD		; draw function
+	dc.l	PlaySound				; execute function
+
 	dc.w	0						; end of list
 
 @Draw_SelectedBGM:
@@ -145,10 +152,14 @@ Menu.Items:
 	Console.WriteLine "  SFX: %<.b Menu.SelectedSFX>"
 	rts
 
+@Draw_SelectedCMD:
+	Console.WriteLine "  CMD: %<.b Menu.SelectedCMD>"
+	rts
+
 ; ------------------------------------------------------------------------------
 Menu.InputConfig:
 	;		Start		A			C			B
-	dc.l	0,			0,		@ValueApply,		0
+	dc.l	0,			0,			@ValueApply,0
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
@@ -159,7 +170,7 @@ Menu.InputConfig:
 
 ; ------------------------------------------------------------------------------
 @NextItem:
-	cmp.b	#1, Menu.SelectedItem
+	cmp.b	#2, Menu.SelectedItem
 	beq.s	@done
 	addq.b	#1, Menu.SelectedItem
 	bra.s	@setRedraw
