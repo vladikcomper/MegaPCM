@@ -9,9 +9,18 @@
 	xdef	Main
 
 ; ------------------------------------------------------------------------------
-	rsset	$FFFF8000
 
-v_snddriver_ram:	rs.b	$600
+						rsset	$FFFF8000
+
+Joypad:					rs.w	1
+JoypadHeldTimers:		rs.b	8
+
+Menu.SelectedItem:		rs.b	1
+Menu.SelectedBGM:		rs.b	1
+Menu.SelectedSFX:		rs.b	1
+Menu.RedrawFlag:		rs.b	1
+
+v_snddriver_ram:		rs.b	$600
 
 ; ------------------------------------------------------------------------------
 Main:
@@ -29,30 +38,163 @@ Main:
 	moveq	#$FFFFFFE4, d0
 	jsr		PlaySound
 	jsr		UpdateMusic
-	moveq	#$FFFFFF8C, d0
+
+	jsr		Menu.Init
+	move.b	Menu.SelectedBGM, d0
 	jsr		PlaySound
-	jsr		UpdateMusic
 
 	@MainLoop:
-		move.w	d6, -(sp)
 		jsr		MDDBG__VSync
+		jsr		ReadJoypads
+		jsr		Menu.Update
 		jsr		UpdateMusic
-		move.w	(sp)+, d6
-
-		addq.w	#1, d6
-		move.w	d6, d0
-		and.w	#$FF, d0
-		bne.s	@no
-		moveq	#$FFFFFF8C, d0
-		jsr		MegaPCM_PlaySample
-	@no:
-
 		bra.s	@MainLoop
 
 ; ------------------------------------------------------------------------------
 @SampleTableError:
 	Console.WriteLine "ERROR: MegaPCM_LoadSampleTable returned %<.b d0>"
 	rts
+
+; ------------------------------------------------------------------------------
+
+	include	'dma-survival-test/input.asm'
+
+; ------------------------------------------------------------------------------
+; Menu subsystem
+; ------------------------------------------------------------------------------
+
+Menu.Init:
+	move.b	#0, Menu.SelectedItem
+
+	lea		Menu.Items(pc), a0
+
+	@ItemLoop:
+		move.w	(a0)+, d0			; get variable address
+		beq.s	@ItemsDone			; if NULL, quit
+		move.w	d0, a1
+		move.b	(a0)+, (a1)			; value = min
+		lea		9(a0), a0			; skip max, draw and execute functions
+		bra.s	@ItemLoop
+	@ItemsDone:
+	; fallthrough
+
+Menu.Redraw:
+	; Render menu items
+	Console.SetXY #1, #4
+	lea		Menu.Items(pc), a0
+
+	@ItemLoop:
+		move.w	(a0)+, d0			; get variable address
+		beq.s	@ItemsDone			; if NULL, quit
+		addq.w	#2, a0				; skip min, max
+		move.l	(a0)+, a1
+		jsr		(a1)				; call draw function
+		addq.w	#4, a0				; skip execute function
+		bra.s	@ItemLoop
+
+	@ItemsDone:
+
+	; Render cursor
+	moveq	#4, d0
+	add.b	Menu.SelectedItem, d0
+	Console.SetXY #1, d0
+	Console.Write ">"
+
+	; Mark menu redrawn
+	clr.b	Menu.RedrawFlag			
+	rts
+
+; ------------------------------------------------------------------------------
+Menu.Update:
+	lea		Menu.InputConfig(pc), a0
+	jsr		ProcessJoypadInput
+
+	tst.b	Menu.RedrawFlag
+	bne.s	Menu.Redraw
+	rts
+
+; ------------------------------------------------------------------------------
+Menu.GetItemData:
+	moveq	#0, d0
+	move.b	Menu.SelectedItem, d0
+	mulu.w	#12, d0
+	lea		Menu.Items(pc, d0), a0	; a0 = item data
+	movea.w	(a0), a1				; a1 = address
+	move.b	(a1), d0				; d0 = value
+	rts
+
+; ------------------------------------------------------------------------------
+Menu.Items:
+	dc.w	Menu.SelectedBGM		; address
+	dc.b	$81, $93				; min, max
+	dc.l	@Draw_SelectedBGM		; draw function
+	dc.l	PlaySound				; execute function
+
+	dc.w	Menu.SelectedSFX		; address
+	dc.b	$A0, $D1				; min, max
+	dc.l	@Draw_SelectedSFX		; draw function
+	dc.l	PlaySound				; execute function
+
+	dc.w	0						; end of list
+
+@Draw_SelectedBGM:
+	Console.WriteLine "  BGM: %<.b Menu.SelectedBGM>"
+	rts
+
+@Draw_SelectedSFX:
+	Console.WriteLine "  SFX: %<.b Menu.SelectedSFX>"
+	rts
+
+; ------------------------------------------------------------------------------
+Menu.InputConfig:
+	;		Start		A			C			B
+	dc.l	0,			0,		@ValueApply,		0
+	;		Right		Left		Down		Up
+	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
+
+	;		Start		A			C			B
+	dc.l	0,			0,			0,			0
+	;		Right		Left		Down		Up
+	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
+
+; ------------------------------------------------------------------------------
+@NextItem:
+	cmp.b	#1, Menu.SelectedItem
+	beq.s	@done
+	addq.b	#1, Menu.SelectedItem
+	bra.s	@setRedraw
+	
+@PrevItem:
+	tst.b	Menu.SelectedItem
+	beq.s	@done
+	subq.b	#1, Menu.SelectedItem
+
+@setRedraw:
+	st.b	Menu.RedrawFlag
+@done:
+	rts
+
+; ------------------------------------------------------------------------------
+@ValueInc:
+	bsr		Menu.GetItemData		; a0 = item data, a1 = address, d0 = value
+	cmp.b	3(a0), d0				; value == max?
+	beq.s	@done					; if yes, branch
+	addq.b	#1, (a1)
+	bra.s	@setRedraw
+
+; ------------------------------------------------------------------------------
+@ValueDec:
+	bsr		Menu.GetItemData		; a0 = item data, a1 = address, d0 = value
+	cmp.b	2(a0), d0				; value == min?
+	beq.s	@done					; if yes, branch
+	subq.b	#1, (a1)
+	bra.s	@setRedraw
+
+; ------------------------------------------------------------------------------
+@ValueApply:
+	bsr		Menu.GetItemData		; a0 = item data, a1 = address, d0 = value
+	move.l	8(a0), a1				; a1 = execute function
+	jmp		(a1)
 
 ; ------------------------------------------------------------------------------
 

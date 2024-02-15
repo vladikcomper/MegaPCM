@@ -82,7 +82,7 @@ Main:
 		; Execute DMA
 		move.b	DMA_Protection, d1
 		bne.s	@dma_ok
-		stopZ80
+		stopZ80								; some emulators don't stop Z80 on ROM access during DMA
 	@dma_ok:
 		lea		VDP_Ctrl, a0
 		lea		VDP_Data-VDP_Ctrl(a0), a1
