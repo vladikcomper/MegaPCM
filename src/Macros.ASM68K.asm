@@ -12,7 +12,7 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 
 	if \type=TYPE_PCM
 		if \sampleRate+0>TYPE_PCM_MAX_RATE
-			inform 0, "Invalid sample rate: \#sampleRate. TYPE_PCM only supports sample rates <= \#TYPE_PCM_MAX_RATE Hz"
+			inform 2, "Invalid sample rate: \sampleRate\. TYPE_PCM only supports sample rates <= \#TYPE_PCM_MAX_RATE Hz"
 		endif
 		dc.b	\flags+0								; $01	- flags (optional)
 		dc.b	(\sampleRate+0)*256/TYPE_PCM_BASE_RATE	; $02	- pitch (optional for .WAV files)
@@ -21,8 +21,8 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 		dc.l	\samplePtr\_End							; $08	- end offset
 
 	elseif \type=TYPE_PCM_TURBO
-		if (\sampleRate+0<>TYPE_PCM_TURBO_MAX_RATE)|(\sampleRate+0<>0)
-			inform 0, "Invalid sample rate: \#sampleRate. TYPE_PCM_TURBO only supports sample rate of \#TYPE_PCM_TURBO_MAX_RATE Hz"
+		if (\sampleRate+0<>TYPE_PCM_TURBO_MAX_RATE)&(\sampleRate+0<>0)
+			inform 2, "Invalid sample rate: \sampleRate\. TYPE_PCM_TURBO only supports sample rate of \#TYPE_PCM_TURBO_MAX_RATE Hz"
 		endif
 		dc.b	\flags+0								; $01	- flags (optional)
 		dc.b	$FF										; $02	- pitch (optional for .WAV files)
@@ -32,7 +32,7 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 
 	elseif \type=TYPE_DPCM
 		if \sampleRate>TYPE_DPCM_BASE_RATE
-			inform 0, "Invalid sample rate: \#sampleRate. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_BASE_RATE Hz"
+			inform 2, "Invalid sample rate: \sampleRate\. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_BASE_RATE Hz"
 		endif
 		dc.b	\flags+0								; $01	- flags (optional)
 		dc.b	(\sampleRate)*256/TYPE_DPCM_BASE_RATE	; $02	- pitch
@@ -45,7 +45,7 @@ dcSample: macro	type, samplePtr, sampleRate, flags
 		dc.l	0, 0
 
 	else
-		inform 0, "Unknown sample type. Please use one of: TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_NONE"
+		inform 2, "Unknown sample type. Please use one of: TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_NONE"
 	endif
 	endm
 
