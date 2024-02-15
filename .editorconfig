@@ -10,7 +10,7 @@ end_of_line = lf
 
 # 4 space indentation in Markdown files
 [*.md]
-indent_style = tab
+indent_style = space
 indent_size = 4
 
 # 4 space indentation for 68k assembly and C files

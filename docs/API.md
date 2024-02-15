@@ -9,7 +9,7 @@ Loads Mega PCM driver into Z80 memory and waits for its initialization. You only
 **Usage:**
 
 ```m68k
-	jsr		MegaPCM_LoadDriver
+    jsr     MegaPCM_LoadDriver
 ```
 
 **Uses:**
@@ -28,25 +28,25 @@ Loads a given sample table to Z80 memory. You must call this function after init
 **Usage:**
 
 ```m68k
-	lea		YourSampleTable, a0
-	jsr		MegaPCM_LoadSampleTable
-	tst.w	d0							; has function returned error code?
-	bne		YourErrorHandler 			; your subroutine to display error code (d0) or fail
-	; <...>
+    lea     YourSampleTable, a0
+    jsr     MegaPCM_LoadSampleTable
+    tst.w   d0                          ; has function returned error code?
+    bne     YourErrorHandler            ; your subroutine to display error code (d0) or fail
+    ; <...>
 
 ; ---------------------------------------------------------------
 SampleTable:
-	;			type			pointer		Hz					; sample id
-	dcSample	TYPE_DPCM, 		Kick, 		8000				; $81
-	dcSample	TYPE_PCM,		Snare,		24000				; $82
-	dcSample	TYPE_DPCM, 		Timpani, 	7250				; $83
-	dc.w	-1	; end marker
+    ;           type            pointer     Hz                  ; sample id
+    dcSample    TYPE_DPCM,      Kick,       8000                ; $81
+    dcSample    TYPE_PCM,       Snare,      24000               ; $82
+    dcSample    TYPE_DPCM,      Timpani,    7250                ; $83
+    dc.w    -1  ; end marker
 
 ; ---------------------------------------------------------------
-	incdac	Kick, "dac/kick.dpcm"
-	incdac	Snare, "dac/snare.pcm"
-	incdac	Timpani, "dac/timpani.dpcm"
-	even
+    incdac  Kick, "dac/kick.dpcm"
+    incdac  Snare, "dac/snare.pcm"
+    incdac  Timpani, "dac/timpani.dpcm"
+    even
 ```
 
 **Input:**
@@ -67,17 +67,17 @@ SampleTable:
 Error codes are included in Mega PCM definitions:
 
 ```m68k
-MPCM_ST_TOO_MANY_SAMPLES:			equ	$01
-MPCM_ST_UNKNOWN_SAMPLE_TYPE:		equ	$02
+MPCM_ST_TOO_MANY_SAMPLES:           equ $01
+MPCM_ST_UNKNOWN_SAMPLE_TYPE:        equ $02
 
-MPCM_ST_PITCH_NOT_SET:				equ	$10
+MPCM_ST_PITCH_NOT_SET:              equ $10
 
-MPCM_ST_WAVE_INVALID_HEADER:		equ	$20
-MPCM_ST_WAVE_BAD_AUDIO_FORMAT:		equ	$21
-MPCM_ST_WAVE_NOT_MONO:				equ	$22
-MPCM_ST_WAVE_NOT_8BIT:				equ	$23
-MPCM_ST_WAVE_BAD_SAMPLE_RATE:		equ	$24
-MPCM_ST_WAVE_MISSING_DATA_CHUNK:	equ	$25
+MPCM_ST_WAVE_INVALID_HEADER:        equ $20
+MPCM_ST_WAVE_BAD_AUDIO_FORMAT:      equ $21
+MPCM_ST_WAVE_NOT_MONO:              equ $22
+MPCM_ST_WAVE_NOT_8BIT:              equ $23
+MPCM_ST_WAVE_BAD_SAMPLE_RATE:       equ $24
+MPCM_ST_WAVE_MISSING_DATA_CHUNK:    equ $25
 ```
 
 ## `MegaPCM_PlaySample`
@@ -91,8 +91,8 @@ Plays given sample by ID (>$80). If currently playing sample has a higher priori
 **Usage:**
 
 ```m68k
-	move.b	#$81, d0			; play the first sample in table
-	jsr		MegaPCM_PlaySample
+    move.b  #$81, d0            ; play the first sample in table
+    jsr     MegaPCM_PlaySample
 ```
 
 **Input:**
@@ -111,7 +111,7 @@ Pauses playback completely until `MegaPCM_UnpausePlayback` is called or a new sa
 **Usage:**
 
 ```m68k
-	jsr		MegaPCM_PausePlayback
+    jsr     MegaPCM_PausePlayback
 ```
 
 
@@ -126,7 +126,7 @@ Unpauses playback, undoes the effect of `MegaPCM_PausePlayback`. If playback was
 **Usage:**
 
 ```m68k
-	jsr		MegaPCM_UnpausePlayback
+    jsr     MegaPCM_UnpausePlayback
 ```
 
 
@@ -141,7 +141,7 @@ Stops playback completely, regardless of sample flags or priority.
 **Usage:**
 
 ```m68k
-	jsr		MegaPCM_StopPlayback
+    jsr     MegaPCM_StopPlayback
 ```
 
 
@@ -152,8 +152,8 @@ Sets panning for normal (non-SFX) samples.
 **Usage:**
 
 ```m68k
-	move.b	#$40, d0
-	jsr		MegaPCM_SetPan
+    move.b  #$40, d0
+    jsr     MegaPCM_SetPan
 ```
 
 **Input:**
@@ -168,8 +168,8 @@ Sets panning for SFX samples.
 **Usage:**
 
 ```m68k
-	move.b	#$40, d0
-	jsr		MegaPCM_SetSFXPan
+    move.b  #$40, d0
+    jsr     MegaPCM_SetSFXPan
 ```
 
 **Input:**
@@ -184,8 +184,8 @@ Sets volume for normal (non-SFX) samples.
 **Usage:**
 
 ```m68k
-	moveq	#8, d0				; 50% volume
-	jsr		MegaPCM_SetVolume
+    moveq   #8, d0              ; 50% volume
+    jsr     MegaPCM_SetVolume
 ```
 
 **Input:**
@@ -200,8 +200,8 @@ Sets volume for SFX samples.
 **Usage:**
 
 ```m68k
-	moveq	#8, d0				; 50% volume
-	jsr		MegaPCM_SetSFXVolume
+    moveq   #8, d0              ; 50% volume
+    jsr     MegaPCM_SetSFXVolume
 ```
 
 **Input:**
