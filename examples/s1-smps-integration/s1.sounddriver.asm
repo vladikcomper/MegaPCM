@@ -764,6 +764,11 @@ Sound_PlayBGM:
 		move.b	4(a3),d4		; load tempo dividing timing
 		moveq	#TrackSz,d6
 		move.b	#1,d5			; Note duration for first "note"
+
+		stopZ80
+		move.b	#0, Z80_RAM+Z_MPCM_VolumeInput	; set DAC volume to maximum
+		startZ80
+
 		lea	v_music_fmdac_tracks(a6),a1
 		lea	FMDACInitBytes(pc),a2
 ; loc_72098:
@@ -847,9 +852,23 @@ Sound_PlayBGM:
 		moveq	#((v_music_fm_tracks_end-v_music_fm_tracks)/TrackSz)-1,d4	; 6 FM tracks
 ; loc_721A0:
 .fmnoteoffloop:
-		jsr	FMNoteOff(pc)
+		btst	#2, TrackPlaybackControl(a5)	; is channel overriden?
+		bne.s	.fmnoteoffnext			; if yes, branch
+		moveq	#$40,d3				; Total level
+		moveq	#$7F,d1				; Total attenuation (silent)
+		rept 4-1
+			move.b	d3,d0
+			bsr.w	WriteFMIorII		; operators 1-3
+			addq.b	#4,d3
+		endr
+		move.b	d3,d0
+		bsr.w	WriteFMIorII			; operator 4
+		jsr	SendFMNoteOff(pc)
+
+.fmnoteoffnext:
 		adda.w	d6,a5
 		dbf	d4,.fmnoteoffloop		; run all FM tracks
+
 		moveq	#((v_music_psg_tracks_end-v_music_psg_tracks)/TrackSz)-1,d4 ; 3 PSG tracks
 ; loc_721AC:
 .psgnoteoffloop:
@@ -875,10 +894,6 @@ PSGInitBytes:	dc.b $80, $A0, $C0	; Specifically, these configure writes to the P
 Sound_PlaySFX:
 		tst.b	f_1up_playing(a6)	; Is 1-up playing?
 		bne.w	.clear_sndprio		; Exit is it is
-		tst.b	v_fadeout_counter(a6)	; Is music being faded out?
-		bne.w	.clear_sndprio		; Exit if it is
-		tst.b	f_fadein_flag(a6)	; Is music being faded in?
-		bne.w	.clear_sndprio		; Exit if it is
 		cmpi.b	#sfx_Ring,d7		; is ring sound	effect played?
 		bne.s	.sfx_notRing		; if not, branch
 		tst.b	v_ring_speaker(a6)	; Is the ring sound playing on right speaker?
@@ -1016,10 +1031,6 @@ SFX_SFXChannelRAM:
 Sound_PlaySpecial:
 		tst.b	f_1up_playing(a6)	; Is 1-up playing?
 		bne.w	.locret			; Return if so
-		tst.b	v_fadeout_counter(a6)	; Is music being faded out?
-		bne.w	.locret			; Exit if it is
-		tst.b	f_fadein_flag(a6)	; Is music being faded in?
-		bne.w	.locret			; Exit if it is
 		movea.l	(Go_SpecSoundIndex).l,a0
 		subi.b	#spec__First,d7		; Make it 0-based
 		lsl.w	#2,d7
@@ -1254,7 +1265,6 @@ FadeOutMusic:
 		jsr	StopSpecialSFX(pc)
 		move.b	#3,v_fadeout_delay(a6)			; Set fadeout delay to 3
 		move.b	#$28,v_fadeout_counter(a6)		; Set fadeout counter
-		clr.b	v_music_dac_track+TrackPlaybackControl(a6)	; Stop DAC track
 		clr.b	f_speedup(a6)				; Disable speed shoes tempo
 		rts	
 
@@ -1337,7 +1347,7 @@ DoFadeOut:
 
 ; sub_7256A:
 FMSilenceAll:
-		moveq	#2,d3		; 3 FM channels for each YM2612 parts
+		moveq	#3-1,d3		; 3 FM channels for each YM2612 part
 		moveq	#$28,d0		; FM key on/off register
 ; loc_7256E:
 .noteoffloop:
@@ -1529,9 +1539,27 @@ DoFadeIn:
 ; loc_72688:
 .continuefade:
 		tst.b	v_fadein_counter(a6)	; Is fade done?
-		beq.s	.fadedone		; Branch if yes
+		beq	.fadedone		; Branch if yes
 		subq.b	#1,v_fadein_counter(a6)	; Update fade counter
 		move.b	#2,v_fadein_delay(a6)	; Reset fade delay
+
+		; Fade in DAC
+		lea	v_music_dac_track(a6),a5
+		tst.b	(a5)				; is DAC playing?
+		bpl.s	.dac_done			; if yes, branch
+		subq.b	#4, TrackVolume(a5)		; Increase volume attenuation
+		bcc.s	.dac_update_volume
+		move.b	#0, TrackVolume(a5)
+		bra.s	.dac_done
+
+.dac_update_volume:
+		move.b	TrackVolume(a5), d0
+		lsr.b	#3, d0
+		stopZ80
+		move.b	d0, Z80_RAM+Z_MPCM_VolumeInput
+		startZ80
+.dac_done:
+
 		lea	v_music_fm_tracks(a6),a5
 		moveq	#((v_music_fm_tracks_end-v_music_fm_tracks)/TrackSz)-1,d7	; 6 FM tracks
 ; loc_7269E:
@@ -1565,7 +1593,6 @@ DoFadeIn:
 ; ===========================================================================
 ; loc_726D6:
 .fadedone:
-		bclr	#2,v_music_dac_track+TrackPlaybackControl(a6)	; Clear 'SFX overriding' bit
 		clr.b	f_fadein_flag(a6)				; Stop fadein
 		rts	
 ; End of function DoFadeIn
@@ -2087,10 +2114,15 @@ cfFadeInToPrevious:
 		move.l	(a1)+,(a0)+
 		dbf	d0,.restoreramloop
 
-		bset	#2,v_music_dac_track+TrackPlaybackControl(a6)	; Set 'SFX overriding' bit
 		movea.l	a5,a3
-		move.b	#$28,d6
+		moveq	#$28,d6
 		sub.b	v_fadein_counter(a6),d6			; If fade already in progress, this adjusts track volume accordingly
+		
+		tst.b	v_music_dac_track(a6)			; is DAC playing?
+		bpl.s	.dacdone				; if not, branch
+		move.b	#$7F, v_music_dac_track+TrackVolume(a6)	; set initial DAC volume
+.dacdone:
+
 		moveq	#((v_music_fm_tracks_end-v_music_fm_tracks)/TrackSz)-1,d7	; 6 FM tracks
 		lea	v_music_fm_tracks(a6),a5
 ; loc_72B3A:
