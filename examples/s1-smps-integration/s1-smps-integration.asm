@@ -141,7 +141,7 @@ Menu.Items:
 	dc.b	$E0, $E4				; min, max
 	dc.l	@Draw_SelectedCMD		; draw function
 	dc.l	PlaySound				; execute function
-
+@Items_End:
 	dc.w	0						; end of list
 
 @Draw_SelectedBGM:
@@ -157,9 +157,12 @@ Menu.Items:
 	rts
 
 ; ------------------------------------------------------------------------------
+Menu.NumItems:	equ	(@Items_End-Menu.Items)/12
+
+; ------------------------------------------------------------------------------
 Menu.InputConfig:
 	;		Start		A			C			B
-	dc.l	0,			0,			@ValueApply,0
+	dc.l	0,			@PlayVoice,	@ValueApply,0
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
@@ -170,7 +173,7 @@ Menu.InputConfig:
 
 ; ------------------------------------------------------------------------------
 @NextItem:
-	cmp.b	#2, Menu.SelectedItem
+	cmp.b	#Menu.NumItems-1, Menu.SelectedItem
 	beq.s	@done
 	addq.b	#1, Menu.SelectedItem
 	bra.s	@setRedraw
@@ -208,13 +211,18 @@ Menu.InputConfig:
 	jmp		(a1)
 
 ; ------------------------------------------------------------------------------
+@PlayVoice:
+	moveq	#$FFFFFF8C, d0
+	jmp		MegaPCM_PlaySample
+
+; ------------------------------------------------------------------------------
 
 	include	's1-smps-integration/sample-table.asm'
 
 ; ------------------------------------------------------------------------------
 
 	pusho			; save previous options
-	opt		L.		; use "." for local labels (AS compatibility)
+	opt		l+		; use "." for local labels (AS compatibility)
 
 FixBugs:	equ	1	; want to fix bugs
 
