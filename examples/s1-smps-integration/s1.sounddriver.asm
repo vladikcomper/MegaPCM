@@ -265,9 +265,9 @@ DACUpdateTrack:
 		move.b	TrackSavedDAC(a5),d0	; Get sample
 		cmpi.b	#$80,d0			; Is it a rest?
 		beq.s	.locret			; Return if yes
-		stopZ80
+		MPCM_stopZ80
 		move.b	d0, Z80_RAM+Z_MPCM_CommandInput	; send DAC sample to Mega PCM
-		startZ80
+		MPCM_startZ80
 ; locret_71CAA:
 .locret:
 		rts	
@@ -525,9 +525,9 @@ PauseMusic:
 		jsr	WriteFMI(pc)
 		dbf	d3,.noteoffloop
 
-		stopZ80
+		MPCM_stopZ80
 		move.b	#Z_MPCM_COMMAND_PAUSE, Z80_RAM+Z_MPCM_CommandInput ; pause DAC
-		startZ80
+		MPCM_startZ80
 
 		jmp	PSGSilenceAll(pc)
 ; ===========================================================================
@@ -578,9 +578,9 @@ PauseMusic:
 		jsr	WriteFMIorII(pc)
 ; loc_71EFE:
 .unpausedallfm:
-		stopZ80
+		MPCM_stopZ80
 		move.b	#0, Z80_RAM+Z_MPCM_CommandInput	; unpause DAC
-		startZ80
+		MPCM_startZ80
 		rts
 
 ; ---------------------------------------------------------------------------
@@ -767,9 +767,9 @@ Sound_PlayBGM:
 		moveq	#TrackSz,d6
 		move.b	#1,d5			; Note duration for first "note"
 
-		stopZ80
+		MPCM_stopZ80
 		move.b	#0, Z80_RAM+Z_MPCM_VolumeInput	; set DAC volume to maximum
-		startZ80
+		MPCM_startZ80
 
 		lea	v_music_fmdac_tracks(a6),a1
 		lea	FMDACInitBytes(pc),a2
@@ -1297,9 +1297,9 @@ DoFadeOut:
 .dac_update_volume:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
-		stopZ80
+		MPCM_stopZ80
 		move.b	d0, Z80_RAM+Z_MPCM_VolumeInput
-		startZ80
+		MPCM_startZ80
 .dac_done:
 
 		lea	v_music_fm_tracks(a6),a5
@@ -1399,9 +1399,9 @@ StopAllSound:
 		clr.l	(a0)+
 		dbf	d0,.clearramloop
 
-		stopZ80
+		MPCM_stopZ80
 		move.b	#Z_MPCM_COMMAND_STOP, Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
-		startZ80
+		MPCM_startZ80
 
 		move.b	#$80,v_sound_id(a6)	; set music to $80 (silence)
 		jsr	FMSilenceAll(pc)
@@ -1557,9 +1557,9 @@ DoFadeIn:
 .dac_update_volume:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
-		stopZ80
+		MPCM_stopZ80
 		move.b	d0, Z80_RAM+Z_MPCM_VolumeInput
-		startZ80
+		MPCM_startZ80
 .dac_done:
 
 		lea	v_music_fm_tracks(a6),a5
@@ -1657,13 +1657,13 @@ WriteFMIorII:
 
 ; ---------------------------------------------------------------------------
 WriteFMI:
-		stopZ80
+		MPCM_stopZ80
 		move.b	d0, (ym2612_a0).l
 		move.b	d1, (ym2612_d0).l
 .waitLoop:	tst.b	(ym2612_d0).l		; is FM busy?
 		bmi.s	.waitLoop		; branch if yes
 		move.b	#$2A, (ym2612_a0).l	; restore DAC output for Mega PCM
-		startZ80
+		MPCM_startZ80
 		rts
 ; End of function WriteFMI
 
@@ -1674,13 +1674,13 @@ WriteFMIIPart:
 
 ; ---------------------------------------------------------------------------
 WriteFMII:
-		stopZ80
+		MPCM_stopZ80
 		move.b	d0, (ym2612_a1).l
 		move.b	d1, (ym2612_d1).l
 .waitLoop:	tst.b	(ym2612_d0).l		; is FM busy?
 		bmi.s	.waitLoop		; branch if yes
 		move.b	#$2A, (ym2612_a0).l	; restore DAC output for Mega PCM
-		startZ80		
+		MPCM_startZ80		
 		rts
 ; End of function WriteFMII
 
@@ -2068,14 +2068,14 @@ cfPanningAMSFMS:
 		move.b	d1,TrackAMSFMSPan(a5)		; Store value
 		subq.b	#6, d2				; is channel DAC or FM6?
 		bne.s	.not_DAC_or_FM6			; if not, branch
-		stopZ80
+		MPCM_stopZ80
 		; Send to DAC/FM6 panning Mega PCM
 		; Even though we apply it now anyways, Mega PCM needs to track
 		; actual panning bits to restore them in case normal sample is
 		; interrupted by an SFX sample
 		and.b	#$C0, d1
 		move.b	d1, Z80_RAM+Z_MPCM_PanInput
-		startZ80
+		MPCM_startZ80
 	.not_DAC_or_FM6:
 
 		moveq	#$FFFFFFB4,d0			; Command to set AMS/FMS/panning
@@ -2161,7 +2161,7 @@ cfFadeInToPrevious:
 		move.b	#$80,f_fadein_flag(a6)		; Trigger fade-in
 		move.b	#$28,v_fadein_counter(a6)	; Fade-in delay
 		clr.b	f_1up_playing(a6)
-		startZ80
+		MPCM_startZ80
 		addq.w	#8,sp		; Tamper return value so we don't return to caller
 		rts	
 ; ===========================================================================
@@ -2286,7 +2286,7 @@ SetVoice:
 		lea	FastWriteFMIChannel(pc), a3
 .gotfmroutine:
 
-		stopZ80
+		MPCM_stopZ80
 		moveq	#$FFFFFFB0,d0		; Command to write feedback/algorithm
 		jsr	(a3)
 		lea	FMInstrumentOperatorTable(pc),a2
@@ -2319,7 +2319,7 @@ SetVoice:
 		jsr	(a3)
 
 		move.b	#$2A, (ym2612_a0).l	; restore DAC output for Mega PCM
-		startZ80
+		MPCM_startZ80
 		move.w	(sp)+, d6
 		move.l	(sp)+, a3
 
