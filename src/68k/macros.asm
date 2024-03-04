@@ -19,12 +19,12 @@ stopZ80: macro opBusReq
 	if narg=1
 		move.w	#$100, \opBusReq
 		@wait\@:
-			bset	#0, \opBusReq
+			btst	#0, \opBusReq
 			bne.s	@wait\@
 	else
 		move.w	#$100, Z80_BUSREQ
 		@wait\@:
-			bset	#0, Z80_BUSREQ
+			btst	#0, Z80_BUSREQ
 			bne.s	@wait\@
 	endif
 	endm
