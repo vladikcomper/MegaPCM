@@ -1,13 +1,23 @@
 
-# Mega PCM 2 integration for Sonic 1 Github disassembly
+# Installing Mega PCM 2 in Sonic 1 Github Disassembly (AS)
+
+This is a step-by-step guide for installing Mega PCM 2 in Sonic 1 Github Disassembly. Note that it targets the **AS branch** of the disassembly.
+
+While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
+
+All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: openning `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
+
 
 ## Step 1. Disable the original DAC driver
 
-**Step 1.1. Remove old DAC driver loading subroutine (`DACDriverLoad`/`SoundDriverLoad`)**
+At this step we simply disable the original DAC driver that Sonic 1 uses. It's as easy as removing a few blocks of code.
 
-Open `sonic.asm` and search for `DACDriverLoad:` (or `SoundDriverLoad:` if your disassembly version is pre-October 2023). Remove this routine completely:
+### Step 1.1. Remove old DAC driver loading subroutine
+
+Open `sonic.asm` and search for `DACDriverLoad:` string (or `SoundDriverLoad:` if your disassembly version is pre-October 2023). Remove this routine completely:
 
 ```m68k
+; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; ---------------------------------------------------------------------------
 ; Subroutine to load the DAC driver
 ; ---------------------------------------------------------------------------
@@ -31,18 +41,23 @@ DACDriverLoad:
                 startZ80
                 rts     
 ; End of function DACDriverLoad
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
-**Step 1.2. Remove calls to `DACDriverLoad`/`SoundDriverLoad`**
 
-Now you need to remove two calls to `DACDriverLoad` (`SoundDriverLoad` in older disassemblies).
+### Step 1.2. Remove calls to the old driver loading routine
 
-1. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` under `GM_Title:`
-2. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` above `MainGameLoop:`
+Now you need to remove two calls to subroutine you've just removed.
 
-**Step 1.3. Remove old DAC driver busy check in SMPS**
+In the same `sonic.asm` file, search for `DACDriverLoad` string (`SoundDriverLoad` in older disassemblies). There should be 2 matches:
 
-While in `s1.sounddriver.asm`, find `UpdateMusic:` and remove the following code right under it (don't remove `UpdateMusic:` label itself):
+1. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` line above the label `MainGameLoop:`;
+2. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` line under the label `GM_Title:` (this one is redundant in the original game, by the way).
+
+
+### Step 1.3. Remove old DAC driver busy check in SMPS
+
+Now open `s1.sounddriver.asm` file, find `UpdateMusic:` and remove the following code right under it (don't remove `UpdateMusic:` label itself):
 
 ```m68k
 ; ---------------------------------------------------------------------------
@@ -77,15 +92,20 @@ UpdateMusic:
 ; ===========================================================================
 ; loc_71B82:
 .driverinput:
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
 ## Step 2. Remove Z80 stops globally
 
-**Step 2.1. Remove all Z80 macros**
+The original game frequently stops Z80 to make sure Z80 driver doesn't access ROM (or M68K bus in general) during DMA transfers. Mega PCM 2 has automatic DMA protection system and **is guaranteed** not to access ROM during DMA (inside VBlank), so Z80 stops are now redundant.
 
-This is an easy one and tearing stuff down is fun, isn't it?
+Moreover, those stops harm DAC playback quality and are the main reason Mega Drive games have "scratchy" playback. While other DAC driver cannot survive without ROM access, Mega PCM 2 can when needed.
 
-Open `Macros.asm` and remove all Z80 related macros: `stopZ80`, `startZ80`, `waitZ80`, `resetZ80`, `resetZ80a`. Basically **all these lines need to be removed**:
+### Step 2.1. Remove all Z80 macros
+
+This is another easy one and tearing things down is fun, isn't it?
+
+Open `Macros.asm` file and remove all Z80 related macros: `stopZ80`, `startZ80`, `waitZ80`, `resetZ80`, `resetZ80a`. Basically, scroll down until you see the following fragment and **remove all the lines shown below**:
 
 ```m68k
 ; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -126,32 +146,42 @@ resetZ80a:      macro
 startZ80:       macro
                 move.w  #0,(z80_bus_request).l
                 endm
+
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
 
-**Step 2.2. Remove all invocations of Z80 macros**
+### Step 2.2. Remove all invocations of Z80 macros
 
 Now you need to remove every occurance of now-removed macros. There are several ways to pull it off:
 
-1. **The easy way:** global search & replace, replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string **using case-sensitive search**. Note that `resetZ80`, `resetZ80a` should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect).
+1. **The easy way:** Do global search & replace (accross **all files** in your disassembly), replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string. **Use case-sensitive search!** Note that `resetZ80`, `resetZ80a` should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect);
 2. **The hard way:** try building your ROM by running `build.bat` or `build.lua`. You'll a ton of errors regarding the removed macros. Use error log (also saved as `sonic.log`) as a reference to find and remove all lines referencing `stopZ80`, `startZ80` and `waitZ80`.
 
-**Step 2.3. Check yourself**
+
+### Step 2.3. Check yourself
 
 At this point you should have the old DAC driver disabled and Z80 stops completely removed.
 
-Build your ROM by running `build.bat` or `build.lua`. Make sure you don't get errors. Your ROM should also boot, **but music and sounds will be broken**. If you ROM doesn't boot, you likely didn't fully remove code in **Step 1.3**, or you still have other Z80 starts/stops intact.
+Try to build your ROM by running `build.bat` or `build.lua`. Here's your checklist:
+
+1. Make sure you don't get assembly errors. If you do (errors are logged in `sonic.log`), make sure you removed all macro invocations in **Step 2.2**.
+2. Your ROM should at least boot, **but music and sounds will be broken**. If you ROM doesn't boot, you likely didn't fully remove code in **Step 1.3**, or you still have other Z80 starts/stops intact.
+
 
 ## Step 3. Installing Mega PCM 2
 
-**Step 3.1. Download and unpack Mega PCM and Sonic 1 sample table.**
+It's finally time to get to the star of the show, Mega PCM itself! As mentioned in the beginning, installing Mega PCM itself is a easy as dropping a few files and adding a few lines of code. However, a few more steps are required in case of Sonic 1, because of a few hacks involving the infamous "Sega PCM" sample.
 
-Now it's time to get to the meat! 
+### Step 3.1. Download and unpack Mega PCM and Sonic 1 sample table
+
+Another easy one. You need to download a few files and copy them relative to your disassembly's root directory.
 
 1. Download AS bundle of Mega PCM 2. Copy `MegaPCM.asm` file to your disassembly's root.
-2. Download Sonic 1 sample table. Copy `SampleTable.asm` and other files to your directory and replace DAC samples (don't remove old ones yet).
+2. Download Sonic 1 sample table. Copy `SampleTable.asm` and other files to your directory and replace DAC samples (but don't remove the old ones yet!)
 
-**Step 3.2. Include Mega PCM and Sonic 1 sample table.**
+
+### Step 3.2. Include Mega PCM and Sonic 1 sample table
 
 Open `sonic.asm` and search for `SoundDriver:`. Right after that label, add lines marked with `++`:
 
@@ -162,26 +192,12 @@ Open `sonic.asm` and search for `SoundDriver:`. Right after that label, add line
 SoundDriver:    include "s1.sounddriver.asm"
 ```
 
-**Step 3.3. Remove hacks for Sega PCM**
 
-Mega PCM's sample table now properly includes Sega PCM, so we can remove the old one.
+### Step 3.3. Remove hacks for Sega PCM
 
-Open `s1.sounddriver.asm`, find `PlaySegaSound:` label. Replace all the code with the following:
+Mega PCM's sample table now properly includes Sega PCM, so we can remove the old one and hacks around it.
 
-```m68k
-; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-; ===========================================================================
-; ---------------------------------------------------------------------------
-; Play "Say-gaa" PCM sound
-; ---------------------------------------------------------------------------
-; Sound_E1: PlaySega:
-PlaySegaSound:
-                moveq   #$FFFFFF8C, d0          ; ++ request SEGA PCM sample
-                jmp     MegaPCM_PlaySample      ; ++
-```
-
-Remove this:
+Open `s1.sounddriver.asm` file and find `SegaPCM:` label. You need to remove both the sample inclusion and checks surronding it, basically, **remove all the lines shown below**:
 
 ```m68k
 ; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -204,26 +220,49 @@ SegaPCM_End
                 if SegaPCM_End-SegaPCM>Size_of_SegaPCM
                         fatal "Size_of_SegaPCM = $\{Size_of_SegaPCM}, but you have a $\{SegaPCM_End-SegaPCM} byte Sega sound."
                 endif
+
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
-**Step 3.4. Load Mega PCM and the sample table upon boot**
+Next, let's replace hack-ish code that the original Sonic 1 used to play Sega PCM. 
 
-Above `MainGameLoop:`
+In the same `s1.sounddriver.asm` file, find `PlaySegaSound:` label. Replace all its code as follows:
+
+```m68k
+; ===========================================================================
+; ---------------------------------------------------------------------------
+; Play "Say-gaa" PCM sound
+; ---------------------------------------------------------------------------
+; Sound_E1: PlaySega:
+PlaySegaSound:
+                moveq   #$FFFFFF8C, d0          ; ++ request SEGA PCM sample
+                jmp     MegaPCM_PlaySample      ; ++
+```
+
+
+### Step 3.4. Load Mega PCM 2 and the sample table upon boot
+
+Finally, let's load Mega PCM 2 and its sample table during game's initialization.
+
+Open `sonic.asm` file and find `MainGameLoop:` label. Just **above it**, insert the following code:
 
 ```m68k
                 jsr     MegaPCM_LoadDriver
                 lea     SampleTable, a0
                 jsr     MegaPCM_LoadSampleTable
                 tst.w   d0                      ; was sample table loaded successfully?
-                beq.s   .SampleTableOk
+                beq.s   .SampleTableOk          ; if yes, branch
                 ;RaiseError "Bad sample table (code %<.b d0>)"  ; uncomment if you have MD Debugger and Error handler installed
                 illegal
 .SampleTableOk:
 ```
 
-**Step 3.5. Check yourself: Making sure Mega PCM works**
+Note that if you have MD Debugger and Error handler installed, you can uncomment `RaiseError` macro to display a more meaningful message if something goes wrong during initialization.
 
-Above `MainGameLoop:`
+
+### Step 3.5. Check yourself: Making sure Mega PCM works
+
+In the same `sonic.asm` file, insert the following code right **below** the driver load code you've just added in **Step 3.4**:
 
 ```m68k
                 ; REMOVE ME ONCE TESTED >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -232,18 +271,18 @@ Above `MainGameLoop:`
                 bra.s   *                       ; FREEZE, BECAUSE IT'S A TEST
 ```
 
-Build your ROM. You should see black screen and SEGA chant should play.
+Build your ROM. You should see a black screen and SEGA chant should play.
 
 If everything works, **remove this code now**. It's time to integrate our sound drivers proper!
 
 
 ## Step 4. Integrating SMPS with Mega PCM 2
 
-**Step 4.1. Fully remove the old DAC driver**
+We're now on the final stretch! It's time to make SMPS and Mega PCM 2 work together. Up until this point, music and sounds were mostly broken, but we'll have everything fixed in no time.
 
-Now, open `s1.sounddriver.asm` and search for `DACDriver:` (or `Kos_Z80:` if disassembly is pre-October 2023).
+### Step 4.1. Fully remove the old DAC driver
 
-Remove this:
+Open `s1.sounddriver.asm` and search for `DACDriver:` (or `Kos_Z80:` if disassembly is pre-October 2023). You should see the following fragment, **remove all the lines shown below**:
 
 ```m68k
 ; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -273,7 +312,7 @@ z80_dac_sample:         equ z80_ram+zDAC_Sample
 
 Now that the old driver and its constants are removed, we're on the final stretch for patching SMPS to work with Mega PCM 2 instead!
 
-**Step 4.2. Patching SMPS for Mega PCM 2: DAC playback**
+### Step 4.2. Patching SMPS for Mega PCM 2: DAC playback
 
 Open `s1.sounddriver.asm` file and find `.gotsampleduration:` label (it's a part of `DACUpdateTrack` subroutine). You need to edit it as follows (remove all lines marked with `--`, add lines marked with `++`):
 
@@ -316,7 +355,7 @@ The removed code branched to `.timpani` to setup pitch hacks for the old driver.
                 rts     
 ```
 
-**Step 4.3. Patching SMPS for Mega PCM 2: FM routines**
+### Step 4.3. Patching SMPS for Mega PCM 2: FM routines
 
 Finally, in the same `s1.sounddriver.asm` file, find this `WriteFMIorII:` label and replace everything until `; End of function WriteFMII` with this code:
 
@@ -375,7 +414,7 @@ WriteFMII:
 You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFMII` routines with better, more optimized versions comptabile with Mega PCM 2.
 
 
-**Step 4.3. Check yourself: Testing SMPS and Mega PCM 2**
+### Step 4.3. Check yourself: Testing SMPS and Mega PCM 2
 
 And that concludes the basic integration of Mega PCM 2 with Sonic 1's SMPS!
 
