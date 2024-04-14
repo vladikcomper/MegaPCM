@@ -205,9 +205,9 @@ SegaPCM:        incbin  sound\segapcm.bin               ; -- REMOVE THIS
 
 Next, let's replace hack-ish code that the original Sonic 1 used to play Sega PCM. 
 
-Find `PlaySegaSound:` label. Replace all its code as follows:
+Find `Sound_E1:` label. Replace all its code as follows:
 
-```
+```m68k
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Play "Say-gaa" PCM sound
