@@ -1,10 +1,32 @@
 
-# Mega PCM API
+# Mega PCM 2 API
+
+This document describes subroutines exposed by Mega PCM 2 that can you call after installation. While this API is meant for M68K assembly projects, it's also optimized for possible C/C++ integrations (only uses scratch registers and one argument at most).
+
+The bare minimum you need is `MegaPCM_LoadDriver` and `MegaPCM_LoadSampleTable` for setup and `MegaPCM_PlaySample` for playback.
+
+
+## Table of contents
+
+- [`MegaPCM_LoadDriver`](#megapcm_loaddriver)
+- [`MegaPCM_LoadSampleTable`](#megapcm_loadsampletable)
+- [`MegaPCM_PlaySample`](#megapcm_playsample)
+- [`MegaPCM_PausePlayback`](#megapcm_pauseplayback)
+- [`MegaPCM_UnpausePlayback`](#megapcm_unpauseplayback)
+- [`MegaPCM_StopPlayback`](#megapcm_stopplayback)
+- [`MegaPCM_SetPan`](#megapcm_setpan)
+- [`MegaPCM_SetSFXPan`](#megapcm_setsfxpan)
+- [`MegaPCM_SetVolume`](#megapcm_setvolume)
+- [`MegaPCM_SetSFXVolume`](#megapcm_setsfxvolume)
 
 
 ## `MegaPCM_LoadDriver`
 
 Loads Mega PCM driver into Z80 memory and waits for its initialization. You only need to call this function once during boot.
+
+> [!NOTE]
+>
+> Mega PCM 2 performs a few benchmarks during initialization to perfectly calibrate timings for both real hardware and inaccurate emulators alike. This process takes 3-4 frames and `MegaPCM_LoadDriver` will only return once calibration is complete.
 
 **Usage:**
 
@@ -56,7 +78,7 @@ SampleTable:
 **Output:**
 
 - d0 - zero on success, non-zero error code on failure
-- a0 - pointer to problemmatic sample in table (if applicable)
+- a0 - pointer to a problemmatic sample in table (if applicable)
 
 **Uses:**
 
@@ -147,7 +169,9 @@ Stops playback completely, regardless of sample flags or priority.
 
 ## `MegaPCM_SetPan`
 
-Sets panning for normal (non-SFX) samples.
+Sets panning for normal (non-SFX) samples. SFX samples use a separate pan setting.
+
+Note that Mega PCM 2 updates panning *only when* a sample starts playing.
 
 **Usage:**
 
@@ -163,7 +187,9 @@ Sets panning for normal (non-SFX) samples.
 
 ## `MegaPCM_SetSFXPan`
 
-Sets panning for SFX samples.
+Sets panning for SFX samples. Normal samples use a separate pan setting.
+
+Note that Mega PCM 2 updates panning *only when* a sample starts playing.
 
 **Usage:**
 
@@ -179,7 +205,9 @@ Sets panning for SFX samples.
 
 ## `MegaPCM_SetVolume`
 
-Sets volume for normal (non-SFX) samples.
+Sets volume for normal (non-SFX) samples. SFX samples use a separate volume setting.
+
+Mega PCM 2 updates volume once per frame. This setting is ignored in 32 kHz "turbo playback" mode.
 
 **Usage:**
 
@@ -195,7 +223,9 @@ Sets volume for normal (non-SFX) samples.
 
 ## `MegaPCM_SetSFXVolume`
 
-Sets volume for SFX samples.
+Sets volume for SFX samples. Normal samples use a separate volume setting.
+
+Mega PCM 2 updates volume once per frame. This setting is ignored in 32 kHz "turbo playback" mode.
 
 **Usage:**
 

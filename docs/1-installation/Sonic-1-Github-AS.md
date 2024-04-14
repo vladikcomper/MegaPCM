@@ -257,7 +257,7 @@ Open `sonic.asm` file and find `MainGameLoop:` label. Just **above it**, insert 
 .SampleTableOk:
 ```
 
-Note that if you have MD Debugger and Error handler installed, you can uncomment `RaiseError` macro to display a more meaningful message if something goes wrong during initialization.
+Note that if you have [MD Debugger and Error handler](https://github.com/vladikcomper/md-modules/releases) installed, you can uncomment `RaiseError` macro to display a more meaningful message if something goes wrong during initialization.
 
 
 ### Step 3.5. Check yourself: Making sure Mega PCM works
@@ -298,16 +298,19 @@ DACDriver:      include         "sound/z80.asm"
 Now that this inclusion is gone, let's clean up some files:
 - Remove `sound/z80.asm` file;
 - Remove `sound/dac/snare.dpcm` file (it's now replaced with `snare.pcm`);
-- Remove `sound/dac/sega.pcm` file (it's now replaced with `sega.wav` for convenience).
+- Remove `sound/dac/sega.pcm` file (it's now replaced with `sega.wav` for convenience);
+- You may also remove `sound/dac/readme.txt` file, because it's not accurate anymore.
 
 Open `Constants.asm` and remove the following lines (if you have pre-September 2023 disassembly, `z80_dac_timpani_pitch` will be named `z80_dac3_pitch`):
 ```m68k
-; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+; REMOVE EVERYTHING BELOW       >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ;z80_dac3_pitch:        equ z80_ram+zSample3_Pitch      ; BEFORE SEPTEMBER 2023
 z80_dac_timpani_pitch:  equ z80_ram+zTimpani_Pitch      ; AFTER SEPTEMBER 2023
 z80_dac_status:         equ z80_ram+zDAC_Status
 z80_dac_sample:         equ z80_ram+zDAC_Sample
+
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
 Now that the old driver and its constants are removed, we're on the final stretch for patching SMPS to work with Mega PCM 2 instead!
