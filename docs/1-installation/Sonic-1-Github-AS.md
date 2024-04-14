@@ -239,6 +239,16 @@ PlaySegaSound:
                 jmp     MegaPCM_PlaySample      ; ++
 ```
 
+We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instanteneouly.
+
+In `sonic.asm` file, go to `Sega_WaitEnd:` and just **above** it, modify `move.w  #$1E,(v_demolength).w` as follows:
+
+```m68k
+                move.w  #$1E+2*60,(v_demolength).w         ; was $1E
+```
+
+This adds extra 2 seconds of wait time. You can change it depending on your SEGA chant's length.
+
 
 ### Step 3.4. Load Mega PCM 2 and the sample table upon boot
 
@@ -293,6 +303,8 @@ Open `s1.sounddriver.asm` and search for `DACDriver:` (or `Kos_Z80:` if disassem
 ; ---------------------------------------------------------------------------
 ; Kos_Z80:
 DACDriver:      include         "sound/z80.asm"
+
+; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ```
 
 Now that this inclusion is gone, let's clean up some files:

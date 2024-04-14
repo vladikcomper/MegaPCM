@@ -44,13 +44,12 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 ### Installation guides
 
 - [Sonic 1 Github Disassembly (AS version)](docs/1-installation/Sonic-1-Github-AS.md)
+- [Sonic 1 Hivebrain 2005 Disassembly](docs/1-installation/Sonic-1-Hivebrain-2005.md)
 
 
 ### Documentation
 
 - [API Documentation](docs/API.md)
-
-- For Sonic 1 SMPS integration, see `examples/s1-smps-integration`
 
 ## Examples
 
