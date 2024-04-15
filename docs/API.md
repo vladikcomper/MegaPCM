@@ -41,7 +41,7 @@ Loads Mega PCM driver into Z80 memory and waits for its initialization. You only
 
 ## `MegaPCM_LoadSampleTable`
 
-Loads a given sample table to Z80 memory. You must call this function after initialization to be able to play samples by IDs. Sample tables are defined using conveniant macros provided by Mega PCM.
+Loads a given sample table to Z80 memory. You must call this function after initialization to be able to play samples by IDs. Sample tables are defined using convenience macros provided by Mega PCM.
 
 > [!NOTE]
 >
@@ -78,7 +78,7 @@ SampleTable:
 **Output:**
 
 - d0 - zero on success, non-zero error code on failure
-- a0 - pointer to a problemmatic sample in table (if applicable)
+- a0 - pointer to a problematic sample in table (if applicable)
 
 **Uses:**
 
@@ -108,7 +108,7 @@ Plays given sample by ID (>$80). If currently playing sample has a higher priori
 
 > [!NOTE]
 >
-> Mega PCM accepts commands (play, pause, stop) once per frame, rougly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
+> Mega PCM accepts commands (play, pause, stop) once per frame, roughly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
 
 **Usage:**
 
@@ -143,7 +143,7 @@ Unpauses playback, undoes the effect of `MegaPCM_PausePlayback`. If playback was
 
 > [!NOTE]
 >
-> Mega PCM accepts commands (play, pause, stop) once per frame, rougly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
+> Mega PCM accepts commands (play, pause, stop) once per frame, roughly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
 
 **Usage:**
 
@@ -158,7 +158,7 @@ Stops playback completely, regardless of sample flags or priority.
 
 > [!NOTE]
 >
-> Mega PCM accepts commands (play, pause, stop) once per frame, rougly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
+> Mega PCM accepts commands (play, pause, stop) once per frame, roughly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
 
 **Usage:**
 

@@ -9,7 +9,7 @@ This is a step-by-step guide for installing Mega PCM 2 in the old Sonic 1 Hivebr
 
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
-All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: openning `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
+All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: opening `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
 
 
 ## Step 1. Disable the original DAC driver
@@ -103,7 +103,7 @@ Moreover, those stops harm DAC playback quality and are the main reason Mega Dri
 
 ### Step 2.1. Mass-remove "start Z80" command
 
-Since Sonic 1 Hivebrain 2005 disassembly doesn't use macros for common operations like start/stop Z80, we have to manually find instructions that implement them throught the code.
+Since Sonic 1 Hivebrain 2005 disassembly doesn't use macros for common operations like start/stop Z80, we have to manually find instructions that implement them through the code.
 
 In case of "start Z80" command, the code responsible for this operation always looks like this:
 
@@ -115,7 +115,7 @@ To quickly remove all instances of this instruction, in `sonic1.asm` file,  just
 
 ### Step 2.2. Mass-remove "stop Z80" command
 
-Stopping Z80 is with a slightly larger code snipped:
+Stopping Z80 is with a slightly larger code snippet:
 
 ```m68k
                 move.w  #$100,($A11100).l ; stop the Z80
@@ -125,7 +125,7 @@ Stopping Z80 is with a slightly larger code snipped:
                 bne.s   <<SOMELABEL>>   ; if not, branch
 ```
 
-The `<<SOMELABEL>>` part is always different between the occurances as it represents a unique label used for the "wait till Z80 fully stops" loop. This makes simple search & replace much harder.
+The `<<SOMELABEL>>` part is always different between the occurrences as it represents a unique label used for the "wait till Z80 fully stops" loop. This makes simple search & replace much harder.
 
 This time, search for `move.w  #$100,($A11100).l` (make sure to put TAB character between `move.w` and `#0`!) and manually remove this and 3 more lines with the `<<SOMELABEL>>` part:
 
@@ -154,7 +154,7 @@ loc_C76:
 
 This code **will always look the same**, there will always be 3 more lines to remove with a different label.
 
-Keep searching for `move.w  #$100,($A11100).l` and manually removing additional lines as shown above until all occurences are exhausted.
+Keep searching for `move.w  #$100,($A11100).l` and manually removing additional lines as shown above until all occurrences are exhausted.
 
 
 ### Step 2.3. Check yourself
@@ -218,7 +218,7 @@ Sound_E1:                               ; XREF: Sound_ExIndex
                 jmp     MegaPCM_PlaySample      ; ++
 ```
 
-We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instanteneouly.
+We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instantaneously.
 
 Go to `Sega_WaitEnd:` and just **above** it, modify `move.w  #$1E,($FFFFF614).w` as follows:
 
@@ -382,7 +382,7 @@ sub_72764:
 ; End of function sub_72764
 ```
 
-You've just replaced FM routines with better, more optimized versions comptabile with Mega PCM 2.
+You've just replaced FM routines with better, more optimized versions compatible with Mega PCM 2.
 
 
 ### Step 4.3. Check yourself: Testing SMPS and Mega PCM 2

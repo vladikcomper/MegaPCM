@@ -5,7 +5,7 @@ This is a step-by-step guide for installing Mega PCM 2 in Sonic 1 Github Disasse
 
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
-All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: openning `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
+All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: opening `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
 
 
 ## Step 1. Disable the original DAC driver
@@ -153,9 +153,9 @@ startZ80:       macro
 
 ### Step 2.2. Remove all invocations of Z80 macros
 
-Now you need to remove every occurance of now-removed macros. There are several ways to pull it off:
+Now you need to remove every occurrence of now-removed macros. There are several ways to pull it off:
 
-1. **The easy way:** Do global search & replace (accross **all files** in your disassembly), replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string. **Use case-sensitive search!** Note that `resetZ80`, `resetZ80a` should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect);
+1. **The easy way:** Do global search & replace (across **all files** in your disassembly), replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string. **Use case-sensitive search!** Note that `resetZ80`, `resetZ80a` should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect);
 2. **The hard way:** try building your ROM by running `build.bat` or `build.lua`. You'll a ton of errors regarding the removed macros. Use error log (also saved as `sonic.log`) as a reference to find and remove all lines referencing `stopZ80`, `startZ80` and `waitZ80`.
 
 
@@ -197,7 +197,7 @@ SoundDriver:    include "s1.sounddriver.asm"
 
 Mega PCM's sample table now properly includes Sega PCM, so we can remove the old one and hacks around it.
 
-Open `s1.sounddriver.asm` file and find `SegaPCM:` label. You need to remove both the sample inclusion and checks surronding it, basically, **remove all the lines shown below**:
+Open `s1.sounddriver.asm` file and find `SegaPCM:` label. You need to remove both the sample inclusion and checks surrounding it, basically, **remove all the lines shown below**:
 
 ```m68k
 ; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -239,7 +239,7 @@ PlaySegaSound:
                 jmp     MegaPCM_PlaySample      ; ++
 ```
 
-We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instanteneouly.
+We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instantaneously.
 
 In `sonic.asm` file, go to `Sega_WaitEnd:` and just **above** it, modify `move.w  #$1E,(v_demolength).w` as follows:
 
@@ -426,7 +426,7 @@ WriteFMII:
 ; End of function WriteFMII
 ```
 
-You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFMII` routines with better, more optimized versions comptabile with Mega PCM 2.
+You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFMII` routines with better, more optimized versions compatible with Mega PCM 2.
 
 
 ### Step 4.3. Check yourself: Testing SMPS and Mega PCM 2
