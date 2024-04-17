@@ -40,5 +40,5 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 clean:
-	$(MAKE) -C ../z80 clean
+	$(MAKE) -C ../z80 clean -f Makefile.win
 	rm -rf $(BUILD_DIR)/*

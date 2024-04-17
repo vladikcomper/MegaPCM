@@ -19,15 +19,15 @@ endif
 # OS-specific tools
 ifeq ($(OS),Windows_NT)
 	# Windows commands
-	SJASMPLUS := $(TOOLCHAIN_DIR)\\sjasmplus.exe
-	ASM68K := $(TOOLCHAIN_DIR)\\asm68k.exe
-	PSYLINK := $(TOOLCHAIN_DIR)\\psylink.exe
-	CONVSYM := $(TOOLCHAIN_DIR)\\convsym.exe
-	CBUNDLE := $(TOOLCHAIN_DIR)\\cbundle.exe
-	BLOBTOASM := $(PYTHON) $(TOOLCHAIN_DIR)\\blobtoasm.py
-	SYMTOH := $(PYTHON) $(TOOLCHAIN_DIR)\\symtoh.py
-	MKVOLUME := $(PYTHON) $(TOOLCHAIN_DIR)\\mkvolume.py
-	MKDPCMTBL := $(PYTHON) $(TOOLCHAIN_DIR)\\mkdpcmtbl.py
+	SJASMPLUS := $(TOOLCHAIN_DIR)\sjasmplus.exe
+	ASM68K := $(TOOLCHAIN_DIR)\asm68k.exe
+	PSYLINK := $(TOOLCHAIN_DIR)\psylink.exe
+	CONVSYM := $(TOOLCHAIN_DIR)\convsym.exe
+	CBUNDLE := $(TOOLCHAIN_DIR)\cbundle.exe
+	BLOBTOASM := $(PYTHON) $(TOOLCHAIN_DIR)\blobtoasm.py
+	SYMTOH := $(PYTHON) $(TOOLCHAIN_DIR)\symtoh.py
+	MKVOLUME := $(PYTHON) $(TOOLCHAIN_DIR)\mkvolume.py
+	MKDPCMTBL := $(PYTHON) $(TOOLCHAIN_DIR)\mkdpcmtbl.py
 	CC := gcc
 
 else
