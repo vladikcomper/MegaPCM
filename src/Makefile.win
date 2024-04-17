@@ -59,4 +59,4 @@ $(LIB_BUILD_DIR)\megapcm.obj $(LIB_BUILD_DIR)\megapcm.debug.obj $(LIB_BUILD_DIR)
 
 clean:
 	$(MAKE) -C 68k clean -f Makefile.win
-	del /q /f $(BUILD_DIR)\*
+	del /q /f /s $(BUILD_DIR)\*

@@ -23,13 +23,12 @@ megapcm-z80:
 	$(MAKE) -C ../src
 
 run:	$(EXE_FILES)
-	# TODO: Windows version
 	$(foreach executable, $(EXE_FILES), echo -n "$(executable)... " && ./$(executable) 2>$(executable).log &&) echo "ALL DONE"
 
 build:	$(EXE_FILES)
 
 clean:
-	rm -f $(EXE_FILES)
+	rm -f $(EXE_FILES) *.log
 
 $(EXE_FILES):	$(SRC_FILES)
 

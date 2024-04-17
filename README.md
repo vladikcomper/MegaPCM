@@ -70,11 +70,23 @@ make examples
 
 ### Windows
 
-Windows is semi-supported. If you have GNU Make and GCC installed, you should be able to run the same commands as on Linux.
+You need to have GCC, Make and Python3 installed and availabe via PATH. The easiest way to get everything with one command is to use Chocolatey, but you may choose any other option that works for you:
+
+```
+choco install mingw python3 make
+```
+
+Once dependencies are installed, build process is the same as on Unix-like systems:
+
+```
+make
+make examples
+```
+
+If you need to invoke `make` from individual directories however (not root), be sure to use `make -f Makefile.win` instead (the root Makefile does it automatically).
 
 ### FreeBSD
 
-Almost the same as Linux, with a few extra steps:
+Almost the same as Linux, however you need to make sure to use GNU version of Make.
 
 - Install GNU Make; use `gmake` command instead of `make`;
-- Make sure `python` is symlinked to `python3`
