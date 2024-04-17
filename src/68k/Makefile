@@ -37,9 +37,8 @@ $(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 $(Z80_FILES):	megapcm-z80
 
 $(BUILD_DIR):
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$(BUILD_DIR)"
+	mkdir -p $(BUILD_DIR)
 
 clean:
 	$(MAKE) -C ../z80 clean
-	$(RM) $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/*

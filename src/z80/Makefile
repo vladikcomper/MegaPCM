@@ -29,8 +29,7 @@ $(SRC_DIR)/dpcm-tables.asm:
 	$(MKDPCMTBL) $@
 
 $(BUILD_DIR):
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$(BUILD_DIR)"
+	mkdir -p $(BUILD_DIR)
 
 %.h: %.sym
 	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
@@ -39,4 +38,4 @@ $(BUILD_DIR):
 	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
 
 clean:
-	$(RM) $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/*

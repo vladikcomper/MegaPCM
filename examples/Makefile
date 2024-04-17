@@ -28,7 +28,7 @@ s1-smps-integration/s1-smps-integration.gen: $(wildcard s1-smps-integration/*.as
 %.gen: %.obj
 	$(PSYLINK) /q /p $(LIBS) $<,$@,$@.sym
 	$(CONVSYM) $@.sym $@ -ref 200 -a
-	$(RM) $@.sym
+	rm -rf $@.sym
 
 clean:
-	$(RM) **/*.gen **/*.obj
+	rm -rf **/*.gen **/*.obj

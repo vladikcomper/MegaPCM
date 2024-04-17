@@ -26,10 +26,10 @@ $(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-tab
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -def LINKABLE -out $@
 
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.obj:	$(LIB_BUILD_DIR)/megapcm.obj | $(BUILD_DIR)/asm68k-linkable
-	$(CP) $^ $@
+	cp $^ $@
 
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj:	$(LIB_BUILD_DIR)/megapcm.debug.obj | $(BUILD_DIR)/asm68k-linkable
-	$(CP) $^ $@
+	cp $^ $@
 
 $(BUILD_DIR)/asm68k/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm $(BUILD_DIR)/MegaPCM.Blob.asm $(BUILD_DIR)/MegaPCM.Symbols.asm | $(BUILD_DIR)/asm68k
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -out $@
@@ -44,23 +44,19 @@ $(BUILD_DIR)/MegaPCM.Symbols.asm: $(LIB_BUILD_DIR)/megapcm.sym | $(BUILD_DIR)
 	$(CONVSYM) $(LIB_BUILD_DIR)/megapcm.sym $@ -out asm -outopt "%s:	equ	MegaPCMLibraryBlob+$$%X"
 
 $(BUILD_DIR):
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$@"
+	mkdir -p $@
 
 $(BUILD_DIR)/as:
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$@"
+	mkdir -p $@
 
 $(BUILD_DIR)/asm68k:
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$@"
+	mkdir -p $@
 
 $(BUILD_DIR)/asm68k-linkable:
-	# Quotes are mandatory in Windows so MKDIR recognizes Unix slashes
-	$(MKDIR) "$@"
+	mkdir -p $@
 
 $(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	megapcm-68k
 
 clean:
 	$(MAKE) -C 68k clean
-	$(RM) $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR)/*
