@@ -6,6 +6,9 @@
 
 MegaPCM_LoadDriver:
 
+	move.w	sr, -(sp)
+	move.w	#$2700, sr					; disable interrupts
+
 	; ----------------------------------------------------------------------
 	; USES:
 	@var0:			equr	d0			;		generic variable #1
@@ -71,6 +74,7 @@ MegaPCM_LoadDriver:
 
 ; ----------------------------------------------------------------------
 @Done:
-	; Release additional registers and quit
+	; Release additional registers, restore SR and quit
 	move.l	(sp)+, a3
+	move.w	(sp)+, sr
 	rts

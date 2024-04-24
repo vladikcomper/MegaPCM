@@ -172,6 +172,8 @@ MegaPCM_LoadSampleTable:
 		swap	@var1								; @var1 HIGH = end bank
 
 		; We can send processed data to Mega PCM's sample table now ...
+		move.w	sr, -(sp)
+		move.w	#$2700, sr							; disable interrupts
 		stopZ80	(@z80_busreq)
 		move.b	@sample_type, (@z80_sample_tbl)+	; 00h	- sample type
 		move.b	@sample_flags, (@z80_sample_tbl)+	; 01h	- sample flags
@@ -183,6 +185,7 @@ MegaPCM_LoadSampleTable:
 		move.b	3(sp), (@z80_sample_tbl)+			; 07h	- end offset LOW
 		move.b	2(sp), (@z80_sample_tbl)+			; 08h	- end offset HIGH
 		startZ80 (@z80_busreq)
+		move.w	(sp)+, sr							; restore interrupts		
 
 		dbf		@sample_cnt, @ProcessSampleLoop
 		bra.s	@Err_TooManySamples
@@ -201,11 +204,14 @@ MegaPCM_LoadSampleTable:
 	; ----------------------------------------------------------------------
 	@WriteEmptyRecord:
 		KDebug.WriteLine "Sample: <None>"
+		move.w	sr, -(sp)
+		move.w	#$2700, sr							; disable interrupts
 		stopZ80	(@z80_busreq)
 		rept 9
 			move.b	@sample_type, (@z80_sample_tbl)+
 		endr
 		startZ80 (@z80_busreq)
+		move.w	(sp)+, sr							; restore interrupts
 
 		lea		11(@sample_tbl), @sample_tbl		; skip the remaining bytes
 		dbf		@sample_cnt, @ProcessSampleLoop
