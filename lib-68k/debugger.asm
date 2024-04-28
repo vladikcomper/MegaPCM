@@ -94,7 +94,7 @@ _eh_address_error	equ	$01		; use for address and bus errors only (tells error ha
 _eh_show_sr_usp		equ	$02		; displays SR and USP registers content on error screen
 
 ; Advanced execution flags
-; WARNING! For experts only, DO NOT USES them unless you know what you're doing
+; WARNING! For experts only, DO NOT USE them unless you know what you're doing
 _eh_return			equ	$20
 _eh_enter_console	equ	$40
 _eh_align_offset	equ	$80
@@ -183,9 +183,12 @@ assert	macro	src, cond, dest
 	else narg=2
 		tst.\0	\src
 	endif
+	pusho
+	opt l-
 		b\cond\.s	@skip\@
 		RaiseError	"Assertion failed:%<endl>\src \cond \dest"
 	@skip\@:
+	popo
 	endif
 	endm
 
@@ -249,6 +252,9 @@ Console &
 
 		__FSTRING_GenerateArgumentsCode \1
 
+		pusho
+		opt l-
+
 		; If we have any arguments in string, use formatted string function ...
 		if (__sp>0)
 			movem.l	a0-a2/d7, -(sp)
@@ -280,6 +286,7 @@ Console &
 
 		; Back to previous section (it should be 'rom' for this trick to work)
 		section	rom
+		popo	
 
 	elseif strcmp("\0","run")|strcmp("\0","Run")
 		jsr		MDDBG__ErrorHandler_ConsoleOnly
@@ -346,6 +353,9 @@ KDebug &
 
 		__FSTRING_GenerateArgumentsCode \1
 
+		pusho
+		opt l-
+
 		; If we have any arguments in string, use formatted string function ...
 		if (__sp>0)
 			movem.l	a0-a2/d7, -(sp)
@@ -376,6 +386,7 @@ KDebug &
 
 		; Back to previous section (it should be 'rom' for this trick to work)
 		section	rom
+		popo	
 
 	elseif strcmp("\0","breakline")|strcmp("\0","BreakLine")
 		move.w	sr, -(sp)
@@ -424,16 +435,16 @@ __ErrorMessage &
 __FSTRING_GenerateArgumentsCode &
 	macro	string
 
-	__pos:	set 	instr(\string,'%<')		; token position
-	__stack:set		0						; size of actual stack
-	__sp:	set		0						; stack displacement
+	__pos:	= instr(\string,'%<')		; token position
+	__stack:= 0						; size of actual stack
+	__sp:	= 0						; stack displacement
 
 	; Parse string itself
 	while (__pos)
 
 		; Retrive expression in brackets following % char
-    	__endpos:	set		instr(__pos+1,\string,'>')
-    	__midpos:	set		instr(__pos+5,\string,' ')
+    	__endpos:	= instr(__pos+1,\string,'>')
+    	__midpos:	= instr(__pos+5,\string,' ')
     	if (__midpos<1)|(__midpos>__endpos)
 			__midpos: = __endpos
     	endif
@@ -466,7 +477,7 @@ __FSTRING_GenerateArgumentsCode &
 			endif
 		endif
 
-		__pos:	set		instr(__pos+1,\string,'%<')
+		__pos:	= instr(__pos+1,\string,'%<')
 	endw
 
 	; Generate stack code
@@ -481,8 +492,8 @@ __FSTRING_GenerateArgumentsCode &
 __FSTRING_GenerateDecodedString &
 	macro string
 
-	__lpos:	set		1						; start position
-	__pos:	set 	instr(\string,'%<')		; token position
+	__lpos:	= 1							; start position
+	__pos:	= instr(\string,'%<')		; token position
 
 	while (__pos)
 
@@ -491,8 +502,8 @@ __FSTRING_GenerateDecodedString &
 		dc.b	"\__substr"
 
 		; Retrive expression in brakets following % char
-    	__endpos:	set		instr(__pos+1,\string,'>')
-    	__midpos:	set		instr(__pos+5,\string,' ')
+    	__endpos:	= instr(__pos+1,\string,'>')
+    	__midpos:	= instr(__pos+5,\string,' ')
     	if (__midpos<1)|(__midpos>__endpos)
 			__midpos: = __endpos
     	endif
@@ -527,8 +538,8 @@ __FSTRING_GenerateDecodedString &
 			dc.b	\__substr
 		endif
 
-		__lpos:	set		__endpos+1
-		__pos:	set		instr(__pos+1,\string,'%<')
+		__lpos:	= __endpos+1
+		__pos:	= instr(__pos+1,\string,'%<')
 	endw
 
 	; Write part of string before the end
