@@ -6,8 +6,11 @@ BUILD_DIR := ../build/bundle
 LIB_BUILD_DIR := ../build/68k
 SRC_DIR := .
 LIB_SRC_DIR := ./68k
+Z80_SRC_DIR := ./z80
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
+LIB_SRC_FILES := $(wildcard $(LIB_SRC_DIR)/*.asm)
+Z80_SRC_FILES := $(wildcard $(Z80_SRC_DIR)/*.asm)
 
 .PHONY:	all asm68k asm68k-linkable as megapcm-68k
 
@@ -55,7 +58,8 @@ $(BUILD_DIR)/asm68k:
 $(BUILD_DIR)/asm68k-linkable:
 	mkdir -p $@
 
-$(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	megapcm-68k
+$(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	$(LIB_SRC_FILES) $(Z80_SRC_FILES)
+	$(MAKE) -C 68k
 
 clean:
 	$(MAKE) -C 68k clean
