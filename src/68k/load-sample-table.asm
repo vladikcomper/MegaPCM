@@ -58,9 +58,9 @@ MegaPCM_LoadSampleTable:
 		endm
 	; ----------------------------------------------------------------------
 
-	lea		Z80_BUSREQ, @z80_busreq
+	lea		MPCM_Z80_BUSREQ, @z80_busreq
 
-	lea		Z80_RAM+Z_MPCM_SampleTable, @z80_sample_tbl
+	lea		MPCM_Z80_RAM+Z_MPCM_SampleTable, @z80_sample_tbl
 	subq.w	#4, sp						; used for fast LE->BE conversion
 	moveq	#$7F-1, @sample_cnt			; load at most $7F samples (but table should have an end marker anyways!)
 
@@ -183,7 +183,7 @@ MegaPCM_LoadSampleTable:
 		; We can send processed data to Mega PCM's sample table now ...
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
-		stopZ80	(@z80_busreq)
+		MPCM_stopZ80	(@z80_busreq)
 		move.b	@sample_type, (@z80_sample_tbl)+	; 00h	- sample type
 		move.b	@sample_flags, (@z80_sample_tbl)+	; 01h	- sample flags
 		move.b	@sample_pitch, (@z80_sample_tbl)+	; 02h	- pitch
@@ -193,7 +193,7 @@ MegaPCM_LoadSampleTable:
 		move.b	2+0(sp), (@z80_sample_tbl)+			; 06h	- start offset HIGH
 		move.b	2+3(sp), (@z80_sample_tbl)+			; 07h	- end offset LOW
 		move.b	2+2(sp), (@z80_sample_tbl)+			; 08h	- end offset HIGH
-		startZ80 (@z80_busreq)
+		MPCM_startZ80 (@z80_busreq)
 		move.w	(sp)+, sr							; restore interrupts		
 
 		dbf		@sample_cnt, @ProcessSampleLoop
@@ -215,11 +215,11 @@ MegaPCM_LoadSampleTable:
 		KDebug.WriteLine "Sample: <None>"
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
-		stopZ80	(@z80_busreq)
+		MPCM_stopZ80	(@z80_busreq)
 		rept 9
 			move.b	@sample_type, (@z80_sample_tbl)+
 		endr
-		startZ80 (@z80_busreq)
+		MPCM_startZ80 (@z80_busreq)
 		move.w	(sp)+, sr							; restore interrupts
 
 		lea		11(@sample_tbl), @sample_tbl		; skip the remaining bytes

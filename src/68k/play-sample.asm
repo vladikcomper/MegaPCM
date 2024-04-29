@@ -11,9 +11,9 @@ MegaPCM_PlaySample:
 	@sample_id:			equr	d0	; .b	sample id (>$80)
 	; ----------------------------------------------------------------------
 
-	stopZ80
-	move.b	@sample_id, Z80_RAM+Z_MPCM_CommandInput
-	startZ80
+	MPCM_stopZ80
+	move.b	@sample_id, MPCM_Z80_RAM+Z_MPCM_CommandInput
+	MPCM_startZ80
 	rts
 
 
@@ -23,9 +23,9 @@ MegaPCM_PlaySample:
 ; ------------------------------------------------------------------------------
 
 MegaPCM_PausePlayback:
-	stopZ80
-	move.b	#Z_MPCM_COMMAND_PAUSE, Z80_RAM+Z_MPCM_CommandInput
-	startZ80
+	MPCM_stopZ80
+	move.b	#Z_MPCM_COMMAND_PAUSE, MPCM_Z80_RAM+Z_MPCM_CommandInput
+	MPCM_startZ80
 	rts
 
 
@@ -35,9 +35,9 @@ MegaPCM_PausePlayback:
 ; ------------------------------------------------------------------------------
 
 MegaPCM_UnpausePlayback:
-	stopZ80
-	move.b	#0, Z80_RAM+Z_MPCM_CommandInput
-	startZ80
+	MPCM_stopZ80
+	move.b	#0, MPCM_Z80_RAM+Z_MPCM_CommandInput
+	MPCM_startZ80
 	rts
 
 
@@ -47,7 +47,7 @@ MegaPCM_UnpausePlayback:
 ; ------------------------------------------------------------------------------
 
 MegaPCM_StopPlayback:
-	stopZ80
-	move.b	#Z_MPCM_COMMAND_STOP, Z80_RAM+Z_MPCM_CommandInput
-	startZ80
+	MPCM_stopZ80
+	move.b	#Z_MPCM_COMMAND_STOP, MPCM_Z80_RAM+Z_MPCM_CommandInput
+	MPCM_startZ80
 	rts

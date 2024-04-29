@@ -1,3 +1,6 @@
+##
+## This is a direct source code port of `68k/macros.asm` targeting AS.
+##
 ; ==============================================================================
 ; ------------------------------------------------------------------------------
 ; Macros
@@ -68,33 +71,46 @@ incdac:	macro NAME, PATH
 ; Macro to stop Z80 and take over its bus
 ; ------------------------------------------------------------------------------
 
-MPCM_stopZ80:	macro
-	move.w	#$100, ($A11100).l
--	bset	#0, ($A11100).l
-	bne.s	-
+MPCM_stopZ80:	macro OPBUSREQ
+	if ARGCOUNT==1
+		move.w	#$100, OPBUSREQ
+		.wait:
+			bset	#0, OPBUSREQ
+			bne.s	.wait
+	else
+		move.w	#$100, MPCM_Z80_BUSREQ
+		.wait:
+			bset	#0, MPCM_Z80_BUSREQ
+			bne.s	.wait
+	endif
 	endm
 
 ; ------------------------------------------------------------------------------
 ; Macro to start Z80 and release its bus
 ; ------------------------------------------------------------------------------
 
-MPCM_startZ80:	macro
-	move.w	#0, ($A11100).l
+MPCM_startZ80:	macro OPBUSREQ
+	if ARGCOUNT==1
+		move.w	#0, OPBUSREQ
+	else
+		move.w	#0, MPCM_Z80_BUSREQ
+	endif
 	endm
 
 ; ------------------------------------------------------------------------------
 ; Ensures Mega PCM 2 isn't busy writing to YM (other than DAC output obviously)
 ; ------------------------------------------------------------------------------
 
-MPCM_ensureYMWriteReady:	macro
--	tst.b	($A00000+Z_MPCM_DriverReady).l
-	bne.s	+
-	MPCM_startZ80
-	move.w	d0, -(sp)
-	moveq	#10, d0
-	dbf		d0, *						; waste 100+ cycles
-	move.w	(sp)+, d0
-	MPCM_stopZ80
-	bra.s	-
-+
+MPCM_ensureYMWriteReady:	macro OPBUSREQ
+	.chk_ready:
+		tst.b	(MPCM_Z80_RAM+Z_MPCM_DriverReady).l
+		bne.s	.ready
+		MPCM_startZ80	OPBUSREQ
+		move.w	d0, -(sp)
+		moveq	#10, d0
+		dbf		d0, *						; waste 100+ cycles
+		move.w	(sp)+, d0
+		MPCM_stopZ80	OPBUSREQ
+		bra.s	.chk_ready
+	.ready:
 	endm

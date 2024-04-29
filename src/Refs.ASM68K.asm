@@ -9,3 +9,7 @@
 	xref	MegaPCM_SetSFXVolume
 	xref	MegaPCM_SetPan
 	xref	MegaPCM_SetSFXPan
+
+	if def(__DEBUG__)
+		xref	MPCM_Debugger_LoadSampleTableException
+	endif

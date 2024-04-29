@@ -25,7 +25,7 @@
 
 ; ------------------------------------------------------------------------------
 
-	include	'vars.asm'
+	include	'equates.asm'
 	include	'macros.asm'
 	include	'sample-table.defs.asm'
 
@@ -36,6 +36,9 @@
 	public	on
 	include	'load-driver.asm'
 	include	'load-sample-table.asm'
+	if def(__DEBUG__)
+		include	'load-sample-table.debugger.asm'
+	endif
 	include	'play-sample.asm'
 	include	'set-volume.asm'
 	include	'set-pan.asm'

@@ -11,9 +11,9 @@ MegaPCM_SetVolume:
 	@volume:			equr	d0	; .b	volume level (0 = max, $F = min)
 	; ----------------------------------------------------------------------
 
-	stopZ80
-	move.b	@volume, Z80_RAM+Z_MPCM_VolumeInput
-	startZ80
+	MPCM_stopZ80
+	move.b	@volume, MPCM_Z80_RAM+Z_MPCM_VolumeInput
+	MPCM_startZ80
 	rts
 
 
@@ -29,7 +29,7 @@ MegaPCM_SetSFXVolume:
 	@volume:			equr	d0	; .b	volume level (0 = max, $F = min)
 	; ----------------------------------------------------------------------
 
-	stopZ80
-	move.b	@volume, Z80_RAM+Z_MPCM_SFXVolumeInput
-	startZ80
+	MPCM_stopZ80
+	move.b	@volume, MPCM_Z80_RAM+Z_MPCM_SFXVolumeInput
+	MPCM_startZ80
 	rts

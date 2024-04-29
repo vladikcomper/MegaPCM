@@ -35,4 +35,21 @@ MegaPCMLibraryBlob:
 ; ------------------------------------------------------------------------------
 
 #include ../build/bundle/MegaPCM.Symbols.asm
+
+#ifdef BUNDLE-ASM68K
+	if def(__DEBUG__)
+#else
+	ifdef __DEBUG__
+#endif
+; ------------------------------------------------------------------------------
+; Additional debuggers
+; ------------------------------------------------------------------------------
+
+#ifdef BUNDLE-ASM68K
+#include Debuggers.ASM68K.asm
+#else
+#include Debuggers.AS.asm
+#endif
+
+	endif
 #endif

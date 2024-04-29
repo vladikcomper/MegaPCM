@@ -11,9 +11,9 @@ MegaPCM_SetPan:
 	@pan:				equr	d0	; .b	LR-pan ($40, $80 or $C0)
 	; ----------------------------------------------------------------------
 
-	stopZ80
-	move.b	@pan, Z80_RAM+Z_MPCM_PanInput
-	startZ80
+	MPCM_stopZ80
+	move.b	@pan, MPCM_Z80_RAM+Z_MPCM_PanInput
+	MPCM_startZ80
 	rts
 
 
@@ -29,7 +29,7 @@ MegaPCM_SetSFXPan:
 	@pan:				equr	d0	; .b	LR-pan ($40, $80 or $C0)
 	; ----------------------------------------------------------------------
 
-	stopZ80
-	move.b	@pan, Z80_RAM+Z_MPCM_SFXPanInput
-	startZ80
+	MPCM_stopZ80
+	move.b	@pan, MPCM_Z80_RAM+Z_MPCM_SFXPanInput
+	MPCM_startZ80
 	rts
