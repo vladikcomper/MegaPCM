@@ -22,7 +22,13 @@ Main:
 	lea		SampleTable(pc), a0
 	jsr		MegaPCM_LoadSampleTable
 	tst.w	d0
-	bne		@SampleTableError
+	beq.s	@SampleTableOk
+	if def(__DEBUG__)
+		RaiseError "MegaPCM_LoadSampleTable returned %<.b d0>", MPCM_Debugger_LoadSampleTableException
+	else
+		illegal
+	endif
+@SampleTableOk:
 	Console.WriteLine "OK"
 
 	Console.WriteLine "Initiating sample playback...%<endl>"
@@ -47,18 +53,12 @@ Main:
 	even
 
 ; ------------------------------------------------------------------------------
-@SampleTableError:
-	Console.WriteLine "FAILED"
-	Console.WriteLine "MegaPCM_LoadSampleTable returned %<.b d0>"
-	rts
-
-; ------------------------------------------------------------------------------
 ; Default sample table
 ; ------------------------------------------------------------------------------
 
 SampleTable:
 	;			type			pointer		Hz		flags			  id
-	dcSample	TYPE_PCM_TURBO, SampleLoop, 32000,	FLAGS_LOOP		; $81
+	dcSample	TYPE_PCM_TURBO, SampleLoop, 0,	FLAGS_LOOP		; $81
 	dc.w	-1	; end marker
 
 ; ------------------------------------------------------------------------------
