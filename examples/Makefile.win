@@ -23,7 +23,7 @@ s1-smps-integration:	s1-smps-integration\s1-smps-integration.gen
 s1-smps-integration\s1-smps-integration.gen: $(wildcard s1-smps-integration\*.asm)
 
 %.obj: %.asm
-	$(ASM68K) $(ASMFLAGS) $<,$@
+	$(ASM68K) $(ASMFLAGS) /e __DEBUG__ $<,$@
 
 %.gen: %.obj
 	$(PSYLINK) /q /p $(LIBS) $<,$@,$@.sym
