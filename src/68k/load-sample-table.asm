@@ -180,10 +180,10 @@ MegaPCM_LoadSampleTable:
 		move.b	@sample_pitch, (@z80_sample_tbl)+	; 02h	- pitch
 		move.b	@var0, (@z80_sample_tbl)+			; 03h	- start bank
 		move.b	@var1, (@z80_sample_tbl)+			; 04h	- end bank
-		move.b	1(sp), (@z80_sample_tbl)+			; 05h	- start offset LOW
-		move.b	(sp), (@z80_sample_tbl)+			; 06h	- start offset HIGH
-		move.b	3(sp), (@z80_sample_tbl)+			; 07h	- end offset LOW
-		move.b	2(sp), (@z80_sample_tbl)+			; 08h	- end offset HIGH
+		move.b	2+1(sp), (@z80_sample_tbl)+			; 05h	- start offset LOW
+		move.b	2+0(sp), (@z80_sample_tbl)+			; 06h	- start offset HIGH
+		move.b	2+3(sp), (@z80_sample_tbl)+			; 07h	- end offset LOW
+		move.b	2+2(sp), (@z80_sample_tbl)+			; 08h	- end offset HIGH
 		startZ80 (@z80_busreq)
 		move.w	(sp)+, sr							; restore interrupts		
 
