@@ -8,6 +8,10 @@
 ; ------------------------------------------------------------------------------
 
 dcSample: macro	SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
+	if ARGCOUNT>4
+		fatal "Too many arguments. USAGE: dcSample type, samplePtr, sampleRateHz, flags"
+	endif
+
 	dc.b	SAMPLETYPE					; $00	- type
 
 	if SAMPLETYPE=TYPE_PCM
@@ -66,8 +70,8 @@ incdac:	macro NAME, PATH
 
 MPCM_stopZ80:	macro
 	move.w	#$100, ($A11100).l
-	bset	#0, ($A11100).l
-	bne.s	*-8
+-	bset	#0, ($A11100).l
+	bne.s	-
 	endm
 
 ; ------------------------------------------------------------------------------
@@ -76,4 +80,21 @@ MPCM_stopZ80:	macro
 
 MPCM_startZ80:	macro
 	move.w	#0, ($A11100).l
+	endm
+
+; ------------------------------------------------------------------------------
+; Ensures Mega PCM 2 isn't busy writing to YM (other than DAC output obviously)
+; ------------------------------------------------------------------------------
+
+MPCM_ensureYMWriteReady:	macro
+-	tst.b	($A00000+Z_MPCM_DriverReady).l
+	bne.s	+
+	MPCM_startZ80
+	move.w	d0, -(sp)
+	moveq	#10, d0
+	dbf		d0, *						; waste 100+ cycles
+	move.w	(sp)+, d0
+	MPCM_stopZ80
+	bra.s	-
++
 	endm

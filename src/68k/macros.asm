@@ -43,26 +43,3 @@ startZ80: macro opBusReq
 		move.w	#0, Z80_BUSREQ
 	endif
 	endm
-
-; ------------------------------------------------------------------------------
-; Checks that Mega PCM is ready for operation
-; ------------------------------------------------------------------------------
-; ARGUMENTS:
-;	opBusReq? - (Optional) Custom operand for Z80_BUSREQ
-; ------------------------------------------------------------------------------
-
-waitMegaPCMReady: macro opBusReq
-	@chk_ready\@:
-		stopZ80	\opBusReq
-		tst.b	Z80_RAM+Z_MPCM_DriverReady	; is Mega PCM ready?
-		bne.s	@ready\@					; if yes, branch
-		startZ80 \opBusReq
-		move.w	d0, -(sp)
-		moveq	#10, d0
-		dbf		d0, *						; waste 100+ cycles
-		move.w	(sp)+, d0
-		bra.s	@chk_ready\@
-	@ready\@:
-		startZ80 \opBusReq
-
-	endm
