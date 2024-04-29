@@ -356,6 +356,7 @@ sub_72722:
 ; ---------------------------------------------------------------------------
 sub_7272E:
                 MPCM_stopZ80
+                MPCM_ensureYMWriteReady
                 move.b  d0, ($A04000).l
                 move.b  d1, ($A04001).l
 @waitLoop:      tst.b   ($A04000).l             ; is FM busy?
@@ -372,6 +373,7 @@ loc_7275A:
 ; ---------------------------------------------------------------------------
 sub_72764:
                 MPCM_stopZ80
+                MPCM_ensureYMWriteReady
                 move.b  d0, ($A04002).l
                 move.b  d1, ($A04003).l
 @waitLoop:      tst.b   ($A04000).l             ; is FM busy?

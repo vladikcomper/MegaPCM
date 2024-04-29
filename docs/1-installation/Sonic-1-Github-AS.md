@@ -399,6 +399,7 @@ WriteFMIorII:
 ; ---------------------------------------------------------------------------
 WriteFMI:
                 MPCM_stopZ80
+                MPCM_ensureYMWriteReady
                 move.b  d0, (ym2612_a0).l
                 move.b  d1, (ym2612_d0).l
 .waitLoop:      tst.b   (ym2612_d0).l           ; is FM busy?
@@ -416,6 +417,7 @@ WriteFMIIPart:
 ; ---------------------------------------------------------------------------
 WriteFMII:
                 MPCM_stopZ80
+                MPCM_ensureYMWriteReady
                 move.b  d0, (ym2612_a1).l
                 move.b  d1, (ym2612_d1).l
 .waitLoop:      tst.b   (ym2612_d0).l           ; is FM busy?
