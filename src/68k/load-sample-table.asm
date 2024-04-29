@@ -89,10 +89,16 @@ MegaPCM_LoadSampleTable:
 	@Sample_PCM_or_DPCM:
 
 		; For TYPE_PCM and TYPE_PCM_TURBO, detect RIFF header if present
-		; TODO: AIFF support?
-		cmp.l	#'RIFF', (@sample_start)
-		bne.w	@PCM_AlignOffsets				; if not RIFF container, assume it's raw data
+		move.l	(@sample_start), @var0
+		cmp.l	#'RIFF', @var0					; is this a RIFF container?
+		beq.s	@WAVE_ChkHeader					; is yes, proceed to check WAVE header
+		cmp.l	#'AIFF', @var0					; is this an AIFF container?
+		beq.w	@Err_WAVE_InvalidHeaderFormat	; we don't support AIFF's disguised as WAV files
+		cmp.l	#'NIST', @var0					; we don't support NIST containers either
+		bne.w	@PCM_AlignOffsets				; if not RIFF, AIFF or NIST, assume raw PCM stream
+		bra.w	@Err_WAVE_InvalidHeaderFormat
 
+	@WAVE_ChkHeader:
 		; Validate WAVE file format ...
 		cmp.l	#'WAVE', 8(@sample_start)		; for RIFF containers, we only accept WAVE type
 		bne.w	@Err_WAVE_InvalidHeaderFormat
@@ -102,8 +108,11 @@ MegaPCM_LoadSampleTable:
 		lea		$C(@sample_start), @sample_start; locate "fmt" chunk
 		cmp.l	#'fmt ', (@sample_start)
 		bne.w	@Err_WAVE_InvalidHeaderFormat
-		cmp.w	#$0100, 8(@sample_start)		; is sample type uncompressed PCM ($0001 Little-endian)?
-		bne.w	@Err_WAVE_BadAudioFormat		; if not, branch
+		cmp.w	#$0100, 8(@sample_start)		; is audio format uncompressed PCM ($0001 Little-endian)?
+		beq.w	@WAVE_FormatOk					; if yes, branch
+		cmp.w	#$FEFF, 8(@sample_start)		; is it Microsoft's WAVEX PCM format ($FFFE Little-endian)?
+		bne.w	@Err_WAVE_BadAudioFormat		; if not, we've exhausted supported format options
+	@WAVE_FormatOk:
 		cmp.w	#$0100, $A(@sample_start)		; is number of channels 1 ($0001 Little-endian)?
 		bne.w	@Err_WAVE_NotMono				; if not, branch
 		cmp.w	#$0800, $16(@sample_start)		; is bits per sample 8 ($0008 Little-endian)?
@@ -131,7 +140,7 @@ MegaPCM_LoadSampleTable:
 		; Locate "data" chunk ...
 		@WAVE_SeekDataChunk:
 			cmpa.l	@sample_end, @sample_start					; if we went outside of WAVE file
-			bhs.w	@Err_WAVE_MissingDataChunk					; ... raise an exception
+			bhs.w	@Err_WAVE_MissingDataChunk					; ... return an error
 			@moveLE.l 4(@sample_start), @var0					; @var0 = chunk size
 			KDebug.WriteLine "Seeking data chunk: Skipping %<.l @var0> bytes"
 			lea		8(@sample_start, @var0.l), @sample_start	; load next chunk
