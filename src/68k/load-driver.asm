@@ -56,7 +56,7 @@ MegaPCM_LoadDriver:
 
 	@WaitReadyLoop:
 		MPCM_stopZ80 (@z80_busreq)
-		move.b	(@src), @var1		; d1 = Z_MPCM_DriverReady
+		move.b	(@src), @var1		; @var1 = Z_MPCM_DriverReady
 		MPCM_startZ80 (@z80_busreq)
 		cmp.b	#'R', @var1			; is driver ready?
 		beq.s	@Done				; if yes, branch
