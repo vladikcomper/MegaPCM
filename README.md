@@ -90,3 +90,23 @@ If you need to invoke `make` from individual directories however (not root), be 
 Almost the same as Linux, however you need to make sure to use GNU version of Make.
 
 - Install GNU Make; use `gmake` command instead of `make`;
+
+## Licensing
+
+**Mega PCM 2's main source code and its dependencies (`src/`, `lib-68k/`, `examples/` directories) are fully free and open source and are provided under MIT license. See `LICENSE` file.**
+
+Also included in this repo, but not distributed with Mega PCM 2 releases:
+
+- Mega PCM 2's testing suite (see `test/` directory):
+
+    - All tests source code and "MegaPCM-Emu" library retain the same MIT license;
+
+    - "Z80VM" library (`tests/z80vm`) is a custom solution based on a modified z80emu v.1.3.0 (c) by Lin Ke-Fong; the original software comes without a set license;
+
+- For developer's convenience this repo also includes a few binary tools (see `toolchain/` directory):
+
+   - `asm68k` and `psylink` are (c) by S.N. Systems Software Limited and come with propriatary license, but are considered [abandonware](https://en.wikipedia.org/wiki/Abandonware). 
+
+   - `sjasmplus` is a free and open source Z80 assembler available under BSD-3-Clause license.
+
+   - `convsym`, `cbundle` and others are written by me and are availabe under permissive MIT License.
