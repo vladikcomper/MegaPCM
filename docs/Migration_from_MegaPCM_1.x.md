@@ -274,6 +274,10 @@ If you complete follow next sections carefully, you should get the following res
     dc.w    -1
 ```
 
+> [!NOTE]
+>
+> For more information on Mega PCM 2's sample table format, see [Mega PCM 2 Sample table format](Sample_table_format.md).
+
 #### Pitches to sample rate for PCM (`TYPE_PCM`)
 
 Use this table if your target sample's type is `TYPE_PCM`. Note that allowed pitches in 1.x are $01..$FF, but only $01..$3F are covered here, because anything above is so low, it's not practically usable.

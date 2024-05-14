@@ -50,7 +50,9 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 ### Documentation
 
 - [API Documentation](docs/API.md)
+- [Sample table format](docs/Sample_table_format.md)
 - [Migrating from MegaPCM 1.x](docs/Migration_from_MegaPCM_1.x.md)
+- [Troubleshooting](docs/Troubleshooting.md)
 
 ## Examples
 
