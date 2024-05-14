@@ -3,7 +3,7 @@
 
 > [!WARNING]
 >
-> The development of Mega PCM 2 is 99.9999% complete, but some integrations and cross-platform build system are still pending. For proper support, **please wait until documentation is finalized and release is officially announced.**
+> The development of Mega PCM 2 is 99.999999% complete, but some integrations and cross-platform build system are still pending. For proper support, **please wait until documentation is finalized and release is officially announced.**
 
 **Mega PCM 2** is a DAC sound driver for Sega Mega-Drive / Genesis. It offers the highest quality playback possible on the hardware, high sample rate (up to 32 kHz), pitch/volume effects and supports several sample formats (WAVE, raw PCM, compressed DPCM).
 
@@ -50,6 +50,7 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 ### Documentation
 
 - [API Documentation](docs/API.md)
+- [Migrating from MegaPCM 1.x](docs/Migration_from_MegaPCM_1.x.md)
 
 ## Examples
 
