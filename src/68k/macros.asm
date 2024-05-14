@@ -129,12 +129,12 @@ MPCM_ensureYMWriteReady:	macro opBusReq
 	@chk_ready\@:
 		tst.b	(MPCM_Z80_RAM+Z_MPCM_DriverReady).l
 		bne.s	@ready\@
-		MPCM_MPCM_startZ80 \opBusReq
+		MPCM_startZ80 \opBusReq
 		move.w	d0, -(sp)
 		moveq	#10, d0
 		dbf		d0, *						; waste 100+ cycles
 		move.w	(sp)+, d0
-		MPCM_MPCM_stopZ80 \opBusReq
+		MPCM_stopZ80 \opBusReq
 		bra.s	@chk_ready\@
 	@ready\@:
 

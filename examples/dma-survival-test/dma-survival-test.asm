@@ -3,8 +3,8 @@
 
 	include	'../build/z80/megapcm.symbols.asm'	; import Mega PCM debug symbols for tricks
 
-	include	'../src/68k/macros.asm'		; for startZ80, stopZ80
-	include	'../src/68k/vars.asm'		; for Z80_RAM etc
+	include	'../src/68k/macros.asm'		; for MPCM_startZ80, MPCM_stopZ80
+	include	'../src/68k/equates.asm'	; for MPCM_Z80_RAM etc
 
 ; ------------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ Main:
 		; Execute DMA
 		move.b	DMA_Protection, d1
 		bne.s	@dma_ok
-		stopZ80								; some emulators don't stop Z80 on ROM access during DMA
+		MPCM_stopZ80								; some emulators don't stop Z80 on ROM access during DMA
 	@dma_ok:
 		lea		VDP_Ctrl, a0
 		lea		VDP_Data-VDP_Ctrl(a0), a1
@@ -102,7 +102,7 @@ Main:
 		move.w	#$0000, (a1)				; VDP => make BG black
 		tst.b	d1
 		bne.s	@dma_ok2
-		startZ80
+		MPCM_startZ80
 	@dma_ok2:
 
 		; Update menu logic
@@ -138,13 +138,13 @@ InitConfig:
 		bne.s	@getVBlankSamplesLocation
 
 	addq.w	#6-2, a0
-	lea		Z80_RAM, a1
+	lea		MPCM_Z80_RAM, a1
 	adda.w	(a0), a1
 	move.l	a1, VBlank_PCM_SamplesLoc
 
-	stopZ80
+	MPCM_stopZ80
 	move.b	(a1), VBlank_PCM_Samples
-	startZ80
+	MPCM_startZ80
 	rts
 
 ; ------------------------------------------------------------------------------
@@ -204,8 +204,8 @@ InputConfig:
 
 ; ------------------------------------------------------------------------------
 @PauseToggle:
-	lea		Z80_RAM+Z_MPCM_CommandInput, a0
-	stopZ80
+	lea		MPCM_Z80_RAM+Z_MPCM_CommandInput, a0
+	MPCM_stopZ80
 	move.b	(a0), d0
 	subq.b	#Z_MPCM_COMMAND_PAUSE, d0
 	beq.s	@unpause
@@ -213,7 +213,7 @@ InputConfig:
 
 @unpause:
 	move.b	d0, (a0)
-	startZ80
+	MPCM_startZ80
 	KDebug.WriteLine "Pause state = %<.b d0>"
 	rts
 
@@ -264,16 +264,16 @@ InputConfig:
 
 @DMAProtectionOff:
 	sf.b	DMA_Protection
-	stopZ80
-	move.b	#$C9, Z80_RAM+Z_MPCM_VBlank		; `RET`
-	startZ80
+	MPCM_stopZ80
+	move.b	#$C9, MPCM_Z80_RAM+Z_MPCM_VBlank		; `RET`
+	MPCM_startZ80
 	bra.s	@setredraw
 
 @DMAProtectionOn:
 	st.b	DMA_Protection
-	stopZ80
-	move.b	#$C3, Z80_RAM+Z_MPCM_VBlank		; `JP (nnn)`
-	startZ80
+	MPCM_stopZ80
+	move.b	#$C3, MPCM_Z80_RAM+Z_MPCM_VBlank		; `JP (nnn)`
+	MPCM_startZ80
 	bra		@setredraw
 
 @DMALengthDec:
@@ -295,9 +295,9 @@ InputConfig:
 
 @setsamples:
 	movea.l	VBlank_PCM_SamplesLoc, a0
-	stopZ80
+	MPCM_stopZ80
 	move.b	VBlank_PCM_Samples, (a0)
-	startZ80
+	MPCM_startZ80
 	bra		@setredraw
 
 @VBlankSamplesInc:
@@ -365,7 +365,6 @@ UpdateMenu:
 ; ------------------------------------------------------------------------------
 
 	include	'../src/68k/sample-table.defs.asm'	; for constants
-	include	'../src/Macros.ASM68K.asm'			; for dcSample, incdac
 
 SampleTable:
 	;			type			pointer		 Hz		flags			  id
