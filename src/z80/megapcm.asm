@@ -24,6 +24,7 @@
 	export	SFXVolumeInput
 	export	PanInput
 	export	SFXPanInput
+	export	LoopId
 	export	ActiveSamplePitch
 	export	VBlankActive
 	export	CalibrationApplied
@@ -37,6 +38,12 @@
 	; Exported constants
 	export	COMMAND_STOP
 	export	COMMAND_PAUSE
+	export	LOOP_IDLE
+	export	LOOP_PAUSE
+	export	LOOP_PCM
+	export	LOOP_PCM_TURBO
+	export	LOOP_DPCM
+	export	LOOP_CALIBRATION
 	export	ERROR__BAD_INTERRUPT
 	export	ERROR__BAD_SAMPLE_TYPE
 	export	ERROR__UNKNOWN_COMMAND
