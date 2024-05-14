@@ -262,12 +262,16 @@ Open `sonic.asm` file and find `MainGameLoop:` label. Just **above it**, insert 
                 jsr     MegaPCM_LoadSampleTable
                 tst.w   d0                      ; was sample table loaded successfully?
                 beq.s   .SampleTableOk          ; if yes, branch
-                ;RaiseError "Bad sample table (code %<.b d0>)"  ; uncomment if you have MD Debugger and Error handler installed
-                illegal
+                ifdef __DEBUG__
+                    ; for MD Debugger v.2.5 or above
+                    RaiseError "MegaPCM_LoadSampleTable returned %<.b d0>", MPCM_Debugger_LoadSampleTableException
+                else
+                    illegal
+                endif
 .SampleTableOk:
 ```
 
-Note that if you have [MD Debugger and Error handler](https://github.com/vladikcomper/md-modules/releases) installed, you can uncomment `RaiseError` macro to display a more meaningful message if something goes wrong during initialization.
+Note that if you have [MD Debugger and Error handler](https://github.com/vladikcomper/md-modules/releases) installed, you can take advantage of detailed error reporting in Debug builds (`s1built.debug.bin`) if something goes wrong during initialization.
 
 
 ### Step 3.5. Check yourself: Making sure Mega PCM works

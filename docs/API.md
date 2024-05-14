@@ -47,13 +47,23 @@ Loads a given sample table to Z80 memory. You must call this function after init
 >
 > You can use several sample tables and switch between them on the fly. However, uploading a large sample table may affect Mega PCM's performance and timings on that frame, so it's recommended to do so when Mega PCM is idling.
 
+> [!NOTE]
+>
+> If you have [MD Debugger and Error handler](https://github.com/vladikcomper/md-modules/releases) installed, you can take advantage of detailed error reporting if something goes wrong, since Mega PCM 2 library comes bundled with `MPCM_Debugger_LoadSampleTableException` debugger.
+
 **Usage:**
 
 ```m68k
     lea     YourSampleTable, a0
     jsr     MegaPCM_LoadSampleTable
     tst.w   d0                          ; has function returned error code?
-    bne     YourErrorHandler            ; your subroutine to display error code (d0) or fail
+    beq.s   SampleTable_ok              ; if not, branch
+    ; If you have MD Debugger v.2.5 or above:
+    RaiseError "MegaPCM_LoadSampleTable returned %<.b d0>", MPCM_Debugger_LoadSampleTableException
+    ; Otherwise:
+    illegal
+
+SampleTable_ok:
     ; <...>
 
 ; ---------------------------------------------------------------
