@@ -47,9 +47,9 @@ SampleTable:
 **Arguments:**
 
 - `<Type>` - sample type:
-    - `PCM_PCM` (for raw PCM and WAV files);
-    - `PCM_DPCM` (for raw DPCM files);
-    - `PCM_PCM_TURBO` (for raw PCM and WAV files at 32000 Hz);
+    - `TYPE_PCM` (for raw PCM and WAV files);
+    - `TYPE_DPCM` (for raw DPCM files);
+    - `TYPE_PCM_TURBO` (for raw PCM and WAV files at 32000 Hz);
 - `<Name>` - sample pointer/name, the one you specify for the `indac` macro, so sample table can reference it;
 - `<SampleRateHz>` (optional) - sample rate in Hz, supported rates are:
     - For `TYPE_PCM_TURBO`: Only 32000 Hz;

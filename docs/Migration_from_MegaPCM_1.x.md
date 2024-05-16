@@ -198,7 +198,7 @@ Instead of going into the detail of converting every field of every line, we can
 
     The first column (`<2.x_Type>`) is now almost compatible, but some instances with flags need correction (⚠️), see below.
 
-4. If some records in the first column (`<2.x_Type>`) has leftover flags after previous manipulations (e.g. `TYPE_PCM+FLAGS_SFX`), you need to move everything after the first `+` character to a new dedicated column (`<2.x_Flags>`):
+4. If some records in the first column (`<2.x_Type>`) have leftover flags after previous manipulations (e.g. `TYPE_PCM+FLAGS_SFX`), you need to move everything after the first `+` character to a new dedicated column (`<2.x_Flags>`):
 
     ```m68k
     ;   ✅          ✅          ✅           ❌      ✅
