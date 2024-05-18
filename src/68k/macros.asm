@@ -41,8 +41,8 @@ dcSample: macro	type, samplePtr, sampleRateHz, flags
 		dc.l	\samplePtr\_End							; $08	- end offset
 
 	elseif \type=TYPE_DPCM
-		if \sampleRateHz>TYPE_DPCM_BASE_RATE
-			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_BASE_RATE Hz"
+		if \sampleRateHz>TYPE_DPCM_MAX_RATE
+			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_MAX_RATE Hz"
 		endif
 		dc.b	\flags+0								; $01	- flags (optional)
 		dc.b	(\sampleRateHz)*256/TYPE_DPCM_BASE_RATE	; $02	- pitch
