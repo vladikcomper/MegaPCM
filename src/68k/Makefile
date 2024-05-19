@@ -12,13 +12,7 @@ Z80_FILES := $(Z80_BUILD_DIR)/megapcm.bin $(Z80_BUILD_DIR)/megapcm.exports.asm
 
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 
-TEST_BUILD_DIR := $(BUILD_DIR)/tests
-TEST_SRC_DIR := $(SRC_DIR)/tests
-TEST_FILES := $(wildcard $(TEST_SRC_DIR)/*.asm)
-TEST_LIBS := ../../lib-68k/mdshell.obj
-TEST_ROMS := $(patsubst $(TEST_SRC_DIR)/%.asm,$(TEST_BUILD_DIR)/%.gen,$(TEST_FILES))
-
-.PHONY:	all tests megapcm-blob megapcm-linkable megapcm-debug-linkable megapcm-z80 clean
+.PHONY:	all megapcm-blob megapcm-linkable megapcm-debug-linkable megapcm-z80 clean
 
 all:	megapcm-blob megapcm-linkable megapcm-debug-linkable
 
@@ -40,25 +34,10 @@ $(BUILD_DIR)/megapcm.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 $(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
 	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /l $(SRC_DIR)/megapcm.asm,$@
 
-tests:	$(TEST_ROMS)
-
-$(TEST_ROMS):	$(TEST_FILES) $(BUILD_DIR)/megapcm.debug.obj
-
-$(TEST_BUILD_DIR)/%.obj: $(TEST_SRC_DIR)/%.asm | $(TEST_BUILD_DIR)
-	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /g /l $<,$@
-
-$(TEST_BUILD_DIR)/%.gen: $(TEST_BUILD_DIR)/%.obj
-	$(PSYLINK) /q /p $(TEST_LIBS) $<,$@,$@.sym
-	$(CONVSYM) $@.sym $@ -ref 200 -a
-	rm -rf $@.sym
-
 $(Z80_FILES):	megapcm-z80
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
-
-$(TEST_BUILD_DIR):
-	mkdir -p $(TEST_BUILD_DIR)
 
 clean:
 	$(MAKE) -C ../z80 clean

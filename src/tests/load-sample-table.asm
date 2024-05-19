@@ -8,20 +8,12 @@
 ; (c) 2023-2024, Vladikcomper
 ; ------------------------------------------------------------------------------
 
-	include	'../../lib-68k/mdshell.asm'				; MD Shell bindings
-
-; ------------------------------------------------------------------------------
-
-	include	'macros.asm'							; for `dcSample`/`MPCM_stopZ80`/`MPCM_startZ80`
-	include	'equates.asm'							; `MPCM_Z80_RAM`, `MPCM_Z80_BUSREQ` etc
-	include	'../../build/z80/megapcm.exports.asm'	; for `Z_MPCM_SampleTable`
-
-	include	'sample-table.defs.asm'					; for `TYPE_PCM` etc
+	include	'../lib-68k/mdshell.asm'						; MD Shell library
+	include '../build/bundle/asm68k-linkable/MegaPCM.asm'	; Mega PCM library
 
 ; ------------------------------------------------------------------------------
 
 	section rom
-
 	xdef	Main
 
 ; ------------------------------------------------------------------------------
@@ -39,14 +31,6 @@ Main:
 
 	Console.WriteLine "%<pal2>ALL DONE"
 	rts
-
-; ------------------------------------------------------------------------------
-
-	include	'load-driver.asm'						; for `MegaPCM_LoadDriver`
-	include	'load-sample-table.asm'					; for `MegaPCM_LoadSampleTable`
-
-; ------------------------------------------------------------------------------
-
 
 ; ==============================================================================
 ; ------------------------------------------------------------------------------
@@ -142,12 +126,3 @@ Test_SampleRates:
 	dc.l	$12345678, $12345678
 
 @PCM_Dummy_32000Hz_End:
-
-; ------------------------------------------------------------------------------
-; Mega PCM Z80 blob
-; ------------------------------------------------------------------------------
-
-MegaPCM:
-	incbin	"../../build/z80/megapcm.bin"
-MegaPCM_End:
-	even
