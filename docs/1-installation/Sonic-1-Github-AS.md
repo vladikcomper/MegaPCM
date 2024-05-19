@@ -1,7 +1,7 @@
 
 # Installing Mega PCM 2 in Sonic 1 Github Disassembly (AS)
 
-This is a step-by-step guide for installing Mega PCM 2 in Sonic 1 Github Disassembly. Note that it targets the **AS branch** of the disassembly.
+This is a step-by-step guide for installing Mega PCM 2 in [Sonic 1 Github Disassembly](https://github.com/sonicretro/s1disasm). Note that it targets the **AS branch** of the disassembly (this is the default).
 
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
@@ -404,10 +404,15 @@ WriteFMIorII:
 WriteFMI:
                 MPCM_stopZ80
                 MPCM_ensureYMWriteReady
-                move.b  d0, (ym2612_a0).l
-                move.b  d1, (ym2612_d0).l
-.waitLoop:      tst.b   (ym2612_d0).l           ; is FM busy?
+.waitLoop:      tst.b   (ym2612_a0).l           ; is FM busy?
                 bmi.s   .waitLoop               ; branch if yes
+                move.b  d0, (ym2612_a0).l
+                nop
+                move.b  d1, (ym2612_d0).l
+                nop
+                nop
+.waitLoop2:     tst.b   (ym2612_a0).l           ; is FM busy?
+                bmi.s   .waitLoop2              ; branch if yes
                 move.b  #$2A, (ym2612_a0).l     ; restore DAC output for Mega PCM
                 MPCM_startZ80
                 rts
@@ -422,12 +427,17 @@ WriteFMIIPart:
 WriteFMII:
                 MPCM_stopZ80
                 MPCM_ensureYMWriteReady
-                move.b  d0, (ym2612_a1).l
-                move.b  d1, (ym2612_d1).l
-.waitLoop:      tst.b   (ym2612_d0).l           ; is FM busy?
+.waitLoop:      tst.b   (ym2612_a0).l           ; is FM busy?
                 bmi.s   .waitLoop               ; branch if yes
+                move.b  d0, (ym2612_a1).l
+                nop
+                move.b  d1, (ym2612_d1).l
+                nop
+                nop
+.waitLoop2:     tst.b   (ym2612_a0).l           ; is FM busy?
+                bmi.s   .waitLoop2              ; branch if yes
                 move.b  #$2A, (ym2612_a0).l     ; restore DAC output for Mega PCM
-                MPCM_startZ80           
+                MPCM_startZ80
                 rts
 ; End of function WriteFMII
 ```

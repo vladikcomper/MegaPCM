@@ -361,10 +361,15 @@ sub_72722:
 sub_7272E:
                 MPCM_stopZ80
                 MPCM_ensureYMWriteReady
-                move.b  d0, ($A04000).l
-                move.b  d1, ($A04001).l
 @waitLoop:      tst.b   ($A04000).l             ; is FM busy?
                 bmi.s   @waitLoop               ; branch if yes
+                move.b  d0, ($A04000).l
+                nop
+                move.b  d1, ($A04001).l
+                nop
+                nop
+@waitLoop2:     tst.b   ($A04000).l             ; is FM busy?
+                bmi.s   @waitLoop2              ; branch if yes
                 move.b  #$2A, ($A04000).l       ; restore DAC output for Mega PCM
                 MPCM_startZ80
                 rts
@@ -378,12 +383,17 @@ loc_7275A:
 sub_72764:
                 MPCM_stopZ80
                 MPCM_ensureYMWriteReady
-                move.b  d0, ($A04002).l
-                move.b  d1, ($A04003).l
 @waitLoop:      tst.b   ($A04000).l             ; is FM busy?
                 bmi.s   @waitLoop               ; branch if yes
+                move.b  d0, ($A04002).l
+                nop
+                move.b  d1, ($A04003).l
+                nop
+                nop
+@waitLoop2:     tst.b   ($A04000).l             ; is FM busy?
+                bmi.s   @waitLoop2              ; branch if yes
                 move.b  #$2A, ($A04000).l       ; restore DAC output for Mega PCM
-                MPCM_startZ80           
+                MPCM_startZ80
                 rts
 ; End of function sub_72764
 ```
