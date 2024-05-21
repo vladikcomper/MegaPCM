@@ -497,7 +497,7 @@ FMSetRest:
 PauseMusic:
 		bmi.s	.unpausemusic		; Branch if music is being unpaused
 		cmpi.b	#2,f_pausemusic(a6)
-		beq.w	.unpausedallfm
+		beq.w	.done
 		move.b	#2,f_pausemusic(a6)
 		moveq	#$FFFFFFB4,d0		; Command to set AMS/FMS/panning
 		moveq	#0,d1			; No panning, AMS or FMS
@@ -576,11 +576,14 @@ PauseMusic:
 		move.b	#$B4,d0				; Command to set AMS/FMS/panning
 		move.b	TrackAMSFMSPan(a5),d1		; Get value from track RAM
 		jsr	WriteFMIorII(pc)
+
 ; loc_71EFE:
 .unpausedallfm:
 		MPCM_stopZ80
 		move.b	#0, Z80_RAM+Z_MPCM_CommandInput	; unpause DAC
 		MPCM_startZ80
+
+.done:
 		rts
 
 ; ---------------------------------------------------------------------------
