@@ -1,10 +1,6 @@
 
 # Mega PCM 2
 
-> [!WARNING]
->
-> The development of Mega PCM 2 is 99.999999% complete, but some integrations and cross-platform build system are still pending. For proper support, **please wait until documentation is finalized and release is officially announced.**
-
 **Mega PCM 2** is a DAC sound driver for Sega Mega-Drive / Genesis. It offers the highest quality playback possible on the hardware, high sample rate (up to 32 kHz), pitch/volume effects and supports several sample formats (WAVE, raw PCM, compressed DPCM).
 
 Unlike the majority of DAC drivers on the Mega-Drive with the infamous "scratchy" playback many games are known for, Mega PCM 2 outputs cleanest sounding samples on the hardware thanks to its buffering / DMA protection system.
@@ -21,14 +17,14 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 - Complex inside, user-friendly outside:
 	- Zero-config DMA protection (no extra flags to set and unset, simply don't stop Z80 on DMA's);
 	- Native WAVE file support, native PCM format (no custom converters required!);
-	- Auto-detects issues with WAVE formats or sample configuration on startup;
+	- Auto-detects issues with sample formats or configuration on startup;
 - Several supported sample formats:
-	- WAVE file with 8-bit unsigned PCM (playback rate can be detected from header);
+	- WAVE files in 8-bit unsigned PCM format (sample rate can be detected from header);
 	- Raw 8-bit unsigned PCM (headless);
 	- Raw 4-bit DPCM (headless);
 - Playback control, priority settings and SFX support:
 	- Pause, Stop and Loop supported for all sample types;
-	- Differentiates between "normal" samples (usually BGM drums) and SFX samples;
+	- Differentiates between "normal" (usually BGM drums) and SFX samples;
 	- SFX samples aren't interrupted by BGM drums, they have separate volume and pan settings;
 - Tested to the extreme:
 	- Z80 portion of Mega PCM is unique in that it's extensively auto-tested in a virtual machine;
@@ -45,7 +41,6 @@ Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage o
 
 - [Sonic 1 Github Disassembly (AS version)](docs/1-installation/Sonic-1-Github-AS.md)
 - [Sonic 1 Hivebrain 2005 Disassembly](docs/1-installation/Sonic-1-Hivebrain-2005.md)
-
 
 ### Documentation
 
@@ -96,7 +91,9 @@ Almost the same as Linux, however you need to make sure to use GNU version of Ma
 
 ## Licensing
 
-**Mega PCM 2's main source code and its dependencies (`src/`, `lib-68k/`, `examples/` directories) are fully free and open source and are provided under MIT license. See `LICENSE` file.**
+**Mega PCM 2's main source code and its dependencies (`src/` and `lib-68k/`directories) are fully free and open source and are provided under MIT license. See `LICENSE` file.**
+
+Source code for Mega PCM 2 implementation examples (`examples/` directory) is also MIT-licensed, however, some included assets and disassembled "SMPS" sound driver may be proprietary and provided for educational purposes only.
 
 Also included in this repo, but not distributed with Mega PCM 2 releases:
 
