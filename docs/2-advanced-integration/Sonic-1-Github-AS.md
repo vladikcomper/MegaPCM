@@ -1,11 +1,15 @@
 
 # Extended Mega PCM 2 integration in Sonic 1 Github Disassembly (AS)
 
+> [!WARNING]
+>
+> This guide is work-in-progress, some sections are pending (DAC fade in/fade out and a few fixes). Please see S1 SMPS integration from `examples/` directory for a complete implementation example.
+
 In the installation guide we only achieved the most basic integration between SMPS and Mega PCM 2. To take advantage of Mega PCM 2's features like DAC fade in/out and pause/unpause and fix a few potential issues, further SMPS modifications are necessary.
 
 > [!NOTE]
 > 
-> This guide was written based on the reference S1 SMPS integrations from `examples/` directory. You can see [`examples/s1-smps-integration/s1.sounddriver.asm`](../../examples/s1-smps-integration/s1.sounddriver.asm) as a working example.
+> This guide was written based on the reference S1 SMPS integration from `examples/` directory. You can see [`examples/s1-smps-integration/s1.sounddriver.asm`](../../examples/s1-smps-integration/s1.sounddriver.asm) as a working example.
 
 ## Implement DAC pause/unpause
 
@@ -29,7 +33,7 @@ PauseMusic:
                 dbf     d3,.killpanloop
 ```
 
-**Replace** the snipped above with this:
+**Replace** the snippet above with this:
 
 ```m68k
 ; loc_71E50:
@@ -101,6 +105,68 @@ Finally, find `.unpausedallfm:` line below. Right above it (and before `bra.w   
 
 - Code should compile after your changes.
 - You can try to play a really long sample (via `MegaPCM_PlaySample` or by modifying SMPS music to reference it in DAC channel); you should be able to pause/unpause it properly in-game.
+
+## Don't stop DAC and SFX on fading
+
+By default, SMPS stops DAC and disables all SFX during fade in/out sequences. Let's do a quality of life improvement and fix this. We won't suppress SFX and stop DAC only when fade out is complete. This prepares the ground to implement actual DAC fading in the next section.
+
+In `s1.sounddriver.asm` find `Sound_PlaySFX:` and **remove** the following lines below it:
+
+```diff
+-               tst.b   v_fadeout_counter(a6)   ; Is music being faded out?
+-               bne.w   .clear_sndprio          ; Exit if it is
+-               tst.b   f_fadein_flag(a6)       ; Is music being faded in?
+-               bne.w   .clear_sndprio          ; Exit if it is
+```
+
+Next, find `Sound_PlaySpecial:` and, similarly, remove these lines:
+
+```diff
+-               tst.b   v_fadeout_counter(a6)   ; Is music being faded out?
+-               bne.w   .locret                 ; Exit if it is
+-               tst.b   f_fadein_flag(a6)       ; Is music being faded in?
+-               bne.w   .locret                 ; Exit if it is
+```
+
+This will allow SFX and special SFX to play during fade in and out.
+
+Next, find `FadeOutMusic:` and somewhere below it, remove the following line:
+```diff
+-               clr.b   v_music_dac_track+TrackPlaybackControl(a6)      ; Stop DAC track
+```
+
+Now, find `StopAllSound:` and remove the following lines right below it (don't remove the label itself):
+```diff
+ StopAllSound:
+-               moveq   #$2B,d0         ; Enable/disable DAC
+-               move.b  #$80,d1         ; Enable DAC
+-               jsr     WriteFMI(pc)
+```
+
+Since Mega PCM 2 now "owns" the DAC channel, we don't need this to avoid issues. Mega PCM will enable and disable DAC automatically for you.
+
+Finally, scroll down until you see these lines:
+
+```m68k
+                move.b  #$80,v_sound_id(a6)     ; set music to $80 (silence)
+                jsr     FMSilenceAll(pc)
+                bra.w   PSGSilenceAll
+```
+
+Right **above** them, add this:
+
+```m68k
+                MPCM_stopZ80
+                move.b  #Z_MPCM_COMMAND_STOP, Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
+                MPCM_startZ80
+```
+
+This is a clean and proper way to stop DAC now, not forcefully disabling the channel.
+
+**How to test:**
+
+- Code should compile after your changes.
+- The easiest way is to get a 1-up and make sure you are able to hear both DAC and SFX when it fades in back to level's BGM. Don't worry, we will address DAC fade in/out effects in the next section.
 
 ## Implement DAC fade in and fade out
 
