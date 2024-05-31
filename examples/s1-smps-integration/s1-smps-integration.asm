@@ -27,8 +27,19 @@ v_snddriver_ram:		rs.b	$600
 ; ------------------------------------------------------------------------------
 Main:
 	Console.SetXY #1, #1
-	Console.WriteLine "Sonic 1 SMPS + Mega PCM 2 Example"
-	Console.WriteLine "(c) 2024, Vladikcomper%<endl>"
+	Console.WriteLine "%<pal1>Sonic 1 SMPS + Mega PCM 2 Example"
+	Console.WriteLine "(c) 2024, Vladikcomper"
+
+	; Display header
+	Console.SetXY #1, #6
+	Console.WriteLine "%<pal1>Sound select:"
+
+	; Display controls
+	Console.SetXY #1, #21
+	Console.Write "%<pal1>Controls:%<endl>%<endl>"
+	Console.WriteLine "%<pal2>   [Up/Down] %<pal0>Change selection"
+	Console.WriteLine "%<pal2>[Left/Right] %<pal0>Change value (Hold)"
+	Console.Write "%<pal2>[A] %<pal0>Play SFX, %<pal2>[B] %<pal0>Fade out, %<pal2>[C] %<pal0>Play"
 
 	jsr		MegaPCM_LoadDriver
 
@@ -82,7 +93,7 @@ Menu.Init:
 
 Menu.Redraw:
 	; Render menu items
-	Console.SetXY #1, #4
+	Console.SetXY #1, #8
 	lea		Menu.Items(pc), a0
 
 	@ItemLoop:
@@ -97,10 +108,10 @@ Menu.Redraw:
 	@ItemsDone:
 
 	; Render cursor
-	moveq	#4, d0
+	moveq	#8, d0
 	add.b	Menu.SelectedItem, d0
 	Console.SetXY #1, d0
-	Console.Write ">"
+	Console.Write "%<pal2>>"
 
 	; Mark menu redrawn
 	clr.b	Menu.RedrawFlag			
@@ -145,15 +156,15 @@ Menu.Items:
 	dc.w	0						; end of list
 
 @Draw_SelectedBGM:
-	Console.WriteLine "  BGM: %<.b Menu.SelectedBGM>"
+	Console.WriteLine "  %<pal2>BGM: %<pal0>%<.b Menu.SelectedBGM>"
 	rts
 
 @Draw_SelectedSFX:
-	Console.WriteLine "  SFX: %<.b Menu.SelectedSFX>"
+	Console.WriteLine "  %<pal2>SFX: %<pal0>%<.b Menu.SelectedSFX>"
 	rts
 
 @Draw_SelectedCMD:
-	Console.WriteLine "  CMD: %<.b Menu.SelectedCMD>"
+	Console.WriteLine "  %<pal2>CMD: %<pal0>%<.b Menu.SelectedCMD>"
 	rts
 
 ; ------------------------------------------------------------------------------
@@ -162,7 +173,7 @@ Menu.NumItems:	equ	(@Items_End-Menu.Items)/12
 ; ------------------------------------------------------------------------------
 Menu.InputConfig:
 	;		Start		A			C			B
-	dc.l	0,			@PlayVoice,	@ValueApply,0
+	dc.l	0,			@PlayVoice,	@ValueApply,@FadeOut
 	;		Right		Left		Down		Up
 	dc.l	@ValueInc,	@ValueDec,	@NextItem,	@PrevItem
 
@@ -209,6 +220,11 @@ Menu.InputConfig:
 	bsr		Menu.GetItemData		; a0 = item data, a1 = address, d0 = value
 	move.l	8(a0), a1				; a1 = execute function
 	jmp		(a1)
+
+; ------------------------------------------------------------------------------
+@FadeOut:
+	moveq	#$FFFFFFE0, d0
+	jmp		PlaySound
 
 ; ------------------------------------------------------------------------------
 @PlayVoice:
