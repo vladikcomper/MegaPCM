@@ -11,6 +11,28 @@ While installing Mega PCM 2 is technically as easy as including a few files and 
 
 All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: opening `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
 
+## Table of Contents
+
+- [Step 1. Disable the original DAC driver](#step-1-disable-the-original-dac-driver)
+  - [Step 1.1. Remove old DAC driver loading subroutine](#step-11-remove-old-dac-driver-loading-subroutine)
+  - [Step 1.2. Remove calls to the old driver loading routine](#step-12-remove-calls-to-the-old-driver-loading-routine)
+  - [Step 1.3. Remove old DAC driver busy check in SMPS](#step-13-remove-old-dac-driver-busy-check-in-smps)
+- [Step 2. Remove Z80 stops globally](#step-2-remove-z80-stops-globally)
+  - [Step 2.1. Mass-remove "start Z80" command](#step-21-mass-remove--start-z80--command)
+  - [Step 2.2. Mass-remove "stop Z80" command](#step-22-mass-remove--stop-z80--command)
+  - [Step 2.3. Check yourself](#step-23-check-yourself)
+- [Step 3. Installing Mega PCM 2](#step-3-installing-mega-pcm-2)
+  - [Step 3.1. Download and unpack Mega PCM and Sonic 1 sample table](#step-31-download-and-unpack-mega-pcm-and-sonic-1-sample-table)
+  - [Step 3.2. Include Mega PCM and Sonic 1 sample table](#step-32-include-mega-pcm-and-sonic-1-sample-table)
+  - [Step 3.3. Remove hacks for Sega PCM](#step-33-remove-hacks-for-sega-pcm)
+  - [Step 3.4. Fully remove the old DAC driver](#step-34-fully-remove-the-old-dac-driver)
+  - [Step 3.5. Load Mega PCM 2 and the sample table upon boot](#step-35-load-mega-pcm-2-and-the-sample-table-upon-boot)
+  - [Step 3.6. Check yourself: Making sure Mega PCM works](#step-36-check-yourself-making-sure-mega-pcm-works)
+- [Step 4. Integrating SMPS with Mega PCM 2](#step-4-integrating-smps-with-mega-pcm-2)
+  - [Step 4.1. Patching SMPS for Mega PCM 2: DAC playback](#step-41-patching-smps-for-mega-pcm-2--dac-playback)
+  - [Step 4.2. Patching SMPS for Mega PCM 2: FM routines](#step-42-patching-smps-for-mega-pcm-2--fm-routines)
+  - [Step 4.3. Check yourself: Testing SMPS and Mega PCM 2](#step-43-check-yourself-testing-smps-and-mega-pcm-2)
+
 
 ## Step 1. Disable the original DAC driver
 
@@ -99,7 +121,7 @@ loc_71B82:
 
 The original game frequently stops Z80 to make sure Z80 driver doesn't access ROM (or M68K bus in general) during DMA transfers. Mega PCM 2 has automatic DMA protection system and **is guaranteed** not to access ROM during DMA (inside VBlank), so Z80 stops are now redundant.
 
-Moreover, those stops harm DAC playback quality and are the main reason Mega Drive games have "scratchy" playback. While other DAC driver cannot survive without ROM access, Mega PCM 2 can when needed.
+Moreover, those stops harm DAC playback quality and are the main reason Mega Drive games have "scratchy" playback. While other DAC drivers cannot survive without ROM access, Mega PCM 2 can when needed.
 
 ### Step 2.1. Mass-remove "start Z80" command
 
@@ -178,8 +200,9 @@ It's finally time to get to the star of the show, Mega PCM itself! As mentioned 
 
 Another easy one. You need to download a few files and copy them relative to your disassembly's root directory.
 
-1. Download ASM68K bundle of Mega PCM 2. Copy `MegaPCM.asm` file to your disassembly's root.
-2. Download Sonic 1 sample table. Copy `SampleTable.asm` and other files to your directory.
+1. Go to Mega PCM's releases and find the most recent one: https://github.com/vladikcomper/MegaPCM/releases
+2. Download `megapcm.zip` (release bundles) and open `asm68k` directory inside it (ASM68K bundle). Copy `MegaPCM.asm` from that directory to your disassembly's root.
+3. Download `sample-tables.zip` and locate `sonic-1` directory inside. Copy `SampleTable.asm` and other files to your disassembly's directory.
 
 ### Step 3.2. Include Mega PCM and Sonic 1 sample table
 
