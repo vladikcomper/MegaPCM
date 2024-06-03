@@ -7,6 +7,8 @@ Unlike the majority of DAC drivers on the Mega-Drive with the infamous "scratchy
 
 Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage of Sega's sound chip and also use FM and PSG channels, you need to run it alongside the "main" M68K sound driver. Generally, Mega PCM can be integrated with any M68K sound driver. Currently, only SMPS integration is officially provided.
 
+_You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www.youtube.com/watch?v=4RZbvuL2m1c) recorded on real hardware._
+
 ## Features
 
 - High quality crystal-clear PCM playback with DMA protection;
