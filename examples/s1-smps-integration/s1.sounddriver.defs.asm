@@ -1,26 +1,10 @@
 
-
-Z80_RAM:		equ $A00000	; start of Z80 RAM
-Z80_BUSREQ:		equ $A11100
-
 ym2612_a0:		equ $A04000
 ym2612_d0:		equ $A04001
 ym2612_a1:		equ $A04002
 ym2612_d1:		equ $A04003
 
 psg_input:		equ $C00011
-
-; Macros
-stopZ80: macro
-	move.w	#$100, Z80_BUSREQ
-	.wait\@:
-		bset	#0, Z80_BUSREQ
-		bne.s	.wait\@
-	endm
-
-startZ80: macro
-	move.w	#0, Z80_BUSREQ
-	endm
 
 ; Sound driver constants
 TrackPlaybackControl:	equ 0		; All tracks

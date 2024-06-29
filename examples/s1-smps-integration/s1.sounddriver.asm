@@ -266,7 +266,7 @@ DACUpdateTrack:
 		cmpi.b	#$80,d0			; Is it a rest?
 		beq.s	.locret			; Return if yes
 		MPCM_stopZ80
-		move.b	d0, Z80_RAM+Z_MPCM_CommandInput	; send DAC sample to Mega PCM
+		move.b	d0, MPCM_Z80_RAM+Z_MPCM_CommandInput	; send DAC sample to Mega PCM
 		MPCM_startZ80
 ; locret_71CAA:
 .locret:
@@ -526,7 +526,7 @@ PauseMusic:
 		dbf	d3,.noteoffloop
 
 		MPCM_stopZ80
-		move.b	#Z_MPCM_COMMAND_PAUSE, Z80_RAM+Z_MPCM_CommandInput ; pause DAC
+		move.b	#Z_MPCM_COMMAND_PAUSE, MPCM_Z80_RAM+Z_MPCM_CommandInput ; pause DAC
 		MPCM_startZ80
 
 		jmp	PSGSilenceAll(pc)
@@ -560,7 +560,7 @@ PauseMusic:
 		bpl.s	.sfxfmnext			; Branch if not
 		btst	#2,TrackPlaybackControl(a5)	; Is track being overridden?
 		bne.s	.sfxfmnext			; Branch if yes
-		move.b	#$B4,d0				; Command to set AMS/FMS/panning
+		moveq	#$FFFFFFB4,d0			; Command to set AMS/FMS/panning
 		move.b	TrackAMSFMSPan(a5),d1		; Get value from track RAM
 		jsr	WriteFMIorII(pc)
 ; loc_71EDC:
@@ -580,7 +580,7 @@ PauseMusic:
 ; loc_71EFE:
 .unpausedallfm:
 		MPCM_stopZ80
-		move.b	#0, Z80_RAM+Z_MPCM_CommandInput	; unpause DAC
+		move.b	#0, MPCM_Z80_RAM+Z_MPCM_CommandInput	; unpause DAC
 		MPCM_startZ80
 
 .done:
@@ -771,7 +771,8 @@ Sound_PlayBGM:
 		move.b	#1,d5			; Note duration for first "note"
 
 		MPCM_stopZ80
-		move.b	#0, Z80_RAM+Z_MPCM_VolumeInput	; set DAC volume to maximum
+		move.b	#0, MPCM_Z80_RAM+Z_MPCM_VolumeInput	; set DAC volume to maximum
+		move.b	#$C0, MPCM_Z80_RAM+Z_MPCM_PanInput	; set panning to LR
 		MPCM_startZ80
 
 		lea	v_music_fmdac_tracks(a6),a1
@@ -1301,7 +1302,7 @@ DoFadeOut:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
 		MPCM_stopZ80
-		move.b	d0, Z80_RAM+Z_MPCM_VolumeInput
+		move.b	d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
 		MPCM_startZ80
 .dac_done:
 
@@ -1403,7 +1404,7 @@ StopAllSound:
 		dbf	d0,.clearramloop
 
 		MPCM_stopZ80
-		move.b	#Z_MPCM_COMMAND_STOP, Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
+		move.b	#Z_MPCM_COMMAND_STOP, MPCM_Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
 		MPCM_startZ80
 
 		move.b	#$80,v_sound_id(a6)	; set music to $80 (silence)
@@ -1561,7 +1562,7 @@ DoFadeIn:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
 		MPCM_stopZ80
-		move.b	d0, Z80_RAM+Z_MPCM_VolumeInput
+		move.b	d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
 		MPCM_startZ80
 .dac_done:
 
@@ -2095,7 +2096,7 @@ cfPanningAMSFMS:
 		; actual panning bits to restore them in case normal sample is
 		; interrupted by an SFX sample
 		and.b	#$C0, d1
-		move.b	d1, Z80_RAM+Z_MPCM_PanInput
+		move.b	d1, MPCM_Z80_RAM+Z_MPCM_PanInput
 		MPCM_startZ80
 	.not_DAC_or_FM6:
 
