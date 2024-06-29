@@ -41,8 +41,8 @@ Now let's go over those 3 migration steps one-by-one!
 
 Follow the right installation guide for your disassembly, but bear in mind _important notes_ below:
 
-- [Sonic 1 Github Disassembly (AS version)](docs/1-installation/Sonic-1-Github-AS.md)
-- [Sonic 1 Hivebrain 2005 Disassembly](docs/1-installation/Sonic-1-Hivebrain-2005.md)
+- [Sonic 1 Github Disassembly (AS version)](1-installation/Sonic-1-Github-AS.md)
+- [Sonic 1 Hivebrain 2005 Disassembly](1-installation/Sonic-1-Hivebrain-2005.md)
 
 **Important notes:**
 
