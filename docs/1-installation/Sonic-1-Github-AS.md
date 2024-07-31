@@ -3,6 +3,10 @@
 
 This is a step-by-step guide for installing Mega PCM 2 in [Sonic 1 Github Disassembly](https://github.com/sonicretro/s1disasm). Note that it targets the **AS branch** of the disassembly (this is the default).
 
+> [!NOTE]
+>
+> The AS branch of Sonic 1 Github Disassembly is a fast-moving target. Depending on when you forked it, there may be small changes in code style and naming conventions. I try to keep this guide up-to-date and highlight any noticeable changes in the disassembly that happened over the last few years. However, if you're using an up-to-date disassembly and you noticed that code diverged too much from examples in this guide, feel free to open an issue in this repository.
+
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
 All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: opening `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
@@ -28,6 +32,7 @@ All steps in the guide are designed to be as simple and short as reasonably poss
   - [Step 4.2. Patching SMPS for Mega PCM 2: DAC playback](#step-42-patching-smps-for-mega-pcm-2--dac-playback)
   - [Step 4.3. Patching SMPS for Mega PCM 2: FM routines](#step-43-patching-smps-for-mega-pcm-2--fm-routines)
   - [Step 4.3. Check yourself: Testing SMPS and Mega PCM 2](#step-43-check-yourself-testing-smps-and-mega-pcm-2)
+- [Next Steps](#next-steps)
 
 
 ## Step 1. Disable the original DAC driver
@@ -50,16 +55,16 @@ Open `sonic.asm` and search for `DACDriverLoad:` string (or `SoundDriverLoad:` i
 DACDriverLoad:
                 nop     
                 stopZ80
-                resetZ80
+                deassertZ80Reset
                 lea     (DACDriver).l,a0        ; load DAC driver
                 lea     (z80_ram).l,a1          ; target Z80 RAM
                 bsr.w   KosDec                  ; decompress
-                resetZ80a
+                assertZ80Reset
                 nop     
                 nop     
                 nop     
                 nop     
-                resetZ80
+                deassertZ80Reset
                 startZ80
                 rts     
 ; End of function DACDriverLoad
@@ -73,8 +78,8 @@ Now you need to remove two calls to subroutine you've just removed.
 
 In the same `sonic.asm` file, search for `DACDriverLoad` string (`SoundDriverLoad` in older disassemblies). There should be 2 matches:
 
-1. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` line above the label `MainGameLoop:`;
-2. Remove `bsr.w DACDriverLoad` / `bsr.w SoundDriverLoad` line under the label `GM_Title:` (this one is redundant in the original game, by the way).
+1. Remove `bsr.w DACDriverLoad` line (`bsr.w SoundDriverLoad` in older version) above the label `MainGameLoop:`;
+2. Remove `bsr.w DACDriverLoad` line (`bsr.w SoundDriverLoad` in older version) under the label `GM_Title:` (this one is redundant in the original game, by the way).
 
 
 ### Step 1.3. Remove old DAC driver busy check in SMPS
@@ -127,12 +132,12 @@ Moreover, those stops harm DAC playback quality and are the main reason Mega Dri
 
 This is another easy one and tearing things down is fun, isn't it?
 
-Open `Macros.asm` file and remove all Z80 related macros: `stopZ80`, `startZ80`, `waitZ80`, `resetZ80`, `resetZ80a`. Basically, scroll down until you see the following fragment and **remove all the lines shown below**:
+Open `Macros.asm` file and remove all Z80 related macros: `stopZ80`, `startZ80`, `waitZ80`, `deassertZ80Reset`, `assertZ80Reset` (last two are `resetZ80`, `resetZ80a` if your disassembly is pre-July 2024). Basically, scroll down until you see the following fragment and **remove all the lines shown below**:
 
 ```m68k
 ; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-; ---------------------------------------------------------------------------
+---------------------------------------------------------------------------
 ; stop the Z80
 ; ---------------------------------------------------------------------------
 
@@ -153,11 +158,11 @@ waitZ80:        macro
 ; reset the Z80
 ; ---------------------------------------------------------------------------
 
-resetZ80:       macro
+deassertZ80Reset:       macro
                 move.w  #$100,(z80_reset).l
                 endm
 
-resetZ80a:      macro
+assertZ80Reset: macro
                 move.w  #0,(z80_reset).l
                 endm
 
@@ -177,7 +182,7 @@ startZ80:       macro
 
 Now you need to remove every occurrence of now-removed macros. There are several ways to pull it off:
 
-1. **The easy way:** Do global search & replace (across **all files** in your disassembly), replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string. **Use case-sensitive search!** Note that `resetZ80`, `resetZ80a` should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect);
+1. **The easy way:** Do global search & replace (across **all files** in your disassembly), replacing `stopZ80`, `startZ80` and `waitZ80` with an empty string. **Use case-sensitive search!** Note that `assertZ80Reset`, `deassertZ80Reset` (`resetZ80`, `resetZ80a` in older versions) should be already taken care of when removing `DACDriverLoad`/`SoundDriverLoad`. Case-sensitive search is important, otherwise you may corrupt `DoStopZ80:` label in `s1.sounddriver.asm` file will become `Do:` (this is unlikely to break things, it's just incorrect);
 2. **The hard way:** try building your ROM by running `build.bat` or `build.lua`. You'll a ton of errors regarding the removed macros. Use error log (also saved as `sonic.log`) as a reference to find and remove all lines referencing `stopZ80`, `startZ80` and `waitZ80`.
 
 
@@ -193,7 +198,7 @@ Try to build your ROM by running `build.bat` or `build.lua`. Here's your checkli
 
 ## Step 3. Installing Mega PCM 2
 
-It's finally time to get to the star of the show, Mega PCM itself! As mentioned in the beginning, installing Mega PCM itself is a easy as dropping a few files and adding a few lines of code. However, a few more steps are required in case of Sonic 1, because of a few hacks involving the infamous "Sega PCM" sample.
+It's finally time to get to the star of the show, Mega PCM itself! As mentioned at the beginning, installing Mega PCM itself is a easy as dropping a few files and adding a few lines of code. However, a few more steps are required in case of Sonic 1, because of a few hacks involving the infamous "Sega PCM" sample.
 
 ### Step 3.1. Download and unpack Mega PCM and Sonic 1 sample table
 
@@ -340,7 +345,7 @@ Now that this inclusion is gone, let's clean up some files:
 - Remove `sound/dac/sega.pcm` file (it's now replaced with `sega.wav` for convenience);
 - You may also remove `sound/dac/readme.txt` file, because it's not accurate anymore.
 
-Open `Constants.asm` and remove the following lines (if you have pre-September 2023 disassembly, `z80_dac_timpani_pitch` will be named `z80_dac3_pitch`):
+If your disassembly is pre-June 2024, open `Constants.asm` and remove the following lines (if you have pre-September 2023 disassembly, `z80_dac_timpani_pitch` will be named `z80_dac3_pitch`):
 ```m68k
 ; REMOVE EVERYTHING BELOW       >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -361,19 +366,19 @@ Open `s1.sounddriver.asm` file and find `.gotsampleduration:` label (it's a part
 ```m68k
 ; loc_71C88:
 .gotsampleduration:
-                move.l  a4,TrackDataPointer(a5) ; Save pointer
-                btst    #2,TrackPlaybackControl(a5)                     ; Is track being overridden?
-                bne.s   .locret                 ; Return if yes
+                move.l  a4,SMPS_Track.DataPointer(a5)           ; Save pointer
+                btst    #2,SMPS_Track.PlaybackControl(a5)       ; Is track being overridden?
+                bne.s   .locret                                 ; Return if yes
                 moveq   #0,d0
-                move.b  TrackSavedDAC(a5),d0    ; Get sample
-                cmpi.b  #$80,d0                 ; Is it a rest?
-                beq.s   .locret                 ; Return if yes
-                ;btst    #3,d0                  ; -- REMOVE THIS LINE
-                ;bne.s   .timpani               ; -- REMOVE THIS LINE
-                ;move.b  d0,(z80_dac_sample).l  ; -- REMOVE THIS LINE
-                MPCM_stopZ80                            ; ++
-                move.b  d0, z80_ram+Z_MPCM_CommandInput ; ++ send DAC sample to Mega PCM
-                MPCM_startZ80                           ; ++
+                move.b  SMPS_Track.SavedDAC(a5),d0      ; Get sample
+                cmpi.b  #$80,d0                         ; Is it a rest?
+                beq.s   .locret                         ; Return if yes
+                ;btst    #3,d0                          ; -- REMOVE THIS LINE
+                ;bne.s   .timpani                       ; -- REMOVE THIS LINE
+                ;move.b  d0,(z80_dac_sample).l          ; -- REMOVE THIS LINE
+                MPCM_stopZ80                                    ; ++
+                move.b  d0, MPCM_Z80_RAM+Z_MPCM_CommandInput    ; ++ send DAC sample to Mega PCM
+                MPCM_startZ80                                   ; ++
 ; locret_71CAA:
 .locret:
                 rts
@@ -405,7 +410,7 @@ Finally, in the same `s1.sounddriver.asm` file, find this `WriteFMIorII:` label 
 ; ===========================================================================
 ; loc_72716:
 WriteFMIorIIMain:
-                btst    #2,TrackPlaybackControl(a5)     ; Is track being overriden by sfx?
+                btst    #2,SMPS_Track.PlaybackControl(a5); Is track being overriden by sfx?
                 bne.s   .locret                         ; Return if yes
                 bra.w   WriteFMIorII
 ; ===========================================================================
@@ -417,7 +422,7 @@ WriteFMIorIIMain:
 
 ; sub_72722:
 WriteFMIorII:
-                move.b  TrackVoiceControl(a5), d2
+                move.b  SMPS_Track.VoiceControl(a5), d2
                 subq.b  #4, d2                          ; Is this bound for part I or II?
                 bcc.s   WriteFMIIPart                   ; If yes, branch
                 addq.b  #4, d2                          ; Add in voice control bits
@@ -465,6 +470,10 @@ WriteFMII:
 ; End of function WriteFMII
 ```
 
+If your disassembly is **pre-June 2024**, you should replace some variables in the code above:
+- `SMPS_Track.PlaybackControl(a5)` (new) -> `TrackPlaybackControl(a5)` (old)
+- `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
+
 You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFMII` routines with better, more optimized versions compatible with Mega PCM 2.
 
 
@@ -473,3 +482,8 @@ You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFM
 And that concludes the basic integration of Mega PCM 2 with Sonic 1's SMPS!
 
 Run `build.bat` or `build.lua` to build your ROM and test it. All music, sounds and DAC samples should work now.
+
+
+## Next steps
+
+While this guide completes basic Mega PCM 2 installation, there are still a few exiting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github-AS.md).

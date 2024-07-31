@@ -13,20 +13,20 @@ In the installation guide we only achieved the most basic integration between SM
 
 ## Restore DAC panning
 
-To keep everything in sync and consistent, Mega PCM 2 takes over and "owns" the DAC channel, which includes DAC panning. SMPS, however, also tries to directly control every channel, including DAC and this may lead to a few inconsistencies, like non-working panning. The fix is easy enough and make panning flag on SMPS side fully functional again.
+To keep everything in sync and consistent, Mega PCM 2 takes over and "owns" the DAC channel, which includes DAC panning. SMPS, however, also tries to directly control every channel, including DAC and this may lead to a few inconsistencies, like non-working panning. The fix is easy enough and should make panning flag on SMPS side fully functional again.
 
 In `s1.sounddriver.asm` search for `cfPanningAMSFMS:`, you should see something like this:
 ```m68k
 ; loc_72ACC:
 cfPanningAMSFMS:
-                move.b  (a4)+,d1                ; New AMS/FMS/panning value
-                tst.b   TrackVoiceControl(a5)   ; Is this a PSG track?
-                bmi.s   locret_72AEA            ; Return if yes
-                move.b  TrackAMSFMSPan(a5),d0   ; Get current AMS/FMS/panning
-                andi.b  #$37,d0                 ; Retain bits 0-2, 3-4 if set
-                or.b    d0,d1                   ; Mask in new value
-                move.b  d1,TrackAMSFMSPan(a5)   ; Store value
-                move.b  #$B4,d0                 ; Command to set AMS/FMS/panning
+                move.b  (a4)+,d1                        ; New AMS/FMS/panning value
+                tst.b   SMPS_Track.VoiceControl(a5)     ; Is this a PSG track?
+                bmi.s   locret_72AEA                    ; Return if yes
+                move.b  SMPS_Track.AMSFMSPan(a5),d0     ; Get current AMS/FMS/panning
+                andi.b  #$37,d0                         ; Retain bits 0-2, 3-4 if set
+                or.b    d0,d1                           ; Mask in new value
+                move.b  d1,SMPS_Track.AMSFMSPan(a5)     ; Store value
+                move.b  #$B4,d0                         ; Command to set AMS/FMS/panning
                 bra.w   WriteFMIorIIMain
 ```
 
@@ -36,12 +36,12 @@ Just **replace** the code above with this:
 ; loc_72ACC:
 cfPanningAMSFMS:
                 move.b  (a4)+,d1                        ; New AMS/FMS/panning value
-                move.b  TrackVoiceControl(a5),d2        ; Is this a PSG track?
+                move.b  SMPS_Track.VoiceControl(a5),d2  ; Is this a PSG track?
                 bmi.s   locret_72AEA                    ; Return if yes
                 moveq   #$37, d0
-                and.b   TrackAMSFMSPan(a5),d0           ; Get current AMS/FMS
+                and.b   SMPS_Track.AMSFMSPan(a5),d0     ; Get current AMS/FMS
                 or.b    d0,d1                           ; Add new panning bits
-                move.b  d1,TrackAMSFMSPan(a5)           ; Store value
+                move.b  d1,SMPS_Track.AMSFMSPan(a5)     ; Store value
                 subq.b  #6, d2                          ; is channel DAC or FM6?
                 bne.s   .not_DAC_or_FM6                 ; if not, branch
                 MPCM_stopZ80
@@ -57,6 +57,10 @@ cfPanningAMSFMS:
                 moveq   #$FFFFFFB4,d0                   ; Command to set AMS/FMS/panning
                 bra.w   WriteFMIorIIMain
 ```
+
+If your disassembly is **pre-June 2024**, you should rename some of the variables in the example above:
+- `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
+- `SMPS_Track.AMSFMSPan(a5)` (new) -> `TrackAMSFMSPan(a5)` (old)
 
 As you can see, this updated code merely extends the original. In fact, we've added a few new lines after the line `move.b d1,TrackAMSFMSPan(a5)` and a few micro-optimization (saves a few CPU cycles).
 
