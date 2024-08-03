@@ -2082,26 +2082,26 @@ coordflagLookup:
 ; loc_72ACC:
 cfPanningAMSFMS:
 		move.b	(a4)+,d1			; New AMS/FMS/panning value
-		move.b	TrackVoiceControl(a5),d2	; Is this a PSG track?
+		tst.b	TrackVoiceControl(a5)		; Is this a PSG track?
 		bmi.s	locret_72AEA			; Return if yes
 		moveq	#$37, d0
 		and.b	TrackAMSFMSPan(a5),d0		; Get current AMS/FMS
 		or.b	d0,d1				; Add new panning bits
 		move.b	d1,TrackAMSFMSPan(a5)		; Store value
-		subq.b	#6, d2				; is channel DAC or FM6?
-		bne.s	.not_DAC_or_FM6			; if not, branch
+		tst.b	f_updating_dac(a6)		; Are we updating DAC?
+		bmi.s	.updateDACPanning		; If yes, branch
+		moveq	#$FFFFFFB4,d0			; Command to set AMS/FMS/panning
+		bra.w	WriteFMIorIIMain
+
+	.updateDACPanning:
+		; Send to DAC panning Mega PCM instead of updating it directly.
+		; Mega PCM needs to track panning on its own to restore it in
+		; normal sample is interrupted by an SFX sample
 		MPCM_stopZ80
-		; Send to DAC/FM6 panning Mega PCM
-		; Even though we apply it now anyways, Mega PCM needs to track
-		; actual panning bits to restore them in case normal sample is
-		; interrupted by an SFX sample
 		and.b	#$C0, d1
 		move.b	d1, MPCM_Z80_RAM+Z_MPCM_PanInput
 		MPCM_startZ80
-	.not_DAC_or_FM6:
-
-		moveq	#$FFFFFFB4,d0			; Command to set AMS/FMS/panning
-		bra.w	WriteFMIorIIMain
+		rts
 ; ===========================================================================
 
 locret_72AEA:
