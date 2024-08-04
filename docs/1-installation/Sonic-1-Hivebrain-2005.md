@@ -429,3 +429,7 @@ You've just replaced FM routines with better, more optimized versions compatible
 And that concludes the basic integration of Mega PCM 2 with Sonic 1's SMPS!
 
 Run `build.bat` to build your ROM and test it. All music, sounds and DAC samples should work now.
+
+## Next steps
+
+While this guide completes basic Mega PCM 2 installation, there are still a few exiting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github-AS.md) (unfortunately, this guide is currently only available for S1 Github AS disassembly).

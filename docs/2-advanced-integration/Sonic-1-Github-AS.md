@@ -1,10 +1,6 @@
 
 # Extended Mega PCM 2 integration in Sonic 1 Github Disassembly (AS)
 
-> [!WARNING]
->
-> This guide is work-in-progress, some sections are pending (DAC fade in/fade out and a few fixes). Please see S1 SMPS integration from `examples/` directory for a complete implementation example.
-
 In the installation guide we only achieved the most basic integration between SMPS and Mega PCM 2. To take advantage of Mega PCM 2's features like DAC fade in/out and pause/unpause and fix a few potential issues, further SMPS modifications are necessary.
 
 > [!NOTE]
@@ -13,12 +9,13 @@ In the installation guide we only achieved the most basic integration between SM
 
 ## Table of Contents
 
-- [Restore DAC panning](#restore-dac-panning)
-- [Implement DAC pause/unpause](#implement-dac-pause-unpause)
-- [Don't stop DAC and SFX on fading](#don-t-stop-dac-and-sfx-on-fading)
-- [Implement DAC fade in and fade out](#implement-dac-fade-in-and-fade-out)
+- [1. Restore DAC panning](#1-restore-dac-panning)
+- [2. Implement DAC pause/unpause](#2-implement-dac-pause-unpause)
+- [3. Don't stop DAC and SFX on fading](#3-don-t-stop-dac-and-sfx-on-fading)
+- [4. Implement DAC fade in and fade out](#4-implement-dac-fade-in-and-fade-out)
+- [Next Steps]
 
-## Restore DAC panning
+## 1. Restore DAC panning
 
 To keep everything in sync and consistent, Mega PCM 2 takes over and "owns" the DAC channel, which includes DAC panning. SMPS, however, also tries to directly control every channel, including DAC and this may lead to a few inconsistencies, like non-working panning. The fix is easy enough and should make panning flag on SMPS side fully functional again.
 
@@ -80,7 +77,7 @@ Finally, let's reset panning and other DAC settings when BGM is initialized. Fin
                 MPCM_startZ80
 ```
 
-## Implement DAC pause/unpause
+## 2. Implement DAC pause/unpause
 
 In `s1.sounddriver.asm` search for `PauseMusic:`, you should see the following code:
 
@@ -189,7 +186,7 @@ Finally, find `.unpausedallfm:` line below. Right above it (and before `bra.w   
 - Code should compile after your changes.
 - You can try to play a really long sample (via `MegaPCM_PlaySample` or by modifying SMPS music to reference it in DAC channel); you should be able to pause/unpause it properly in-game.
 
-## Don't stop DAC and SFX on fading
+## 3. Don't stop DAC and SFX on fading
 
 By default, SMPS stops DAC and disables all SFX during fade in/out sequences. Let's do a quality of life improvement and fix this. We won't suppress SFX and stop DAC only when fade out is complete. This prepares the ground to implement actual DAC fading in the next section.
 
@@ -251,7 +248,7 @@ This is a clean and proper way to stop DAC now, not forcefully disabling the cha
 - Code should compile after your changes.
 - The easiest way is to get a 1-up and make sure you are able to hear both DAC and SFX when it fades in back to level's BGM. Don't worry, we will address DAC fade in/out effects in the next section.
 
-## Implement DAC fade in and fade out
+## 4. Implement DAC fade in and fade out
 
 It's finally time for the start of the show! Smooth DAC fade in/out, which is all about increasing/decreasing DAC volume gradually.
 
@@ -391,3 +388,7 @@ Again, in older disassembly, it may look like this:
 - Code should compile after your changes.
 - To easily test fade in: Open Level Select, play sound $81 (GHZ), then play sound $88 (1-up); when 1-up jingle finishes, you should hear DAC fade in as GHZ music resumes.
 - For testing fade out: Start any level from level select while other GHZ is playing; the sequence is shorter (full fade out won't happen as new BGM starts to play early), but you should notice DAC fading out instead of cutting abruptly.
+
+## Next Steps
+
+Now you should have a good Mega PCM 2 integration, so why not take advantage of it? Be sure to check out other guides on how to pull off different things with the driver. See [How to's](../3-how-tos). 
