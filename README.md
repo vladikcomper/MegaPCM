@@ -57,6 +57,11 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 - [DMA Protection testing ROM](examples/dma-survival-test)
 - [Complete Sonic 1 SMPS integration as a standalone player](examples/s1-smps-integration)
 
+## How-to guides
+
+- [How to play SFX samples](docs/3-how-tos/Playing_DAC_SFX.md)
+- [How to play DAC BGM](docs/3-how-tos/Playing_DAC_BGM_with_SMPS.md)
+
 ## Building from source code
 
 ### Linux
