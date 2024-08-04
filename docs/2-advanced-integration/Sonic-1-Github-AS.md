@@ -6,6 +6,8 @@ In the installation guide we only achieved the most basic integration between SM
 > [!NOTE]
 > 
 > This guide was written based on the reference S1 SMPS integration from `examples/` directory. You can see [`examples/s1-smps-integration/s1.sounddriver.asm`](../../examples/s1-smps-integration/s1.sounddriver.asm) as a working example.
+>
+> A ready-to-use Sonic 1 Disassembly with this guide applied as also available here: https://github.com/vladikcomper/s1disasm-megapcm2
 
 ## Table of Contents
 

@@ -35,7 +35,7 @@ SampleTable:
 
 You'll probably want your BGM to loop (otherwise it'll just stop once finishes), so add `FLAGS_LOOP` flag for the sample as shown above.
 
-Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files should be in **8-bit unsigned mono** format and have the supported sample rate. See [Sample table format](../Sample_table_format.md`) for more information.
+Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files should be in **8-bit unsigned mono** format and have the supported sample rate. See [Sample table format](../Sample_table_format.md) for more information.
 
 > [!NOTE]
 >

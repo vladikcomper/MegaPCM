@@ -51,16 +51,22 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 - [Migrating from MegaPCM 1.x](docs/Migration_from_MegaPCM_1.x.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 
+### How-to guides
+
+- [How to play SFX samples](docs/3-how-tos/Playing_DAC_SFX.md)
+- [How to play DAC BGM](docs/3-how-tos/Playing_DAC_BGM_with_SMPS.md)
+
 ## Examples
 
 - [Basic 32 kHz WAVE playback with looping](examples/sample-tester)
 - [DMA Protection testing ROM](examples/dma-survival-test)
 - [Complete Sonic 1 SMPS integration as a standalone player](examples/s1-smps-integration)
 
-## How-to guides
+## Existing implementations
 
-- [How to play SFX samples](docs/3-how-tos/Playing_DAC_SFX.md)
-- [How to play DAC BGM](docs/3-how-tos/Playing_DAC_BGM_with_SMPS.md)
+- Sonic 1 Github AS disassembly with Mega PCM 2 pre-installed: https://github.com/vladikcomper/s1disasm-megapcm2
+- Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integration in Sonic Clean Engine (S.C.E.) by TheBlad768: https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
+
 
 ## Building from source code
 

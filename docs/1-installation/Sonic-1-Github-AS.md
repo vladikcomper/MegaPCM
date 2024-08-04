@@ -11,6 +11,10 @@ While installing Mega PCM 2 is technically as easy as including a few files and 
 
 All steps in the guide are designed to be as simple and short as reasonably possible and are arranged in easy to follow order. You can check yourself at various points of the guide by building a ROM and making sure your modifications work as expected. This guide assumes you have basic skills working with the disassembly: opening `.asm` files, being able to use _Search_ and _Search & Replace_ functions of your text editor and add or remove lines of code shown in the guide.
 
+> [!NOTE]
+>
+> A ready-to-use Sonic 1 Disassembly with this guide applied as also available here: https://github.com/vladikcomper/s1disasm-megapcm2
+
 ## Table of Contents
 
 - [Step 1. Disable the original DAC driver](#step-1-disable-the-original-dac-driver)

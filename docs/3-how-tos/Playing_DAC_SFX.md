@@ -33,7 +33,7 @@ SampleTable:
 
 It's highly recommended that your sample has `FLAGS_SFX` set in the sample table (as shown above). It will still work without it, but it may get interrupted by BGM drums, which would have the same priority otherwise.
 
-Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files should be in **8-bit unsigned mono** format and have the supported sample rate. See [Sample table format](../Sample_table_format.md`) for more information.
+Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files should be in **8-bit unsigned mono** format and have the supported sample rate. See [Sample table format](../Sample_table_format.md) for more information.
 
 > [!NOTE]
 >
