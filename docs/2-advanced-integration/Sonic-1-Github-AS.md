@@ -15,7 +15,7 @@ In the installation guide we only achieved the most basic integration between SM
 - [2. Implement DAC pause/unpause](#2-implement-dac-pause-unpause)
 - [3. Don't stop DAC and SFX on fading](#3-don-t-stop-dac-and-sfx-on-fading)
 - [4. Implement DAC fade in and fade out](#4-implement-dac-fade-in-and-fade-out)
-- [Next Steps]
+- [Next Steps](#next-steps)
 
 ## 1. Restore DAC panning
 
@@ -252,9 +252,9 @@ This is a clean and proper way to stop DAC now, not forcefully disabling the cha
 
 ## 4. Implement DAC fade in and fade out
 
-It's finally time for the start of the show! Smooth DAC fade in/out, which is all about increasing/decreasing DAC volume gradually.
+It's finally time for the star of the show! Smooth DAC fade in/out, which is all about increasing/decreasing DAC volume gradually.
 
-In `s1.sounddriver.asm`, locate the following code (search for `.DoFadeOut:`):
+In `s1.sounddriver.asm`, locate the following code (search for `DoFadeOut:`):
 
 ```m68k
 ; sub_72504:
