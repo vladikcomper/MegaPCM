@@ -20,8 +20,8 @@ MegaPCM_LoadSampleTable:
 
 	; ----------------------------------------------------------------------
 	; USES:
-	@var0:				equr	d0	;		generic varible #1
-	@var1:				equr	d1	;		generic varible #2
+	@var0:				equr	d0	;		generic variable #1
+	@var1:				equr	d1	;		generic variable #2
 	@z80_sample_tbl:	equr	a1	;		position in Z80 sample table
 	; ----------------------------------------------------------------------
 
