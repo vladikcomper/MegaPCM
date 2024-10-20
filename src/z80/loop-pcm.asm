@@ -243,8 +243,9 @@ PCMLoop_NormalPhase_LoadNextBank:
 	; Switch to the next ROM bank
 	rst	SetBank2
 
-	; Ready to continue playback!
-	jp	PCMLoop_NormalPhase
+	; Jump back to playback loop where we left off...
+	di
+	jp	PCMLoop_NormalPhase.Playback_DI
 
 ; --------------------------------------------------------------
 ; PCM: Apply calibration for inaccurate emulators

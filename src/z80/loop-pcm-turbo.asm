@@ -220,8 +220,9 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 	; Switch to the next ROM bank
 	rst	SetBank2
 
-	; Ready to continue playback!
-	jp	PCMTurboLoop_NormalPhase
+	; Jump back to playback loop where we left off...
+	di
+	jp	PCMTurboLoop_NormalPhase.Playback_DI
 
 ; --------------------------------------------------------------
 ; PCM-Turbo: Apply calibration for inaccurate emulators

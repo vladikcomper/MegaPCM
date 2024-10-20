@@ -268,8 +268,9 @@ DPCMLoop_NormalPhase_LoadNextBank:
 	; Switch to the next ROM bank
 	rst	SetBank2
 
-	; Ready to continue playback!
-	jp	DPCMLoop_NormalPhase
+	; Jump back to playback loop where we left off...
+	di
+	jp	DPCMLoop_NormalPhase.Playback_DI
 
 ; --------------------------------------------------------------
 ; DPCM: Apply calibration for inaccurate emulators
