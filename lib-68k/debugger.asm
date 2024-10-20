@@ -118,6 +118,7 @@ _eh_align_offset	equ	$80
 	xref	MDDBG__Str_OffsetLocation_24bit
 	xref	MDDBG__Str_OffsetLocation_32bit
 	xref	MDDBG__Art1bpp_Font
+	xref	MDDBG__GetSymbolByOffset
 	xref	MDDBG__FormatString
 	xref	MDDBG__Console_Init
 	xref	MDDBG__Console_Reset
@@ -165,28 +166,61 @@ _eh_align_offset	equ	$80
 ; Macros
 ; ---------------------------------------------------------------
 
+
+	; Debugger macros will be semi-broken if whitespace isn't supported.
+	; Since version 2.6, MD Debugger recommends projects to set "/o ws+" option to avoid
+	; cryptic errors raised by assembler failing to register spaces between arguments.
+	if 1 &0
+		; This shows a warning currently. This may be changed to an error in future versions.
+		inform 1,"Please set /o ws+ assembly option in your build script to use MD Debugger macros"
+	endif
+
 ; ---------------------------------------------------------------
 ; Creates assertions for debugging
 ; ---------------------------------------------------------------
 ; EXAMPLES:
-;	assert.b	d0, eq, #1		; d0 must be $01, or else crash!
-;	assert.w	d5, eq			; d5 must be $0000!
-;	assert.l	a1, hi, a0		; asert a1 > a0, or else crash!
-;	assert.b	MemFlag, ne		; MemFlag must be non-zero!
+;	assert.b	d0, eq, #1		; d0 must be $01, or else crash
+;	assert.w	d5, pl			; d5 must be positive
+;	assert.l	a1, hi, a0		; assert a1 > a0, or else crash
+;	assert.b	(MemFlag).w, ne	; MemFlag must be set (non-zero)
+;	assert.l	a0, eq, #Obj_Player, MyObjectsDebugger
+;
+; NOTICE:
+;	All "assert" saves and restores CCR so it's fully safe
+;	to use in-between any instructions.
+;	Use "_assert" instead if you deliberatly want to disbale
+;	this behavior and safe a few cycles.
 ; ---------------------------------------------------------------
 
-assert	macro	src, cond, dest
+assert	macro
 	; Assertions only work in DEBUG builds
 	if def(__DEBUG__)
-	if narg=3
+		move.w	sr, -(sp)
+		_assert.\0	\_
+		move.w	(sp)+, sr
+	endif
+	endm
+
+; Same as "assert", but doesn't save/restore CCR (can be used to save a few cycles)
+_assert	macro	src, cond, dest, console_program
+	; Assertions only work in DEBUG builds
+	if def(__DEBUG__)
+	if strlen("\dest")
 		cmp.\0	\dest, \src
-	else narg=2
+	else
 		tst.\0	\src
 	endif
 	pusho
 	opt l-
-		b\cond\.s	@skip\@
-		RaiseError	"Assertion failed:%<endl>\src \cond \dest"
+		b\cond\		@skip\@
+	popo
+	if strlen("\dest")
+		RaiseError	"Assertion failed:%<endl,pal2>> assert.\0 %<pal0>\src,%<pal2>\cond%<pal0>,\dest%<endl,pal1>Got: %<.\0 \src>", \console_program
+	else
+		RaiseError	"Assertion failed:%<endl,pal2>> assert.\0 %<pal0>\src,%<pal2>\cond%<endl,pal1>Got: %<.\0 \src>", \console_program
+	endif
+	pusho
+	opt l-
 	@skip\@:
 	popo
 	endif
@@ -201,14 +235,28 @@ assert	macro	src, cond, dest
 ;	RaiseError	"Module crashed! Extra info:", YourMod_Debugger
 ; ---------------------------------------------------------------
 
-RaiseError &
-	macro	string, console_program, opts
-
-	pea		*(pc)
-	move.w	sr, -(sp)
+RaiseError	macro	string, console_program, opts
+	pea		*(pc)				; this simulates M68K exception
+	move.w	sr, -(sp)			; ...
 	__FSTRING_GenerateArgumentsCode \string
-	jsr		MDDBG__ErrorHandler
+
+	pusho
+	opt l-
+	pea		@data\@
+	popo
+	jmp		MDDBG__ErrorHandler
+
+
+	; Store string data in a separate section
+	pushs
+	section dbgstrings
+
+	pusho
+	opt l-
+@data\@:
+	popo
 	__FSTRING_GenerateDecodedString \string
+
 	if strlen("\console_program")			; if console program offset is specified ...
 		dc.b	\opts+_eh_enter_console|(((*&1)^1)*_eh_align_offset)	; add flag "_eh_align_offset" if the next byte is at odd offset ...
 		even															; ... to tell Error handler to skip this byte, so it'll jump to ...
@@ -230,6 +278,8 @@ RaiseError &
 	endif
 	even
 
+	; Back to previous section
+	pops
 	endm
 
 ; ---------------------------------------------------------------
@@ -239,17 +289,36 @@ RaiseError &
 ;	Console.Run	YourConsoleProgram
 ;	Console.Write "Hello "
 ;	Console.WriteLine "...world!"
-;	Console.SetXY #1, #4
 ;	Console.WriteLine "Your data is %<.b d0>"
 ;	Console.WriteLine "%<pal0>Your code pointer: %<.l a0 sym>"
+;	Console.SetXY #1, #4
+;	Console.SetXY d0, d1
+;	Console.Sleep #60 ; sleep for 1 second
+;	Console.Pause
+;
+; NOTICE:
+;	All "Console.*" calls save and restore CCR so they are fully
+;	safe to use in-between any instructions.
+;	Use "_Console.*" instead if you deliberatly want to disbale
+;	this behavior and safe a few cycles.
 ; ---------------------------------------------------------------
 
-Console &
-	macro
+Console macro
+	; "Console.Run" doesn't have to save/restore CCR, because it's a no-return
+	if strcmp("\0","run")|strcmp("\0","Run")
+		_Console.\0	\_
 
-	if strcmp("\0","write")|strcmp("\0","writeline")|strcmp("\0","Write")|strcmp("\0","WriteLine")
+	; Other Console calls do save/restore CCR
+	else
 		move.w	sr, -(sp)
+		_Console.\0	\_
+		move.w	(sp)+, sr
+	endif
+	endm
 
+; Same as "Console", but doesn't save/restore CCR (can be used to save a few cycles)
+_Console	macro
+	if strcmp("\0","write")|strcmp("\0","writeline")|strcmp("\0","Write")|strcmp("\0","WriteLine")
 		__FSTRING_GenerateArgumentsCode \1
 
 		pusho
@@ -276,16 +345,15 @@ Console &
 			move.l	(sp)+, a0
 		endif
 
-		move.w	(sp)+, sr
-
 		; Store string data in a separate section
+		pushs
 		section dbgstrings
 	@str\@:
 		__FSTRING_GenerateDecodedString \1
 		even
 
 		; Back to previous section (it should be 'rom' for this trick to work)
-		section	rom
+		pops
 		popo	
 
 	elseif strcmp("\0","run")|strcmp("\0","Run")
@@ -294,20 +362,18 @@ Console &
 		bra.s	*
 
 	elseif strcmp("\0","clear")|strcmp("\0","Clear")
-		move.w	sr, -(sp)
 		jsr		MDDBG__ErrorHandler_ClearConsole
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","pause")|strcmp("\0","Pause")
-		move.w	sr, -(sp)
 		jsr		MDDBG__ErrorHandler_PauseConsole
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","sleep")|strcmp("\0","Sleep")
-		move.w	sr, -(sp)
 		move.w	d0, -(sp)
 		move.l	a0, -(sp)
 		move.w	\1, d0
+
+		pusho
+		opt l-
 		subq.w	#1, d0
 		bcs.s	@sleep_done\@
 		@sleep_loop\@:
@@ -315,24 +381,21 @@ Console &
 			dbf		d0, @sleep_loop\@
 
 	@sleep_done\@:
+		popo
+
 		move.l	(sp)+, a0
 		move.w	(sp)+, d0
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","setxy")|strcmp("\0","SetXY")
-		move.w	sr, -(sp)
 		movem.l	d0-d1, -(sp)
 		move.w	\2, -(sp)
 		move.w	\1, -(sp)
 		jsr		MDDBG__Console_SetPosAsXY_Stack
 		addq.w	#4, sp
 		movem.l	(sp)+, d0-d1
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","breakline")|strcmp("\0","BreakLine")
-		move.w	sr, -(sp)
 		jsr		MDDBG__Console_StartNewLine
-		move.w	(sp)+, sr
 
 	else
 		inform	2,"""\0"" isn't a member of ""Console"""
@@ -343,14 +406,32 @@ Console &
 ; ---------------------------------------------------------------
 ; KDebug integration interface
 ; ---------------------------------------------------------------
+; EXAMPLES:
+;	KDebug.WriteLine "Look in your debug console!"
+;	KDebug.WriteLine "Your D0 is %<.w d0>"
+;	KDebug.BreakPoint
+;	KDebug.StartTimer
+;	KDebug.EndTimer
+;
+; NOTICE:
+;	All "KDebug.*" calls save and restore CCR so they are fully
+;	safe to use in-between any instructions.
+;	Use "_KDebug.*" instead if you deliberatly want to disbale
+;	this behavior and safe a few cycles.
+; ---------------------------------------------------------------
 
-KDebug &
-	macro
+KDebug	macro
+	if def(__DEBUG__)	; KDebug interface is only available in DEBUG builds
+		move.w	sr, -(sp)
+		_KDebug.\0	\_
+		move.w	(sp)+, sr
+	endif
+	endm
 
+; Same as "KDebug", but doesn't save/restore CCR (can be used to save a few cycles)
+_KDebug	macro
 	if def(__DEBUG__)	; KDebug interface is only available in DEBUG builds
 	if strcmp("\0","write")|strcmp("\0","writeline")|strcmp("\0","Write")|strcmp("\0","WriteLine")
-		move.w	sr, -(sp)
-
 		__FSTRING_GenerateArgumentsCode \1
 
 		pusho
@@ -377,36 +458,28 @@ KDebug &
 			move.l	(sp)+, a0
 		endif
 
-		move.w	(sp)+, sr
 		; Store string data in a separate section
+		pushs
 		section dbgstrings
 	@str\@:
 		__FSTRING_GenerateDecodedString \1
 		even
 
-		; Back to previous section (it should be 'rom' for this trick to work)
-		section	rom
+		; Back to previous section
+		pops
 		popo	
 
 	elseif strcmp("\0","breakline")|strcmp("\0","BreakLine")
-		move.w	sr, -(sp)
 		jsr		MDDBG__KDebug_FlushLine
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","starttimer")|strcmp("\0","StartTimer")
-		move.w	sr, -(sp)
 		move.w	#$9FC0, ($C00004).l
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","endtimer")|strcmp("\0","EndTimer")
-		move.w	sr, -(sp)
 		move.w	#$9F00, ($C00004).l
-		move.w	(sp)+, sr
 
 	elseif strcmp("\0","breakpoint")|strcmp("\0","BreakPoint")
-		move.w	sr, -(sp)
 		move.w	#$9D00, ($C00004).l
-		move.w	(sp)+, sr
 
 	else
 		inform	2,"""\0"" isn't a member of ""KDebug"""
@@ -438,6 +511,9 @@ __FSTRING_GenerateArgumentsCode &
 	__pos:	= instr(\string,'%<')		; token position
 	__stack:= 0						; size of actual stack
 	__sp:	= 0						; stack displacement
+
+	pusho
+	opt	ae-		; make sure "automatic even" is disabled as this disrupts string generation
 
 	; Parse string itself
 	while (__pos)
@@ -485,6 +561,8 @@ __FSTRING_GenerateArgumentsCode &
 		popp	__command
 		\__command
 	endr
+
+	popo	; restore previous options
 
 	endm
 
