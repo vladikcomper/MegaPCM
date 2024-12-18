@@ -64,7 +64,7 @@ MPCM_Debugger_LoadSampleTableException:
 @Str_WaveNotMono:
 	dc.b	"WAVE error: Audio must be mono", 0
 @Str_WaveNot8bit:
-	dc.b	"WAVE error: Audio must be 8-bit PCM", 0
+	dc.b	"WAVE error: Audio must be 8-bit unsigned PCM", 0
 @Str_BadSampleRate:
 	dc.b	"WAVE error: Unsupported sample rate. Use <=\#TYPE_PCM_MAX_RATE\ Hz for TYPE_PCM or \#TYPE_PCM_TURBO_MAX_RATE\ Hz for TYPE_PCM_TURBO.", 0
 @Str_MissingDataChunk:
