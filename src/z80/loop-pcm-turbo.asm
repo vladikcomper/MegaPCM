@@ -3,7 +3,7 @@
 ; --------------------------------------------------------------
 ; Mega PCM 2.0
 ; --------------------------------------------------------------
-; Tubro PCM loop module
+; Turbo PCM loop module
 ;
 ; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
@@ -107,7 +107,7 @@ PCMTurboLoop_Reload:
 
 
 ; --------------------------------------------------------------
-; PCM-Tubro: Main playback loop (readahead & playback)
+; PCM-Turbo: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
 ;	bc	= Remaining length in ROM bank
@@ -166,7 +166,7 @@ PCMTurboLoop_NormalPhase:
 	; TODO: Make sure we waste as many cycles as half of the drain iteration
 
 ; --------------------------------------------------------------
-; PCM-Tubro: Draining loop (playback only)
+; PCM-Turbo: Draining loop (playback only)
 ; --------------------------------------------------------------
 
 PCMTurboLoop_DrainPhase:
@@ -239,7 +239,7 @@ PCMTurboLoop_ApplyCalibration:
 	ret
 
 ; --------------------------------------------------------------
-; PCM-Tubro: VBlank loop (playback only)
+; PCM-Turbo: VBlank loop (playback only)
 ; --------------------------------------------------------------
 
 PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:

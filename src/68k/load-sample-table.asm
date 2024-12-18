@@ -83,10 +83,10 @@ MegaPCM_LoadSampleTable:
 
 		; Here, make sure sample is PCM or PCM Turbo
 		cmp.b	#TYPE_PCM, @sample_type
-		beq.s	@Sample_PCM_or_DPCM
+		beq.s	@Sample_PCM_or_PCM_Turbo
 		cmp.b	#TYPE_PCM_TURBO, @sample_type
 		bne.w	@Err_UnknownSampleType
-	@Sample_PCM_or_DPCM:
+	@Sample_PCM_or_PCM_Turbo:
 
 		; For TYPE_PCM and TYPE_PCM_TURBO, detect RIFF header if present
 		move.l	(@sample_start), @var0

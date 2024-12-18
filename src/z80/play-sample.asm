@@ -119,7 +119,7 @@ EnterPlaybackLoop:
 	cp	'P'			; is type 'P' (PCM)?
 	jp	z, PCMLoop		; if yes, jump to PCM loop
 	cp	'T'			; is type 'T' (PCM-Turbo)?
-	jp	z, PCMTurboLoop		; if yes, jump to PCM-Tubro loop
+	jp	z, PCMTurboLoop		; if yes, jump to PCM-Turbo loop
 	cp	'D'			; is type 'D' (DPCM)?
 	jp	z, DPCMLoop		; if yes, jump to DPCM loop
 

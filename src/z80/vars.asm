@@ -14,7 +14,7 @@
 
 
 	struct	sSampleInput
-type:		byte			; sample type (only 'P' is supported)
+type:		byte			; sample type (e.g 'P' for PCM)
 flags:		byte			; playback flags
 pitch:		byte			; pitch of the sample
 startBank:	byte			; start bank id
