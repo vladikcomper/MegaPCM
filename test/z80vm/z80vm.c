@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 
-Z80VM_Context * Z80VM_Init() {
+Z80VM_Context * Z80VM_Init(void) {
 	Z80VM_Context * context = calloc(1, sizeof(Z80VM_Context));
 
 	if (!context) {

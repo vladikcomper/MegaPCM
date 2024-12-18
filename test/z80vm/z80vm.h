@@ -58,7 +58,7 @@ struct Z80VM_Context {
 };
 
 
-Z80VM_Context * Z80VM_Init();
+Z80VM_Context * Z80VM_Init(void);
 
 void Z80VM_LoadProgram(Z80VM_Context * context, const uint8_t * buffer, size_t bufferSize);
 
