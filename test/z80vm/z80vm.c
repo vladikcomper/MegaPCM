@@ -2,6 +2,7 @@
 #include "z80vm.h"
 #include "z80emu.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -10,33 +11,19 @@
 
 Z80VM_Context * Z80VM_Init(void) {
 	Z80VM_Context * context = calloc(1, sizeof(Z80VM_Context));
-
 	if (!context) {
-		fprintf(stderr, "Failed to allocate Z80VM context\n");
-		abort();
+		return NULL;
 	}
 
-	/* Fill program RAM with zeroes */
-	for (size_t i = 0; i < 0x2000; ++i) {
-		context->programRAM[i] = 0x00;
-	}
-
-	/* Reset CPU */
-	context->z80State = (Z80_STATE){0};
 	Z80Reset(&context->z80State);
 
 	return context;
 }
 
 void Z80VM_LoadProgram(Z80VM_Context *context, const uint8_t *buffer, size_t bufferSize) {
-	if (bufferSize > 0x2000) {
-		fprintf(stderr, "Z80 Program is too large\n");
-		abort();
-	}
+	assert(bufferSize <= 0x2000);
 
-	for (size_t i = 0; i < bufferSize; ++i) {
-		context->programRAM[i] = buffer[i];
-	}
+	memcpy(context->programRAM, buffer, bufferSize);
 }
 
 void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
@@ -58,7 +45,7 @@ void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
 	char * traceTextBufferPos = traceTextBuffer;
 
 	char lineBuffer[LINE_BUFFER_SIZE];
-	enum  { None, TraceMsg, TraceException } section;
+	enum  { None, TraceMsg, TraceException } section = None;
 
 	*traceTextBufferPos++ = 0x00;		// The offset 0000 in text buffer is unused
 
@@ -89,7 +76,7 @@ void Z80VM_LoadTraceData(Z80VM_Context *context, const char * traceFilePath) {
 		// If line isn't a comment, parse it as a trace entry
 		else if (lineBuffer[0] != '#') {
 			uint16_t offset;
-			if (sscanf(lineBuffer, "%hd: \"%[^\"]\"", &offset, traceTextBufferPos) != 2) {
+			if (sscanf(lineBuffer, "%hu: \"%[^\"]\"", &offset, traceTextBufferPos) != 2) {
 				fprintf(stderr, "%s: Failed to parse line: \"%s\"\n", __func__, lineBuffer);
 				abort();
 			}
@@ -176,7 +163,7 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 	cycles_emulated += Z80VM_Emulate(context, int_signal_start_cycles);
 
 	/* Trigger VBlank signal for 172 cycles */
-	fprintf(stderr, "Entering VBlanking period (cycles=%lld)...\n", context->z80State.cycles_emulated);
+	// fprintf(stderr, "Entering VBlanking period (cycles=%lld)...\n", context->z80State.cycles_emulated);
 	size_t interrupt_enter_cycles = 0;
 	// WARNING! We technically can enter interrupt multiple times between
 	// `int_signal_start_cycles` and `int_signal_end_cycles`,
@@ -188,8 +175,12 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 	) {
 		cycles_emulated += Z80VM_Emulate(context, 1);
 	}
+
 	if (interrupt_enter_cycles) {
-		fprintf(stderr, "Enterting interrupt after %lu cycles\n", cycles_emulated - int_signal_start_cycles);
+		if (context->onEnterVBlank) {
+			context->onEnterVBlank(context);
+		}
+		// fprintf(stderr, "Enterting interrupt after %lu cycles\n", cycles_emulated - int_signal_start_cycles);
 		cycles_emulated += interrupt_enter_cycles;
 	}
 	else {
@@ -204,7 +195,7 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 }
 
 
-void Z80VM_Destroy(Z80VM_Context *context) {
+void Z80VM_Destroy(Z80VM_Context* context) {
 	Z80VM_DestroyTraceData(context);
 	free(context);
 }

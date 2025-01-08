@@ -1,11 +1,15 @@
 
 #include "megapcm-emu.h"
+#include "macros.h"
 #include "z80vm.h"
 
+#include <SDL3/SDL_stdinc.h>
 #include <assert.h>
+#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 void MPCM_LoadDriver(Z80VM_Context * context, const char * path) {
@@ -38,15 +42,174 @@ void MPCM_LoadDriver(Z80VM_Context * context, const char * path) {
 	free(buffer);
 }
 
+static inline uint8_t MPCM_SampleRateToPitch(uint8_t type, uint16_t sample_rate) {
+	int result = 0;	// invalid pitch
+	if (type == 'T' && sample_rate == 32000) {
+		result = 0xFF;
+	}
+	else if (type == 'P') {
+		result = sample_rate / 25208;	// TYPE_PCM_BASE_RATE
+	}
+	else if (type == 'D') {
+		result = sample_rate / 20691;	// TYPE_DPCM_BASE_RATE
+	}
+	return result > 0xFF ? 0 : result;
+}
+
+uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t input_records_size, MPCM_Sample* out_sample_table, size_t *out_rom_size) {
+	uint8_t* rom = NULL;
+	size_t rom_pos = 0;
+	size_t rom_size = 0;
+
+	for (size_t i = 0; i < input_records_size; ++i) {
+		/* Append sample data to ROM */
+		FILE * sample_data = fopen(input_records[i].sample_path, "rb");
+		if (!sample_data) {
+			fprintf(stderr, "Failed to open sample file: %s\n", input_records[i].sample_path);
+			goto failure;
+		}
+
+		fseek(sample_data, 0, SEEK_END);
+		size_t sample_size = ftell(sample_data);
+		fseek(sample_data, 0, SEEK_SET);
+
+		rom_size += sample_size;
+		rom = realloc(rom, rom_size);
+		if (!rom) {
+			fprintf(stderr, "Out of memory\n");
+			goto failure;
+		}
+
+		if (!fread(&rom[rom_pos], sample_size, 1, sample_data)) {
+			fprintf(stderr, "Failed to read sample data: %s\n", input_records[i].sample_path);
+			fclose(sample_data);
+			goto failure;
+		}
+		fclose(sample_data);
+
+		/* Make sample record */
+		out_sample_table[i].type = input_records[i].type;
+		out_sample_table[i].flags = input_records[i].flags;
+		out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, input_records[i].sample_rate);
+		out_sample_table[i].startBank = rom_pos >> 15;
+		out_sample_table[i].startOffset = rom_pos & 0x7FFF;
+		out_sample_table[i].endBank = (rom_pos + sample_size) >> 15;
+		out_sample_table[i].endOffset = (rom_pos + sample_size) & 0x7FFF;
+
+		/* Read WAVE files */
+		if (input_records[i].type == 'T' || input_records[i].type == 'P') {
+			if (
+				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
+				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
+			) {
+				fprintf(stderr, "Invalid contianer (AIFF/NIST): %s\n", input_records[i].sample_path);
+				goto failure;
+			}
+			if (strncmp((char*)&rom[rom_pos], "RIFF", 4) == 0) {
+
+				if (strncmp((char*)&rom[rom_pos+8], "WAVE", 4) != 0) {
+					fprintf(stderr, "Invalid WAVE header: %s\n", input_records[i].sample_path);
+					goto failure;
+				}
+				size_t chunk_pos = rom_pos+12;	// "fmt" chunk
+				if (strncmp((char*)&rom[chunk_pos], "fmt ", 4) != 0) {
+					fprintf(stderr, "Missing 'fmt' chunk: %s\n", input_records[i].sample_path);
+					goto failure;
+				}
+				const uint16_t wave_format = *(uint16_t*)&rom[chunk_pos+8];
+				if (wave_format != 1 && wave_format != 0xFFFE) {
+					fprintf(stderr, "Invalid audio format: %s\n", input_records[i].sample_path);
+					goto failure;
+				}
+				const uint16_t num_channels = *(uint16_t*)&rom[chunk_pos+10];
+				if (num_channels != 1) {
+					fprintf(stderr, "Too many channels: %s\n", input_records[i].sample_path);
+					goto failure;					
+				}
+				const uint16_t bit_depth = *(uint16_t*)&rom[chunk_pos+22];
+				if (bit_depth != 8) {
+					fprintf(stderr, "Not a 8-bit audio stream: %s\n", input_records[i].sample_path);
+					goto failure;
+				}
+
+				/* If pitch wasn't set, auto-calculate it */
+				if (!out_sample_table[i].pitch) {
+					const uint16_t sample_rate = *(uint16_t*)&rom[rom_pos+12+12];
+					out_sample_table[i].pitch = MPCM_SampleRateToPitch('T', sample_rate);
+				}
+
+				/* Locate "data" chunk */
+				while (strncmp((char*)&rom[chunk_pos], "data", 4) != 0) {
+					chunk_pos += 8 + *(uint32_t*)&rom[chunk_pos+4];
+					if (chunk_pos >= rom_size) {
+						fprintf(stderr, "Missing 'data' chunk: %s\n", input_records[i].sample_path);
+						goto failure;
+					}
+				}
+
+				/* Correct sample start/end pointers */
+				const size_t data_size = *(uint32_t*)&rom[chunk_pos+4];
+				const size_t start_pos = chunk_pos+8;
+				const size_t end_pos = chunk_pos+8+data_size;
+
+				out_sample_table[i].startBank = start_pos >> 15;
+				out_sample_table[i].startOffset = start_pos & 0x7FFF;
+				out_sample_table[i].endBank = end_pos >> 15;
+				out_sample_table[i].endOffset = end_pos & 0x7FFF;
+			}
+		}
+
+		/* Auto-detect pitch if needed */
+		if (!out_sample_table[i].pitch) {
+			fprintf(stderr, "Invalid pitch: %s\n", input_records[i].sample_path);
+			goto failure;
+		}
+
+		rom_pos += sample_size;
+	}
+
+	*out_rom_size = rom_size;
+	return rom;
+
+failure:
+	if (!rom) free(rom);
+	return NULL;
+}
+
+void MPCM_LoadSampleTable(Z80VM_Context * context, MPCM_Sample* sample_table, size_t sample_table_size) {
+	memcpy(&context->programRAM[Z_MPCM_SampleTable], sample_table, sample_table_size * sizeof(MPCM_Sample));
+}
+
+void MPCM_PlaySample(Z80VM_Context * context, uint8_t sample_id) {
+	context->programRAM[Z_MPCM_CommandInput] = sample_id;
+}
+
+void MPCM_SetPan(Z80VM_Context * context, uint8_t pan) {
+	context->programRAM[Z_MPCM_PanInput] = pan;
+}
+
+void MPCM_SetSFXPan(Z80VM_Context * context, uint8_t pan) {
+	context->programRAM[Z_MPCM_SFXPanInput] = pan;
+}
+
+void MPCM_SetVolume(Z80VM_Context * context, uint8_t volume) {
+	context->programRAM[Z_MPCM_VolumeInput] = volume;
+}
+
+void MPCM_SetSFXVolume(Z80VM_Context * context, uint8_t volume) {
+	context->programRAM[Z_MPCM_SFXVolumeInput] = volume;
+}
 
 void MPCM_WaitForInitialization(Z80VM_Context * context) {
 	/* Mega PCM shouldn't take longer than this to initialize */
 	const size_t MAX_FRAMES_FOR_INIT = 4;
 
 	/* We must substitute a small ROM so MegaPCM's calibration loop doesn't fail */
-	const uint8_t ROM[] = { 0x00 };
-	context->ROM = ROM;
-	context->ROMsize = sizeof(ROM);
+	if (!context->ROM) {
+		const uint8_t ROM[] = { 0x00 };
+		context->ROM = ROM;
+		context->ROMsize = sizeof(ROM);
+	}
 
 	uint8_t isReady = 0;
 	uint8_t lastErrorCode = 0;

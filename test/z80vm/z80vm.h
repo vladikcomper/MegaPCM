@@ -16,6 +16,7 @@
 typedef struct Z80VM_Context Z80VM_Context;
 typedef void (*Z80VM_WriteByteCallback)(uint16_t, uint8_t, Z80VM_Context *);
 typedef void (*Z80VM_ReadByteCallback)(uint16_t, Z80VM_Context *);
+typedef void (*Z80VM_VBlankCallback)(Z80VM_Context *);
 
 
 struct Z80VM_Context {
@@ -46,6 +47,7 @@ struct Z80VM_Context {
 	/* Callback support */
 	Z80VM_WriteByteCallback onWriteByte;
 	Z80VM_ReadByteCallback onReadByte;
+	Z80VM_VBlankCallback onEnterVBlank;
 
 	/* Trace support */
 	uint16_t (*traceMessageTbl)[0x2000];

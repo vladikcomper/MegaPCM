@@ -2,6 +2,7 @@
 
 !z80vm/
 !megapcm-emu/
+!megapcm-viz/
 
 !.gitignore
 !.clangd
