@@ -13,6 +13,8 @@ PauseLoop:
 
 	TraceMsg "Entering PauseLoop"
 
+	ld	a, (LoopId)
+	ld	(LoopIdCopy), a
 	ld	a, LOOP_PAUSE
 	ld	(LoopId), a
 
@@ -96,6 +98,8 @@ PauseLoop_VBlank:
 	ld	hl, (VBlankRoutineCopy)			; restore previous VBlank routine
 	ld	(VBlankRoutine), hl			; ''
 	pop	hl
+	ld	a, (LoopIdCopy)				; restore previous loop id
+	ld	(LoopId), a				; ''
 
 	inc	sp					; skip return address
 	inc	sp					; ''

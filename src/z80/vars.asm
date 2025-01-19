@@ -77,6 +77,7 @@ LOOP_PCM:		equ	10h		; - `PCMLoop` (see `loop-pcm.asm`)
 LOOP_PCM_TURBO:		equ	18h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
 LOOP_DPCM:		equ	20h		; - `DPCMLoop` (see `loop-dpcm.asm`)
 LOOP_CALIBRATION:	equ	80h		; - `CalibrationLoop` (see `loop-calibration.asm`)
+LoopIdCopy:		ds	1		; id of previously active loop (saved by `PauseLoop` for instance)
 
 StackCopy:		dw	1		; stores a copy of stack pointer
 VBlankRoutineCopy:	dw	1		; stores previous VBlank routine for nested loops
