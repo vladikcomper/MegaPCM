@@ -13,7 +13,7 @@
  * Used to track currently played sample and compare it against what real Mega PCM outputs to YM DAC
  */
 typedef struct {
-	char sampleType;
+	uint8_t sampleType;
 	uint32_t offset;
 	uint32_t length;
 	uint8_t pitch;
@@ -58,7 +58,7 @@ uint8_t emulateSamplePlayback(Z80VM_Context * context) {
 	uint8_t sample = context->ROM[playbackState->offset];
 
 	/* Apply pitch */
-	if ((playbackState->sampleType == 'T') || ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)) {
+	if ((playbackState->sampleType == Z_MPCM_TYPE_PCM_TURBO) || ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)) {
 		playbackState->offset++;
 		playbackState->length--;
 	}
@@ -97,7 +97,7 @@ void runTest_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * 
 	}
 }
 
-void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sample, const size_t sampleSize, uint32_t startOffsetInROM) {
+void runTest(Z80VM_Context * context, uint8_t sampleType, const uint8_t * sample, size_t sampleSize, uint32_t startOffsetInROM) {
 
 	fprintf(stderr, "Testing sample: %ld bytes, @%X...\n", sampleSize, startOffsetInROM);
 
@@ -116,7 +116,7 @@ void runTest(Z80VM_Context * context, const char sampleType, const uint8_t * sam
 
 	/* Setup sample */
 	MPCM_Sample * sampleInput = (MPCM_Sample*) &context->programRAM[Z_MPCM_SampleInput];
-	sampleInput->type = sampleType;
+	sampleInput->flags = (1<<Z_MPCM_FLAGS_SAMPLE) | sampleType;
 	sampleInput->pitch = pitch;
 	sampleInput->startBank = startOffsetInROM >> 15;
 	sampleInput->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
@@ -178,22 +178,22 @@ int main(int argc, char * argv[]) {
 	/* Run actual tests */
 
 	/* No-bankswitching */
-	runTest(context, 'P', sample_2, sizeof(sample_2), 0);
-	runTest(context, 'P', sample_8, sizeof(sample_8), 0);
-	runTest(context, 'P', sample_254, sizeof(sample_254), 0);
-	runTest(context, 'T', sample_2, sizeof(sample_2), 0);
-	runTest(context, 'T', sample_8, sizeof(sample_8), 0);
-	runTest(context, 'T', sample_254, sizeof(sample_254), 0);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_2, sizeof(sample_2), 0);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_8, sizeof(sample_8), 0);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_254, sizeof(sample_254), 0);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_2, sizeof(sample_2), 0);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_8, sizeof(sample_8), 0);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_254, sizeof(sample_254), 0);
 
-	runTest(context, 'P', sample_8, sizeof(sample_8), 0x7F00);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_8, sizeof(sample_8), 0x7F00);
 
 	/* With bankswitching */
-	runTest(context, 'P', sample_2, sizeof(sample_2), 0x7FFE);
-	runTest(context, 'P', sample_8, sizeof(sample_8), 0x7FFE);
-	runTest(context, 'P', sample_254, sizeof(sample_254), 0x7FFE);
-	runTest(context, 'T', sample_2, sizeof(sample_2), 0x7FFE);
-	runTest(context, 'T', sample_8, sizeof(sample_8), 0x7FFE);
-	runTest(context, 'T', sample_254, sizeof(sample_254), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_2, sizeof(sample_2), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_8, sizeof(sample_8), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM, sample_254, sizeof(sample_254), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_2, sizeof(sample_2), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_8, sizeof(sample_8), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_254, sizeof(sample_254), 0x7FFE);
 
 	Z80VM_Destroy(context);
 
