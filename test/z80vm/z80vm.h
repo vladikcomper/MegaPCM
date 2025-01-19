@@ -138,7 +138,7 @@ static inline uint8_t Z80_ReadByte(uint16_t address, Z80VM_Context * context) {
 		return Z80VM_ReadROMByte(address, context);
 	}
 
-	fprintf(stderr, "%s: Illegal read: %04X\n", __func__, address);
+	fprintf(stderr, "%s: Illegal read: %04X at %04X\n", __func__, address, context->z80State.pc);
 	abort();
 }
 

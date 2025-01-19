@@ -3,9 +3,7 @@
 #include "macros.h"
 #include "z80vm.h"
 
-#include <SDL3/SDL_stdinc.h>
 #include <assert.h>
-#include <bits/stdint-uintn.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -182,6 +180,22 @@ void MPCM_LoadSampleTable(Z80VM_Context * context, MPCM_Sample* sample_table, si
 
 void MPCM_PlaySample(Z80VM_Context * context, uint8_t sample_id) {
 	context->programRAM[Z_MPCM_CommandInput] = sample_id;
+}
+
+void MPCM_PausePlayback(Z80VM_Context * context) {
+	context->programRAM[Z_MPCM_CommandInput] = Z_MPCM_COMMAND_PAUSE;
+}
+
+void MPCM_StopPlayback(Z80VM_Context * context) {
+	context->programRAM[Z_MPCM_CommandInput] = Z_MPCM_COMMAND_STOP;
+}
+
+bool MPCM_IsPlaybackPaused(Z80VM_Context * context) {
+	return context->programRAM[Z_MPCM_CommandInput] == Z_MPCM_COMMAND_PAUSE;
+}
+
+void MPCM_UnpausePlayback(Z80VM_Context * context) {
+	context->programRAM[Z_MPCM_CommandInput] = 0;
 }
 
 void MPCM_SetPan(Z80VM_Context * context, uint8_t pan) {

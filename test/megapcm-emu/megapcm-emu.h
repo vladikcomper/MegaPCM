@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -53,6 +54,10 @@ void MPCM_WaitForInitialization(Z80VM_Context * context);
 
 
 void MPCM_PlaySample(Z80VM_Context * context, uint8_t sample_id);
+void MPCM_PausePlayback(Z80VM_Context * context);
+bool MPCM_IsPlaybackPaused(Z80VM_Context * context);
+void MPCM_StopPlayback(Z80VM_Context * context);
+void MPCM_UnpausePlayback(Z80VM_Context * context);
 void MPCM_SetPan(Z80VM_Context * context, uint8_t pan);
 void MPCM_SetSFXPan(Z80VM_Context * context, uint8_t pan);
 void MPCM_SetVolume(Z80VM_Context * context, uint8_t volume);

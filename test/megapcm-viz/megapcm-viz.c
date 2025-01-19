@@ -214,9 +214,17 @@ static inline bool handle_events(void) {
 			case SDL_EVENT_KEY_DOWN:
 				if (e.key.key == SDLK_Q) {
 					return false;	// also stop running
-				} else if (e.key.key == SDLK_P) {
+				} else if (e.key.key == SDLK_RETURN) {
 					MPCM_PlaySample(z80vm, 0x81);	// start playin'
 					fprintf(stderr, "Playing\n");
+				} else if (e.key.key == SDLK_P) {
+					if (MPCM_IsPlaybackPaused(z80vm)) {
+						MPCM_UnpausePlayback(z80vm);
+						fprintf(stderr, "Unpaused\n");
+					} else {
+						MPCM_PausePlayback(z80vm);
+						fprintf(stderr, "Paused\n");
+					}
 				} else if (e.key.key == SDLK_LEFTBRACKET && (e.key.mod & SDL_KMOD_SHIFT)) {
 					MPCM_SetPan(z80vm, 0x80);
 					fprintf(stderr, "Pan left\n");
@@ -335,7 +343,7 @@ int main(int argc, char** argv) {
 
 	/* Create ROM and a sample table */
 	static const MPCM_SampleMetadata samples[] = {
-		{ .type = 'T', .flags = 0, .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
+		{ .type = 'T', .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
 	};
 	MPCM_Sample sample_table[SDL_arraysize(samples)];
 	size_t rom_size = 0;
