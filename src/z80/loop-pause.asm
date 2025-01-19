@@ -51,38 +51,25 @@ PauseLoop_VBlank:
 	call	WasteCycles				; 19857-10-11-10
 	pop	hl					; 10
 
+	; NOTE: We can't simply call `rst ProcessCommandInput`, because this
+	; loop handles pause/unpause commands differently (otherwise pause
+	; command would cause a recursion)
 	ld	a, (CommandInput)			; 13	a = command
 	or	a					; 4	is command > 00h?
 	jr	z, .Unpause				; 7/12	if not, branch
 	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
-
-	; TODO: Set `VBlankActive` flag
-
-	; Only low-priority samples can be overriden
-	assert	FLAGS_SFX==0				; `FLAGS_SFX` should be 0 for the next optimization to work ...
-
-	ld	a, (ActiveSample+sActiveSample.flags)
-	rrca						; push `FLAGS_SFX` to Carry
-	jr	nc, .PlaySample				; if not SFX, branch
-
-.ChkCommandOrSample_ResetInput:
-	; Reset command
-	xor	a
-	ld	(CommandInput), a
+	call	ProcessCommandInput2.Sample
+	ld	a, COMMAND_PAUSE			;	restore paused state/command if sample wasn't accepted
+	ld	(CommandInput), a			;	(because `ProcessCommandInput` resets `(CommandInput)`)
 
 .Done:
 	ei						; 4	enable interrupts
 	ret						; 10	wait until next VBlank
 
 ; --------------------------------------------------------------
-.PlaySample:
-	ld	a, (CommandInput)			; a = sample
-	jp	RequestSamplePlayback
-
-; --------------------------------------------------------------
 .ChkCommandOrSample_Command:
 	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, StopSamplePlayback			; if yes, branch
+	jp	z, StopSamplePlayback_NR		; if yes, branch
 	dec	a					; is command 02h (`COMMAND_PAUSE`)?
 	jr	z, .Done				; if yes, branch
 
@@ -90,7 +77,9 @@ PauseLoop_VBlank:
 	TraceException	"Uknown command"
 	ld	a, ERROR__UNKNOWN_COMMAND
 	ld	(LastErrorCode), a
-	jr	.ChkCommandOrSample_ResetInput
+	xor	a
+	ld	(CommandInput), a			; reset command
+	jr	.Done
 
 ; --------------------------------------------------------------
 .Unpause:

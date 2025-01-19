@@ -10,28 +10,34 @@
 
 
 ; --------------------------------------------------------------
-; Plays a given sample by id and clears input
+; Plays a given sample by id and clears input (NO RETURN)
 ; --------------------------------------------------------------
 ; INPUT:
 ;	a	- sample id to load (>=80h)
 ; --------------------------------------------------------------
 
-RequestSamplePlayback:
+RequestSamplePlayback_NR:	; NR = No return
 	ld	sp, Stack
 	ld	hl, CommandInput
 	ld	(hl), 00h
-	call	PlaySample
+	call	GetSample
+	call	PlaySample2
 	jp	IdleLoop		; back to idling
 
-
 ; --------------------------------------------------------------
-; Plays a given sample by id
+; Get sample data pointer by sample id
 ; --------------------------------------------------------------
 ; INPUT:
 ;	a	- sample id to load (>=80h)
+;
+; OUTPUT:
+;	ix	- sample data pointer
+;
+; USES:
+;	a, bc, hl
 ; --------------------------------------------------------------
 
-PlaySample:
+GetSample:
 	sub	80h			; 7	is command a sample 80h?
 	jr	z, .loadFromSampleInput	; 7/12	if yes, fetch it from `SampleInput`
 
@@ -45,18 +51,18 @@ PlaySample:
 	add	hl, hl			; 11	hl = sampleIndex * 4
 	add	hl, hl			; 11	hl = sampleIndex * 8
 	add	hl, bc			; 11	hl = sampleIndex * 9
+	ex	de, hl			; 4	save de
 	ld	ix, SampleTable-9	; 14
-	ex	de, hl			; 4
 	add	ix, de			; 15	ix = SampleTable + (sampleIndex - 1) * 9
-	jp	PlaySample2		; 10
+	ex	de, hl			; 4	restore de
+	ret				; 10
 
 .loadFromSampleInput:
 	ld	ix, SampleInput		; 14
-	; fallthrough
-
+	ret				; 10
 	; Total cycles:
-	; - A == 80h: 43 cycles + `PlaySample` cycles
-	; - A != 80h: 113 cycles + `PlaySample` cycles
+	; - A == 80h: 43 cycles
+	; - A != 80h: 117 cycles
 
 ; --------------------------------------------------------------
 ; Plays the loaded sample
@@ -136,7 +142,7 @@ EnterPlaybackLoop:
 ; Completely stops any playback and resets to the idle loop
 ; --------------------------------------------------------------
 
-StopSamplePlayback:
+StopSamplePlayback_NR:
 	xor	a
 	ld	(CommandInput), a
 	ld	sp, Stack

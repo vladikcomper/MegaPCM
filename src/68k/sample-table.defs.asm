@@ -5,6 +5,7 @@
 
 FLAGS_SFX:		equ	$01		; sample is SFX, normal drums cannot interrupt it
 FLAGS_LOOP:		equ	$02		; loop sample indefinitely
+FLAGS_PRIORITY:	equ	$80		; sample is highest priority, nothing can interrupt
 
 TYPE_NONE:		equ	$00
 TYPE_PCM:		equ	'P'

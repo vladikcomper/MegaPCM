@@ -67,7 +67,7 @@ DPCMLoop:
 	ld	a, b				; a = endBank
 	cp	c				; endBank == startBank?
 	jr	nz, .isMultibank		; if not, branch
-	jp	c, StopSamplePlayback		; if endBank < startBank, abort playback
+	jp	c, StopSamplePlayback_NR	; if endBank < startBank, abort playback
 	res	7, h
 	ex	de, hl				; hl = end length - 1, de = start length
 	sbc	hl, de				; hl = length - 1
@@ -343,25 +343,8 @@ DPCMLoop_VBlankPhase_LastIteration:
 	exx						; 4
 	Playback_LoadPitch				; 21	reload pitch
 
-DPCMLoop_VBlankPhase_CheckCommandOrSample:
-	ld	a, (CommandInput)			; 13	a = command
-	or	a					; 4	is command > 00h?
-	jr	z, .ChkCommandOrSample_Done		; 7/12	if not, branch
-	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
+	rst	ProcessCommandInput			; 11+22	returns a=0 once driver input is processed
 
-	; Only low-priority samples can be overriden
-	assert	FLAGS_SFX==0				; `FLAGS_SFX` should be 0 for the next optimization to work ...
-
-	ld	a, (ActiveSample+sActiveSample.flags)
-	rrca						; push `FLAGS_SFX` to Carry
-	jr	nc, .PlaySample				; if not SFX, branch
-
-.ChkCommandOrSample_ResetInput:
-	; Reset command
-	xor	a
-	ld	(CommandInput), a
-
-.ChkCommandOrSample_Done:
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	c		; 71-72/28
 
@@ -373,28 +356,3 @@ DPCMLoop_VBlankPhase_CheckCommandOrSample:
 	pop	af					; 10
 	ei						; 4
 	ret						; 10
-
-; --------------------------------------------------------------
-.ChkCommandOrSample_Command:
-	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, StopSamplePlayback			; if yes, branch
-	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	jr	nz, .UnkownCommand			; if yes, branch
-
-.PausePlayback:
-	; There's a trick to it: While the "pause command" is set,
-	; we reset sample pitch to 0, cancelling pitch reload above.
-	; As soon as this command is unset, the pitch reload will restore it.
-	Playback_ResetPitch				; set pitch to 00h
-	jr	.ChkCommandOrSample_Done
-
-.PlaySample:
-	ld	a, (CommandInput)			; a = sample
-	jp	RequestSamplePlayback
-
-; --------------------------------------------------------------
-.UnkownCommand:
-	TraceException	"Uknown command"
-	ld	a, ERROR__UNKNOWN_COMMAND
-	ld	(LastErrorCode), a
-	jr	.ChkCommandOrSample_ResetInput

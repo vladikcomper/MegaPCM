@@ -36,10 +36,26 @@ pitch:		byte			; pitch of the sample
 
 FLAGS_SFX:	equ	0
 FLAGS_LOOP:	equ	1
+FLAGS_PRIORITY:	equ	7
 
+; ---------------------------------------------
+; Variables baked into self-modifying code
+; ---------------------------------------------
+
+
+; NOTE: This variable is a part of self-modifying instruction in `SetBank:`
+CurrentBank:	equ	SetBank.sm1+1		; currently loaded bank
+
+; NOTE: This variable is a part of self-modifying instruction in `ProcessCommandInput:`
+CommandInput:	equ	ProcessCommandInput.sm1+1; command input byte (written by the M68K):
+						; - 00h - nothing
+COMMAND_STOP:	equ	01h			; - 01h - STOP playback
+COMMAND_PAUSE:	equ	02h			; - 02h - PAUSE playback
+						; - 03..7Fh - ignored
+						; - 80..FFh - play sample record from `SampleInput`
 
 ; ------------------------
-; Z80 RAM
+; Main RAM variables
 ; ------------------------
 
 Stack:			equ	1FC0h		; start of the stack
@@ -47,12 +63,6 @@ WorkRAM:		equ	1FC0h		; driver's working memory
 
 		phase	WorkRAM
 StackFailsafe:		dw	1		; set to 0000h, failsafe return value in unlikely case of stack corruption
-CommandInput:		ds	1		; command input byte (written by the main CPU):
-						; - 00h - nothing
-COMMAND_STOP:		equ	01h		; - 01h - STOP playback
-COMMAND_PAUSE:		equ	02h		; - 02h - PAUSE playback
-						; - 03..7Fh - ignored
-						; - 80..FFh - play sample record from `SampleInput`
 DriverReady:		ds	1		; flag to indicate that the driver is ready for operation
 						; - 'R' (52h) - set when `InitDriver` finishes
 						; - 00h or anything else - still initializing

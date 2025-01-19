@@ -9,9 +9,6 @@
 ; -----------------------------------------------------------------------------
 
 
-; NOTE: This variable is a part of self-modifying instruction (see `SetBank`)
-CurrentBank:	equ	SetBank.sm1+1
-
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank
 ; -----------------------------------------------------------------------------
@@ -32,9 +29,9 @@ CurrentBank:	equ	SetBank.sm1+1
 
 SetBank:
 
-._DYNAMIC_VALUE:	equ	0FFh	; initial bank value for self-modifying code
+.CurrentBank_Initial:	equ	0FFh	; initial value of (CurrentBank) variable
 
-.sm1:	cp	._DYNAMIC_VALUE		; 7	are we in this bank already?
+.sm1:	cp	.CurrentBank_Initial	; 7	are we in this bank already?
 	jp	nz, SetBank2		; 10	if not, branch
 	ret				; 10
 	; Total cycles: 162 (bankswitch), 27 (same bank)

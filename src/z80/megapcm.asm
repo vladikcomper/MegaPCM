@@ -6,6 +6,18 @@
 ; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
 
+; --------------------------------------------------------------
+; Naming convetions:
+;
+; - `SomeLabel_EXX` - routine expects alternative regiters
+;	(`exx` must be executed before calling or jumping to it!)
+; - `SomeLabel_DI` - routine expects interrupts to be disabled
+;	(`di` must be executed before calling or jumping to it!)
+; - `SomeLabel_NR` - routine is a NO RETURN
+;	(it fully resets stack and currently running loop)
+; --------------------------------------------------------------
+
+
 	include	'vars.asm'
 	include	'trace.asm'		; trace support for Z80VM
 
@@ -157,6 +169,7 @@ DPCMTables:
 
 	include	'init.asm'
 	include	'play-sample.asm'
+	include 'process-command.asm'
 
 ; --------------------------------------------------------------
 ; Sample table for sample ids >=81h
@@ -168,10 +181,12 @@ DPCMTables:
 ; and generate pitches, start/end positions on the fly.
 ; --------------------------------------------------------------
 
+Driver_End:
+
 SampleTable:
 	; This table must be appended by the driver loader.
-
-Driver_End:
+	ds	sSampleInput*127
+SampleTable_End:
 
 ; --------------------------------------------------------------
 ; Dumping the data ...

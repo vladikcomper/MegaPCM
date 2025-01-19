@@ -64,7 +64,7 @@ PCMTurboLoop:
 	ld	a, b				; a = endBank
 	cp	c				; endBank == startBank?
 	jr	nz, .isMultibank		; if not, branch
-	jp	c, StopSamplePlayback		; if endBank < startBank, abort playback
+	jp	c, StopSamplePlayback_NR	; if endBank < startBank, abort playback
 	res	7, h
 	ex	de, hl				; hl = end length, de = start length
 	sbc	hl, de				; hl = length
@@ -283,45 +283,12 @@ PCMTurboLoop_VBlankPhase:
 	nop						; 4
 	PlaybackTurbo_Run_Draining_NoSync	e	; 41/24
 
-PCMTurboLoop_VBlankPhase_CheckCommandOrSample:
-	ld	a, (CommandInput)			; 13	a = command
-	or	a					; 4	is command > 00h?
-	jr	z, .ChkCommandOrSample_Done		; 7/12	if not, branch
-	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
+	rst	ProcessCommandInput			; 11+22	returns a=0 once driver input is processed
 
-	; Only low-priority samples can be overriden
-	bit	FLAGS_SFX, (ix+sActiveSample.flags)	; is sample high priority?
-	jp	z, RequestSamplePlayback		; if not, branch
-
-.ChkCommandOrSample_ResetInput:
-	; Reset command
-	xor	a
-	ld	(CommandInput), a
-
-.ChkCommandOrSample_Done:
+	; TODO: assert a=0
 	ld	(VBlankActive), a			; 13	report we're out of VBlank
 
 	pop	bc					; 10
 	pop	af					; 10
 	ei						; 4
 	ret						; 10
-
-; --------------------------------------------------------------
-.ChkCommandOrSample_Command:
-	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, StopSamplePlayback			; if yes, branch
-	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	jr	nz, .UnkownCommand			; if yes, branch
-
-.PausePlayback:
-	; TODO: Reset VBlankActive flag
-	call	PauseLoop				; enter pause loop until cancelled
-	xor	a
-	jr	.ChkCommandOrSample_Done
-
-; --------------------------------------------------------------
-.UnkownCommand:
-	TraceException	"Uknown command"
-	ld	a, ERROR__UNKNOWN_COMMAND
-	ld	(LastErrorCode), a
-	jr	.ChkCommandOrSample_ResetInput
