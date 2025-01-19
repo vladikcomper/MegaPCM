@@ -33,7 +33,6 @@ PCMTurboLoop:
 	; Fetch input sample data (see `sSampleInput` struct) ...
 	; TODO: Disable sample input?
 	ld	sp, ix				; load sample in the stack
-	inc	sp				; skip type
 	pop	af				; a = pitch, f = flags
 	pop	bc				; c = startBank
 						; b = endBank

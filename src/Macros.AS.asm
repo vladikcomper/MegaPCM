@@ -21,7 +21,7 @@ dcSample: macro	SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 		if (SAMPLERATE+0)>TYPE_PCM_MAX_RATE
 			fatal "Invalid sample rate: SAMPLERATE. TYPE_PCM only supports sample rates <= 25100 Hz"
 		endif
-		dc.b	SAMPLEFLAGS+0							; $01	- flags (optional)
+		dc.b	SAMPLEFLAGS+FLAGS_SAMPLE				; $01	- flags (optional)
 		dc.b	(SAMPLERATE+0)*256/TYPE_PCM_BASE_RATE	; $02	- pitch (optional for .WAV files)
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	SAMPLEPTR								; $04	- start offset
@@ -31,7 +31,7 @@ dcSample: macro	SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 		if ((SAMPLERATE+0)<>TYPE_PCM_TURBO_MAX_RATE)&((SAMPLERATE+0)<>0)
 			fatal "Invalid sample rate: SAMPLERATE. TYPE_PCM_TURBO only supports sample rate of 32000 Hz"
 		endif
-		dc.b	SAMPLEFLAGS+0							; $01	- flags (optional)
+		dc.b	SAMPLEFLAGS+FLAGS_SAMPLE				; $01	- flags (optional)
 		dc.b	$FF										; $02	- pitch (optional for .WAV files)
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	SAMPLEPTR								; $04	- start offset
@@ -41,7 +41,7 @@ dcSample: macro	SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 		if SAMPLERATE>TYPE_DPCM_MAX_RATE
 			fatal "Invalid sample rate: SAMPLERATE. TYPE_DPCM only supports sample rates <= 20600 Hz"
 		endif
-		dc.b	SAMPLEFLAGS+0							; $01	- flags (optional)
+		dc.b	SAMPLEFLAGS+FLAGS_SAMPLE				; $01	- flags (optional)
 		dc.b	(SAMPLERATE)*256/TYPE_DPCM_BASE_RATE	; $02	- pitch
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	SAMPLEPTR								; $04	- start offset

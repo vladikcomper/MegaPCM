@@ -273,6 +273,7 @@ static inline void render_video_frame(void) {
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 16.0f, "SFX Volume: %X", Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm));
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 24.0f, "CurrentLoop: %02X", Z80_ReadByte(Z_MPCM_LoopId, z80vm));
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 32.0f, "CurrentBank: %02X", Z80_ReadByte(Z_MPCM_CurrentBank, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 40.0f, "LastError: %02X", Z80_ReadByte(Z_MPCM_LastErrorCode, z80vm));
 
 			SDL_RenderDebugText(renderer, 8.0f, 64-8, "BufferHealth:");
 			VizGraph_PutMeasure(g_buffer, ((Z80VM_Extension*)(z80vm->stateExtension))->mpcm_buffer_health / 256.0f);
@@ -339,11 +340,12 @@ int main(int argc, char** argv) {
 		exit(4);
 	}
 	Z80VM_LoadProgram(z80vm, z80_program, z80_program_size);
+	Z80VM_LoadTraceData(z80vm, "../../build/z80/megapcm.tracedata.txt");
 	SDL_free(z80_program);
 
 	/* Create ROM and a sample table */
 	static const MPCM_SampleMetadata samples[] = {
-		{ .type = 'T', .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
+		{ .type = Z_MPCM_TYPE_PCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
 	};
 	MPCM_Sample sample_table[SDL_arraysize(samples)];
 	size_t rom_size = 0;

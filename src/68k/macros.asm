@@ -14,6 +14,7 @@
 ; ------------------------------------------------------------------------------
 
 dcSample: macro	type, samplePtr, sampleRateHz, flags
+	; TODO: Combine flags and type into a single byte
 	if narg>4
 		inform 2, "Too many arguments. USAGE: dcSample type, samplePtr, sampleRateHz, flags"
 	endif
@@ -24,7 +25,7 @@ dcSample: macro	type, samplePtr, sampleRateHz, flags
 		if \sampleRateHz+0>TYPE_PCM_MAX_RATE
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_PCM only supports sample rates <= \#TYPE_PCM_MAX_RATE Hz"
 		endif
-		dc.b	\flags+0								; $01	- flags (optional)
+		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
 		dc.b	(\sampleRateHz+0)*256/TYPE_PCM_BASE_RATE; $02	- pitch (optional for .WAV files)
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	\samplePtr								; $04	- start offset
@@ -34,7 +35,7 @@ dcSample: macro	type, samplePtr, sampleRateHz, flags
 		if (\sampleRateHz+0<>TYPE_PCM_TURBO_MAX_RATE)&(\sampleRateHz+0<>0)
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_PCM_TURBO only supports sample rate of \#TYPE_PCM_TURBO_MAX_RATE Hz"
 		endif
-		dc.b	\flags+0								; $01	- flags (optional)
+		dc.b	\flags+FLAGS_SAMPLE							; $01	- flags (optional)
 		dc.b	$FF										; $02	- pitch (optional for .WAV files)
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	\samplePtr								; $04	- start offset
@@ -44,7 +45,7 @@ dcSample: macro	type, samplePtr, sampleRateHz, flags
 		if \sampleRateHz>TYPE_DPCM_MAX_RATE
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_MAX_RATE Hz"
 		endif
-		dc.b	\flags+0								; $01	- flags (optional)
+		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
 		dc.b	(\sampleRateHz)*256/TYPE_DPCM_BASE_RATE	; $02	- pitch
 		dc.b	0										; $03	- <RESERVED>
 		dc.l	\samplePtr								; $04	- start offset

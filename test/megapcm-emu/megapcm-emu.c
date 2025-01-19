@@ -42,13 +42,13 @@ void MPCM_LoadDriver(Z80VM_Context * context, const char * path) {
 
 static inline uint8_t MPCM_SampleRateToPitch(uint8_t type, uint16_t sample_rate) {
 	int result = 0;	// invalid pitch
-	if (type == 'T' && sample_rate == 32000) {
+	if (type == Z_MPCM_TYPE_PCM_TURBO && sample_rate == 32000) {
 		result = 0xFF;
 	}
-	else if (type == 'P') {
+	else if (type == Z_MPCM_TYPE_PCM) {
 		result = sample_rate / 25208;	// TYPE_PCM_BASE_RATE
 	}
-	else if (type == 'D') {
+	else if (type == Z_MPCM_TYPE_DPCM) {
 		result = sample_rate / 20691;	// TYPE_DPCM_BASE_RATE
 	}
 	return result > 0xFF ? 0 : result;
@@ -86,8 +86,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		fclose(sample_data);
 
 		/* Make sample record */
-		out_sample_table[i].type = input_records[i].type;
-		out_sample_table[i].flags = input_records[i].flags;
+		out_sample_table[i].flags = (1<<Z_MPCM_FLAGS_SAMPLE) | input_records[i].type | input_records[i].flags;
 		out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, input_records[i].sample_rate);
 		out_sample_table[i].startBank = rom_pos >> 15;
 		out_sample_table[i].startOffset = rom_pos & 0x7FFF;
@@ -95,7 +94,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		out_sample_table[i].endOffset = (rom_pos + sample_size) & 0x7FFF;
 
 		/* Read WAVE files */
-		if (input_records[i].type == 'T' || input_records[i].type == 'P') {
+		if (input_records[i].type == Z_MPCM_TYPE_PCM_TURBO || input_records[i].type == Z_MPCM_TYPE_PCM) {
 			if (
 				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
 				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
@@ -133,7 +132,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				/* If pitch wasn't set, auto-calculate it */
 				if (!out_sample_table[i].pitch) {
 					const uint16_t sample_rate = *(uint16_t*)&rom[rom_pos+12+12];
-					out_sample_table[i].pitch = MPCM_SampleRateToPitch('T', sample_rate);
+					out_sample_table[i].pitch = MPCM_SampleRateToPitch(Z_MPCM_TYPE_PCM_TURBO, sample_rate);
 				}
 
 				/* Locate "data" chunk */

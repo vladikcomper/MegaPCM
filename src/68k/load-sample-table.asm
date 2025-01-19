@@ -164,6 +164,7 @@ MegaPCM_LoadSampleTable:
 	@WriteSampleData:
 		tst.b	@sample_pitch
 		beq.w	@Err_PitchNotSet					; pitch can't be zero
+		or.b	@sample_type, @sample_flags			; combine type into flags field
 
 		; Convert absolute start/end offsets to Z80 banks and window addresses ...
 		move.l	@sample_start, @var0
@@ -183,16 +184,15 @@ MegaPCM_LoadSampleTable:
 		; We can send processed data to Mega PCM's sample table now ...
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
-		MPCM_stopZ80	(@z80_busreq)
-		move.b	@sample_type, (@z80_sample_tbl)+	; 00h	- sample type
-		move.b	@sample_flags, (@z80_sample_tbl)+	; 01h	- sample flags
-		move.b	@sample_pitch, (@z80_sample_tbl)+	; 02h	- pitch
-		move.b	@var0, (@z80_sample_tbl)+			; 03h	- start bank
-		move.b	@var1, (@z80_sample_tbl)+			; 04h	- end bank
-		move.b	2+1(sp), (@z80_sample_tbl)+			; 05h	- start offset LOW
-		move.b	2+0(sp), (@z80_sample_tbl)+			; 06h	- start offset HIGH
-		move.b	2+3(sp), (@z80_sample_tbl)+			; 07h	- end offset LOW
-		move.b	2+2(sp), (@z80_sample_tbl)+			; 08h	- end offset HIGH
+		MPCM_stopZ80 (@z80_busreq)
+		move.b	@sample_flags, (@z80_sample_tbl)+	; 00h	- sample flags
+		move.b	@sample_pitch, (@z80_sample_tbl)+	; 01h	- pitch
+		move.b	@var0, (@z80_sample_tbl)+			; 02h	- start bank
+		move.b	@var1, (@z80_sample_tbl)+			; 03h	- end bank
+		move.b	2+1(sp), (@z80_sample_tbl)+			; 04h	- start offset LOW
+		move.b	2+0(sp), (@z80_sample_tbl)+			; 05h	- start offset HIGH
+		move.b	2+3(sp), (@z80_sample_tbl)+			; 06h	- end offset LOW
+		move.b	2+2(sp), (@z80_sample_tbl)+			; 07h	- end offset HIGH
 		MPCM_startZ80 (@z80_busreq)
 		move.w	(sp)+, sr							; restore interrupts		
 

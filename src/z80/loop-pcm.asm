@@ -32,7 +32,6 @@ PCMLoop:
 	; Fetch input sample data (see `sSampleInput` struct) ...
 	; TODO: Disable sample input?
 	ld	sp, ix				; load sample in the stack
-	inc	sp				; skip type
 	pop	af				; a = pitch, f = flags
 	pop	bc				; c = startBank
 						; b = endBank
@@ -85,11 +84,11 @@ PCMLoop:
 	push	bc				; (ActiveSample+sActiveSample.startBank) = c
 						; (ActiveSample+sActiveSample.endBank) = b
 
-	assert FLAGS_SFX==0			; we need this assertion to ensure trick below works
+	assert FLAGS_SFX==6			; we need this assertion to ensure trick below works
 
 	ld	hl, VolumeInput			; hl = VolumeInput
 	ex	af, af'				; a = pitch, f = flags
-	jr	nc, .setVolumeInputPtr		; Carry = FLAGS_SFX
+	jr	nz, .setVolumeInputPtr		; Z = FLAGS_SFX
 	inc	l				; hl = SFXVolumeInput
 .setVolumeInputPtr:
 	push	hl				; (ActiveSample+sActiveSample.volumeInputPtr) = hl

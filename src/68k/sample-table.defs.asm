@@ -3,14 +3,14 @@
 ; Definitions for sample table
 ; ------------------------------------------------------------------------------
 
-FLAGS_SFX:		equ	$01		; sample is SFX, normal drums cannot interrupt it
-FLAGS_LOOP:		equ	$02		; loop sample indefinitely
-FLAGS_PRIORITY:	equ	$80		; sample is highest priority, nothing can interrupt
+FLAGS_LOOP:		equ	$01		; loop sample indefinitely
+FLAGS_SFX:		equ	$40		; sample is SFX, normal drums cannot interrupt it
+FLAGS_SAMPLE:	equ	$80		; marks slot as a playable sample
 
 TYPE_NONE:		equ	$00
-TYPE_PCM:		equ	'P'
-TYPE_PCM_TURBO:	equ	'T'
-TYPE_DPCM:		equ	'D'
+TYPE_PCM:		equ	$02
+TYPE_PCM_TURBO:	equ	$04
+TYPE_DPCM:		equ	$06
 
 ; ------------------------------------------------------------------------------
 ; Maximum playback rates:

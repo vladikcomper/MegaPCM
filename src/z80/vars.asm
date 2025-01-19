@@ -14,7 +14,6 @@
 
 
 	struct	sSampleInput
-type:		byte			; sample type (e.g 'P' for PCM)
 flags:		byte			; playback flags
 pitch:		byte			; pitch of the sample
 startBank:	byte			; start bank id
@@ -34,9 +33,28 @@ flags:		byte			; playback flags
 pitch:		byte			; pitch of the sample
 	ends
 
-FLAGS_SFX:	equ	0
-FLAGS_LOOP:	equ	1
-FLAGS_PRIORITY:	equ	7
+; WARNING! Don't change location of priority or type bits!
+MASK_PRIORITY:	equ	%11110000	; applied to mask priority bits only
+MASK_TYPE:	equ	%00001110	; applied to mask type bits only
+
+TYPE_NONE:	equ	0
+TYPE_PCM:	equ	2
+TYPE_PCM_TURBO:	equ	4
+TYPE_DPCM:	equ	6
+
+PRIORITY_0:	equ	0
+PRIORITY_1:	equ	10h
+PRIORITY_2:	equ	20h
+PRIORITY_3:	equ	40h
+
+FLAGS_LOOP:	equ	0		; if set, sample loops indefinitely
+FLAGS_TYPE_0:	equ	1		; bit 0 of sample type
+FLAGS_TYPE_1:	equ	2		; bit 1 of sample type
+FLAGS_TYPE_2:	equ	3		; bit 2 of sample type
+FLAGS_PRIO_0:	equ	4		; bit 0 of priority level
+FLAGS_PRIO_1:	equ	5		; bit 1 of priority level
+FLAGS_SFX:	equ	6		; bit 2 of priority, also indicates SFX samples
+FLAGS_SAMPLE:	equ	7		; bit 3 of priority, also indicates this slot is a playable sample (not metadata/reserved)
 
 ; ---------------------------------------------
 ; Variables baked into self-modifying code
@@ -76,7 +94,6 @@ SFXPanInput:		ds	1		; panning of SFX samples (40h, 80h or C0h)
 		assert (VolumeInput>>8)==(SFXVolumeInput>>8)
 		assert (VolumeInput+1)==(SFXVolumeInput)
 
-SampleInput:		ds	sSampleInput	; input sample data (used for sample 80h)
 ActiveSample:		ds	sActiveSample	; currently playing sample data
 ActiveSamplePitch:	equ	ActiveSample+sActiveSample.pitch	; pointer to the pitch of active sample
 

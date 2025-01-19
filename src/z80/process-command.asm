@@ -62,28 +62,19 @@ ProcessCommandInput2:
 .Sample:
 	; WARNING! We shouldn't read `(CommandInput)` from now on to avoid any
 	; data races (e.g. 68K stopping Z80 and overwriting it to a non-sample)
-
-	; Only low-priority samples can be overriden
-	bit	FLAGS_PRIORITY, (ix+sActiveSample.flags); is sample high priority?
-	jp	nz, .ResetCommandInput			; if yes, always ignore new samples
-	bit	FLAGS_SFX, (ix+sActiveSample.flags)	; is current sample SFX?
-	jp	z, RequestSamplePlayback_NR		; if not, accept new sample unconditionally
-	push	ix
-	push	hl
-	push	af
-	; TODO: Faster version that gets sample in `hl`
-	call	GetSample				; 17+113/43	ix = Sample
-	ld	a, (ix+sSampleInput.flags)		; get new sample flags
-	and	(1<<FLAGS_SFX)|(1<<FLAGS_PRIORITY)	; is it SFX or high priority sample?
-	jp	z, .ToResetCommandInput			; if not, branch
-	pop	af					; a = sample
-	; TODO: Reset VBlankActive flag
-	jp	RequestSamplePlayback_NR
-
-.ToResetCommandInput:
-	pop	af
+	push	hl				; 11
+	push	af				; 11
+	add	a				; 4	a = sampleIndex * 2 (also discards bit 7)
+	ld	l, a				; 4	hl = sampleIndex * 2
+	ld	h, SampleInput>>10		; 7	hl = sampleIndex * 2 + SampleInput/4
+	add	hl, hl				; 11	hl = sampleIndex * 4 + SampleInput/2
+	add	hl, hl				; 11	hl = sampleIndex * 8 + SampleInput
+	ld	a, (hl)				; 7	a = sSampleInput.flags
+	or	~MASK_PRIORITY			; 7	set all non-priority bits to 1's
+	cp	(ix+sActiveSample.flags)	; 19	does the new sample has higher priority?
+	jp	nc, RequestSamplePlayback2_NR	; 7/12	if yes, branch
+	pop	af				; 10
 	pop	hl
-	pop	ix
 
 .ResetCommandInput:
 	xor	a

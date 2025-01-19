@@ -14,7 +14,6 @@
  * Mega PCM 2.0 sample record format, as presented in Z80 definitions
  */
 typedef struct {
-	uint8_t type;
 	uint8_t flags;
 	uint8_t pitch;
 	uint8_t startBank;

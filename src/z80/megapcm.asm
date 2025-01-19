@@ -56,6 +56,10 @@
 	export	LOOP_PCM_TURBO
 	export	LOOP_DPCM
 	export	LOOP_CALIBRATION
+	export	TYPE_NONE
+	export	TYPE_PCM
+	export	TYPE_PCM_TURBO
+	export	TYPE_DPCM
 	export	ERROR__BAD_INTERRUPT
 	export	ERROR__BAD_SAMPLE_TYPE
 	export	ERROR__UNKNOWN_COMMAND
@@ -121,10 +125,14 @@ VoidInterrupt:
 	include	'loop-pcm-turbo.asm'
 
 ; --------------------------------------------------------------
-; 256-byte sample buffer used for playback
+; Mega PCM buffers and tables (aligned on 256-byte boundaries)
 ; --------------------------------------------------------------
 
 	align	100h
+
+; --------------------------------
+; 256-byte playback ring buffer
+; --------------------------------
 
 SampleBuffer:
 	ds	100h, 0
@@ -133,18 +141,35 @@ SampleBuffer:
 	; for an insane optimization, so it should be 03h
 	assert	(SampleBuffer>>8) == 3
 
-; --------------------------------------------------------------
-; Lookup tables (aligned on 256-byte boundary)
-; --------------------------------------------------------------
-
-	align	100h
+; -----------------
+; Volume tables
+; -----------------
 
 VolumeTables:
 	include	'volume-tables.asm'
 
+; -----------------
+; Sample table
+; -----------------
+
+SampleInput:
+	ds	sSampleInput, 0		; special dynamic sample slot (sample 80h)
+
+SampleTable:				; slots >=81h
+	; This table must be appended by the driver loader.
+	ds	sSampleInput*7Fh, 0
+SampleTable_End:
+
+	; Sample table's base offset (including the dynamic sample) must be
+	; a multiple of 4000h for an insane optimization
+	assert	((SampleInput>>8) % 4) == 0
+
+; -------------------------
+; DPCM decode tables
+; -------------------------
+
 DPCMTables:
 	include	'dpcm-tables.asm'
-
 
 ; --------------------------------------------------------------
 ; Cycle waster (aligned on 256-byte boundary)
@@ -171,22 +196,7 @@ DPCMTables:
 	include	'play-sample.asm'
 	include 'process-command.asm'
 
-; --------------------------------------------------------------
-; Sample table for sample ids >=81h
-; --------------------------------------------------------------
-; NOTE: Sample id 80h is considered "custom" and is read
-; from Work RAM instead (see `SampleInput` in `vars.asm`).
-;
-; This basically allows to bypass limitations of sample table
-; and generate pitches, start/end positions on the fly.
-; --------------------------------------------------------------
-
 Driver_End:
-
-SampleTable:
-	; This table must be appended by the driver loader.
-	ds	sSampleInput*127
-SampleTable_End:
 
 ; --------------------------------------------------------------
 ; Dumping the data ...

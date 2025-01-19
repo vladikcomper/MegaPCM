@@ -1,83 +1,68 @@
 
-; ==============================================================
-; --------------------------------------------------------------
-; Mega PCM 2.0
-; --------------------------------------------------------------
-; Functions for initiating sample playback
+; =============================================================================
+; -----------------------------------------------------------------------------
+; Mega PCM 2.1
+; -----------------------------------------------------------------------------
+; Functions for starting and stopping sample playback
 ;
-; (c) 2023-2024, Vladikcomper
-; --------------------------------------------------------------
+; (c) 2023-2025, Vladikcomper
+; -----------------------------------------------------------------------------
 
-
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; Plays a given sample by id and clears input (NO RETURN)
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; INPUT:
 ;	a	- sample id to load (>=80h)
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 
 RequestSamplePlayback_NR:	; NR = No return
-	ld	sp, Stack
-	ld	hl, CommandInput
-	ld	(hl), 00h
-	call	GetSample
-	call	PlaySample2
+	add	a			; 4	a = sampleIndex * 2 (also discards bit 7)
+	ld	l, a			; 4	hl = sampleIndex * 2
+	ld	h, SampleInput>>10	; 7	hl = sampleIndex * 2 + SampleInput/4
+	add	hl, hl			; 11	hl = sampleIndex * 4 + SampleInput/2
+	add	hl, hl			; 11	hl = sampleIndex * 8 + SampleInput
+	;fallthrough
+
+; -----------------------------------------------------------------------------
+; INPUT:
+;	hl	- sample pointer (sSampleInput struct)
+; -----------------------------------------------------------------------------
+
+RequestSamplePlayback2_NR:	; NR = No return
+	xor	a			; a = 0
+	ld	(CommandInput), a	; reset command input
+	ld	sp, Stack		; reset stack
+	call	PlaySample		; <= hl
 	jp	IdleLoop		; back to idling
 
-; --------------------------------------------------------------
-; Get sample data pointer by sample id
-; --------------------------------------------------------------
-; INPUT:
-;	a	- sample id to load (>=80h)
-;
-; OUTPUT:
-;	ix	- sample data pointer
-;
-; USES:
-;	a, bc, hl
-; --------------------------------------------------------------
 
-GetSample:
-	sub	80h			; 7	is command a sample 80h?
-	jr	z, .loadFromSampleInput	; 7/12	if yes, fetch it from `SampleInput`
-
-	; For ids >=81h, load the desired entry from `SampleTable`
-	; Implements: `ix = SampleTable + (sampleId - 81h) * 9`
-	ld	c, a			; 4	bc = sampleIndex
-	ld	b, 0h			; 7	''
-	add	a			; 4	a = sampleIndex * 2
-	ld	h, b			; 4	hl = sampleIndex * 2
-	ld	l, a			; 4	''
-	add	hl, hl			; 11	hl = sampleIndex * 4
-	add	hl, hl			; 11	hl = sampleIndex * 8
-	add	hl, bc			; 11	hl = sampleIndex * 9
-	ex	de, hl			; 4	save de
-	ld	ix, SampleTable-9	; 14
-	add	ix, de			; 15	ix = SampleTable + (sampleIndex - 1) * 9
-	ex	de, hl			; 4	restore de
-	ret				; 10
-
-.loadFromSampleInput:
-	ld	ix, SampleInput		; 14
-	ret				; 10
-	; Total cycles:
-	; - A == 80h: 43 cycles
-	; - A != 80h: 117 cycles
-
-; --------------------------------------------------------------
+; =============================================================================
+; -----------------------------------------------------------------------------
 ; Plays the loaded sample
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 ; INPUT:
-;	ix	- Sample pointer (`sSampleInput` struct)
-; --------------------------------------------------------------
+;	hl	- Sample pointer (`sSampleInput` struct)
+; -----------------------------------------------------------------------------
 
-PlaySample2:
+PlaySample:
+	TraceMsg "Entering PlaySample"
+
+	push	hl
+
+	; Failsafe against playing non-samples
+	assert FLAGS_SAMPLE == 7
+
+	ld	a, (hl)
+	add	a					; are we playing a sample at all (`FLAGS_SAMPLE` set)?
+	jr	nc, StopSamplePlayback_NR		; if not, halt immediately
+
 	; Load panning value for this sample
+	assert FLAGS_SFX == 6
 	assert SFXPanInput == PanInput+1		; `PanInput` and `SFXPanInput` should follow each other in memory
 
 	ld	hl, PanInput
-	bit	FLAGS_SFX, (ix+sSampleInput.flags)	; are we playing SFX?
-	jr	z, .panInputReady			; if not, branch
+	add	a					; are we playing SFX (`FLAGS_SFX` set)?
+	jr	nc, .panInputReady			; if not, branch
 	inc	l					; if yes, use `SFXPanInput` instead of `PanInput`
 .panInputReady:
 	ld	c, (hl)					; c = panning
@@ -103,6 +88,7 @@ PlaySample2:
 	ld	(de), a					; 7	DriverReady = 'R'
 
 	; Start actual sample playback now
+	pop	ix					; ix = Sample pointer
 	call	EnterPlaybackLoop
 
 DisableDAC:
@@ -118,31 +104,40 @@ DisableDAC:
 	ld	(de), a					; 7	DriverReady = 'R'
 	ret
 
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 EnterPlaybackLoop:
-	; Determine loop to run based on sample type
-	ld	a, (ix+sSampleInput.type)
-	cp	'P'			; is type 'P' (PCM)?
-	jp	z, PCMLoop		; if yes, jump to PCM loop
-	cp	'T'			; is type 'T' (PCM-Turbo)?
-	jp	z, PCMTurboLoop		; if yes, jump to PCM-Turbo loop
-	cp	'D'			; is type 'D' (DPCM)?
-	jp	z, DPCMLoop		; if yes, jump to DPCM loop
+	assert MASK_TYPE == %1110
 
-	; Other type values are considered unknown
-	; We set an error code and execute `StopSamplePlayback`
-	; as a fallback.
-	TraceException	"Unknown sample type"
+	; Determine loop to run based on the sample type
+	ld	a, (ix+sSampleInput.flags)		; 19
+	and	MASK_TYPE				; 7	a = sample type bits
+	add	.LoopTable&0FFh				; 7
+	ld	(.sm1+1), a				; 13
+.sm1:	ld	hl, (.LoopTable+00h)			; 16
+	jp	(hl)					; 4
 
-	ld	a, ERROR__BAD_SAMPLE_TYPE
-	ld	(LastErrorCode), a
-	; fallthrough
+; -----------------------------------------------------------------------------
+.LoopTable:
+	dw	StopSamplePlayback_NR			; +00h
+	dw	PCMLoop					; +02h
+	dw	PCMTurboLoop				; +04h
+	dw	DPCMLoop				; +06h
+	dw	StopSamplePlayback_NR			; +08h
+	dw	StopSamplePlayback_NR			; +0Ah
+	dw	StopSamplePlayback_NR			; +0Ch
+	dw	StopSamplePlayback_NR			; +0Eh
+.LoopTable_End:
 
-; --------------------------------------------------------------
+	; Loop table shouldn't cross 256-byte boundary for 8-bit addition to work
+	assert (.LoopTable_End>>8)==(.LoopTable>>8)
+
+; -----------------------------------------------------------------------------
 ; Completely stops any playback and resets to the idle loop
-; --------------------------------------------------------------
+; -----------------------------------------------------------------------------
 
 StopSamplePlayback_NR:
+	TraceMsg "Entering StopSamplePlayback_NR"
+
 	xor	a
 	ld	(CommandInput), a
 	ld	sp, Stack
