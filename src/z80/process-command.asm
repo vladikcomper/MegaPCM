@@ -28,9 +28,6 @@
 ; If `(CommandInput)` is a sample id (80..FFh):
 ;  - 
 ; -----------------------------------------------------------------------------
-; INPUT:
-;	ix	- Currently loaded sample (`sActiveSample` struct)
-;
 ; OUTPUT:
 ;	a = 0
 ; -----------------------------------------------------------------------------
@@ -69,16 +66,16 @@ ProcessCommandInput2:
 	ld	h, SampleInput>>10		; 7	hl = sampleIndex * 2 + SampleInput/4
 	add	hl, hl				; 11	hl = sampleIndex * 4 + SampleInput/2
 	add	hl, hl				; 11	hl = sampleIndex * 8 + SampleInput
-	ld	a, (hl)				; 7	a = sSampleInput.flags
-	or	~MASK_PRIORITY			; 7	set all non-priority bits to 1's
-	cp	(ix+sActiveSample.flags)	; 19	does the new sample has higher priority?
-	jp	nc, RequestSamplePlayback2_NR	; 7/12	if yes, branch
+	ld	a, (ActiveSample+sActiveSample.flags) ; 13	a = active sample flags
+	and	MASK_PRIORITY			; 7	mask only priority bits
+	cp	(hl)				; 7	does the new sample has higher priority?
+	jp	c, RequestSamplePlayback2_NR	; 7/12	if yes, branch
 	pop	af				; 10
 	pop	hl
 
 .ResetCommandInput:
 	xor	a
-	ld	a, (CommandInput)
+	ld	(CommandInput), a
 	ret
 
 ; --------------------------------------------------------------
