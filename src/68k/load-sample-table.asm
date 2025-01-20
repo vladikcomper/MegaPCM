@@ -216,7 +216,7 @@ MegaPCM_LoadSampleTable:
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
 		MPCM_stopZ80	(@z80_busreq)
-		rept 9
+		rept 8
 			move.b	@sample_type, (@z80_sample_tbl)+
 		endr
 		MPCM_startZ80 (@z80_busreq)
