@@ -141,8 +141,6 @@ DPCMLoop_NormalPhase_NoCycleStealing:
 						;	... that don't emulate cycle-stealing
 
 DPCMLoop_NormalPhase:
-	TraceMsg "DPCMLoop_NormalPhase iteration"
-
 	; Handle "read-ahead" buffer
 	ld	a, (de)				; 7+3.3*
 	inc	de				; 6	increment ROM pointer
@@ -173,8 +171,6 @@ DPCMLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	TraceMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
-
 	; Waste 87 + 3* cycles (we cannot handle "read-ahead" now)
 	push	af						; 11
 	pop	af						; 10
@@ -211,8 +207,6 @@ DPCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 DPCMLoop_DrainPhase:
-	TraceMsg "DPCMLoop_DrainPhase iteration"
-
 	; Handle playback in draining mode
 	di							; 4
 	Playback_Run_Draining	c, .Drained_EXX_DI		; 71-72
@@ -311,8 +305,6 @@ DPCMLoop_VBlank:
 
 ; --------------------------------------------------------------
 DPCMLoop_VBlankPhase:
-	TraceMsg "DPCMLoop_VBlankPhase iteration"
-
 	; Handle sample playback in draining mode
 	Playback_Run_Draining	c, DPCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 

@@ -138,8 +138,6 @@ PCMLoop_NormalPhase_NoCycleStealing:
 								;	... that don't emulate cycle-stealing
 
 PCMLoop_NormalPhase:
-	TraceMsg "PCMLoop_NormalPhase iteration"
-
 	; Handle "read-ahead" buffer
 	di							; 4
 	ldi							; 16+3.3*
@@ -157,8 +155,6 @@ PCMLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	TraceMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
-
 	; Waste 53+7* cycles (we cannot handle "read-ahead" now)
 	push	af						; 11
 	ld	a, 00h						; 7
@@ -190,8 +186,6 @@ PCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 PCMLoop_DrainPhase:
-	TraceMsg "PCMLoop_DrainPhase iteration"
-
 	; Handle playback in draining mode
 	di								; 4
 	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
@@ -286,8 +280,6 @@ PCMLoop_VBlank:
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase:
-	TraceMsg "PCMLoop_VBlankPhase iteration"
-
 	; Handle sample playback in draining mode
 	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 
