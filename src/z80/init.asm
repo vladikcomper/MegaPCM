@@ -48,4 +48,4 @@ InitDriver:
 
 	TraceMsg "Mega PCM init finish"
 
-	jr	IdleLoop
+	jp	IdleLoop

@@ -123,6 +123,8 @@ VoidInterrupt:
 
 	include	'loop-pcm.asm'
 	include	'loop-pcm-turbo.asm'
+	include	'loop-calibration.asm'
+	include	'loop-idle.asm'
 
 ; --------------------------------------------------------------
 ; Mega PCM buffers and tables (aligned on 256-byte boundaries)
@@ -169,7 +171,8 @@ SampleTable_End:
 ; -------------------------
 
 DPCMTables:
-	include	'dpcm-tables.asm'
+	ds	100h, 0	; for nibble 0
+	ds	100h, 0	; for nibble 1
 
 ; --------------------------------------------------------------
 ; Cycle waster (aligned on 256-byte boundary)
@@ -184,9 +187,7 @@ DPCMTables:
 ; --------------------------------------------------------------
 
 	include	'loop-dpcm.asm'
-	include	'loop-calibration.asm'
 	include	'loop-pause.asm'
-	include	'loop-idle.asm'
 
 ; --------------------------------------------------------------
 ; Misc. modules
