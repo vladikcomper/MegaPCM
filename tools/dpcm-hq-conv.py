@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-from typing import Callable, Tuple
+from typing import Tuple
 from itertools import product
-import argparse
 import numpy as np
-import math
-import sys
+import json
+import argparse
 
 input_fn = "test.pcm"
 output_fn = "test.dpcm"
@@ -14,50 +13,9 @@ deltaTables = (
 	np.array([0, 1, 2, 4, 8, 16, 32, 64, -128, -1, -2, -4, -8, -16, -32, -64], dtype=np.int8),
 	# 1 - DPCM-HQ Type 1 (SGDK-like)
 	np.array([-34, -21, -13, -8, -5, -3, -2, -1, 0, 1, 2, 3, 5, 8, 13, 21], dtype=np.int8),
+	# 2 - DPCM-HQ Type 2 (Vladikcomper's custom)
+	np.array([-20, -12, -8, -6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6, 8, 12], dtype=np.int8),
 )
-
-
-def encodeV1(samples: np.ndarray, deltaTable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-	if samples.size % 2: raise Exception('Buffer must contain even number of samples')
-	if samples.dtype != np.uint8: raise Exception('Buffer must be 8-bit unsigned PCM')
-	samples = samples.astype(np.int8) + (-128)
-	samples_predicted = np.empty_like(samples)
-	outdeltas = np.empty_like(samples)
-	current_sample = 0
-
-	for i in range(len(samples)):
-		actual_sample = samples[i]
-		predicted_samples = current_sample + deltaTable
-		best_delta_index = np.argmin(np.abs(np.subtract(actual_sample, predicted_samples, dtype=np.int16)))
-		current_sample = predicted_samples[best_delta_index]
-		outdeltas[i] = best_delta_index
-		samples_predicted[i] = current_sample
-
-	rmse = np.sqrt(np.mean(np.subtract(samples_predicted, samples, dtype=np.int16) ** 2))
-	return ((outdeltas[::2] << 4) + outdeltas[1::2], rmse)
-
-
-def encodeV1B(samples: np.ndarray, deltaTable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-	if samples.size % 2: raise Exception('Buffer must contain even number of samples')
-	if samples.dtype != np.uint8: raise Exception('Buffer must be 8-bit unsigned PCM')
-	samples = samples.astype(np.int8) + (-128)
-	samples_predicted = np.empty_like(samples)
-	outdeltas = np.empty_like(samples)
-	current_sample = 0
-
-	for i in range(len(samples)):
-		actual_sample = samples[i]
-		predicted_samples = current_sample + deltaTable
-		errors = np.abs(np.subtract(actual_sample, predicted_samples, dtype=np.int16))
-		best_delta_indexes = np.flatnonzero(errors == errors.min())
-		best_delta_index = best_delta_indexes[-1]
-		current_sample = predicted_samples[best_delta_index]
-		outdeltas[i] = best_delta_index
-		samples_predicted[i] = current_sample
-
-	rmse = np.sqrt(np.mean(np.subtract(samples_predicted, samples, dtype=np.int16) ** 2))
-	return ((outdeltas[::2] << 4) + outdeltas[1::2], rmse)
-
 
 def encodeV2(samples: np.ndarray, delta_table: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 	if samples.size % 2: raise Exception('Buffer should contain even number of samples')
@@ -73,6 +31,30 @@ def encodeV2(samples: np.ndarray, delta_table: np.ndarray) -> Tuple[np.ndarray, 
 		abs_errors = np.full_like(predicted_samples, 0x7FFF)
 		np.abs(actual_sample - predicted_samples, out=abs_errors, where=nonclipped_predicted_samples) # calc errors for non-clipped samples only
 		best_delta_index = np.argmin(abs_errors)
+		current_sample = predicted_samples[best_delta_index].astype(np.uint8)
+		outdeltas[i] = best_delta_index
+		samples_predicted[i] = current_sample
+
+	rmse = np.sqrt(np.mean(np.subtract(samples_predicted, samples, dtype=np.int16) ** 2))
+	return ((outdeltas[::2] << 4) + outdeltas[1::2], rmse)
+
+def encodeV3(samples: np.ndarray, delta_table: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+	if samples.size % 2: raise Exception('Buffer should contain even number of samples')
+	if samples.dtype != np.uint8: raise Exception('Buffer must be 8-bit unsigned PCM')
+	samples_predicted = np.empty_like(samples)
+	outdeltas = np.empty_like(samples)
+	current_sample = 0x80
+
+	k = 0.5
+	delta_click_factor = np.full(delta_table.size, 0, dtype=np.int32)
+	np.square(np.subtract(np.abs(delta_table, dtype=np.int32), 32, dtype=np.int32), out=delta_click_factor, where=np.abs(delta_table, dtype=np.int32) > 32)
+	delta_click_factor = k * delta_click_factor
+
+	for i in range(len(samples)):
+		actual_sample = samples[i]
+		predicted_samples = np.add(current_sample, delta_table, dtype=np.uint8, casting='unsafe')
+		cost = np.square(np.subtract(actual_sample, predicted_samples, dtype=np.int32), dtype=np.int32) + delta_click_factor
+		best_delta_index = np.argmin(cost)
 		current_sample = predicted_samples[best_delta_index]
 		outdeltas[i] = best_delta_index
 		samples_predicted[i] = current_sample
@@ -80,7 +62,8 @@ def encodeV2(samples: np.ndarray, delta_table: np.ndarray) -> Tuple[np.ndarray, 
 	rmse = np.sqrt(np.mean(np.subtract(samples_predicted, samples, dtype=np.int16) ** 2))
 	return ((outdeltas[::2] << 4) + outdeltas[1::2], rmse)
 
-encode_algorithms = (encodeV1, encodeV1B, encodeV2)
+
+encode_algorithms = (encodeV2,encodeV3)
 
 
 def decode(deltaNibbles: np.ndarray, deltaTable: np.ndarray):
@@ -98,6 +81,12 @@ def runDecoder(path: str) -> np.ndarray:
 	else:
 		return decode(input_buff[2:], deltaTables[int(input_buff[1])])
 
+def readFromFile(path: str):
+	buff = np.fromfile(path, dtype=np.uint8)
+	if buff.size % 2 == 1:
+		return np.append(buff, buff[-1])
+	else:
+		return buff
 
 if __name__ == '__main__':
 	# Parse CLI arguments
@@ -109,45 +98,56 @@ if __name__ == '__main__':
 	parser.add_argument("-d", "--decompress", action="store_true")
 	parser.add_argument("-l", "--logdeltas", action="store_true")
 	parser.add_argument("-c", "--compare", action="store_true")
+	parser.add_argument("-j", "--logjson", action="store_true")
 	args = parser.parse_args()
 
 	# Comparison mode
 	if args.compare:
 		print(f"Comparing '{args.input_filename}' (PCM source) with '{args.output_filename}' (DPCM)...")
-		input_buff = np.fromfile(args.input_filename, dtype=np.uint8)
+		input_buff = readFromFile(args.input_filename)
 		input_buff_2 = runDecoder(args.output_filename)
-		if input_buff.size != input_buff_2.size: raise Exception(f"Number of samples don't match ({input_buff.size} != {input_buff_2.size})")
+		if input_buff.size != input_buff_2.size:
+			print(f"WARNING! Number of samples don't match ({input_buff.size} != {input_buff_2.size})")
+			input_buff_2 = np.append(input_buff_2, [input_buff_2[-1], input_buff_2[-1]])
 		rmse = np.sqrt(np.mean(np.subtract(input_buff_2, input_buff, dtype=np.int16) ** 2))
-		print(f"rmse={rmse:f}")
+		print(f'{{"rmse":{rmse:f}}}')
 
 	# Default compression mode
 	elif not args.decompress:
 		print(f"Compressing '{args.input_filename}' (PCM) into '{args.output_filename}' (DPCM)...")
 
-		input_buff = np.fromfile(args.input_filename, dtype=np.uint8)
+		input_buff = readFromFile(args.input_filename)
 
 		algos = encode_algorithms if args.algorithm == -1 else (encode_algorithms[args.algorithm],)
 		tables = deltaTables if args.table == -1 else (deltaTables[args.table],)
 
-		best_rmse, best_rmse_index = 0x100, -1
+		best_rmse, best_rmse_index = 0x1000, -1
 		results = []
 		for (algorithm, (table_index, delta_table)) in product(algos, enumerate(tables)):
 			print(f"#{len(results):d}: encoder={algorithm.__name__}, table={table_index:d}...")
 			output_buff, rmse = algorithm(input_buff, delta_table)
 			print(f"    rmse={rmse:f}")
-			results.append((output_buff, rmse, table_index))
+			results.append((output_buff, rmse, table_index, algorithm.__name__))
 			if rmse < best_rmse:
 				best_rmse = rmse
 				best_rmse_index = len(results)-1
 
-		output_buff, rmse, table_index = results[best_rmse_index]
-		if len(results) > 1:
-			print(f"Selecting result #{best_rmse_index:d}")
-			print(f"rmse={rmse:f}")
+		if not args.logjson:
+			output_buff, rmse, table_index, _ = results[best_rmse_index]
+			if len(results) > 1:
+				print(f"Selecting result #{best_rmse_index:d}")
+				print(f"rmse={rmse:f}")
 
-		with open(args.output_filename, 'wb') as output_file:
-			output_file.write(bytes((0xD0,table_index)))
-			output_buff.tofile(output_file)
+			with open(args.output_filename, 'wb') as output_file:
+				output_file.write(bytes((0xD0,table_index)))
+				output_buff.tofile(output_file)
+
+		else:
+			with open(args.output_filename, 'w') as output_file:
+				json.dump([
+					{"rmse": rmse, "table_index": table_index, "encoder": encoder}
+						for _, rmse, table_index, encoder in results
+				], output_file, indent=2)
 
 	# Decompression mode
 	else:
