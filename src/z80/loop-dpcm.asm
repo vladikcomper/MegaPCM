@@ -47,6 +47,7 @@ DPCMLoop_Reload:
 	ld	h, DPCMTables>>8
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	ld	ix, (ActiveSample+sActiveSample.startLength)
+	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
 
 	; Init playback registers ...
 	Playback_Init_DI	SampleBuffer
@@ -65,7 +66,7 @@ DPCMLoop_Reload:
 ;	de	= ROM pos
 ;	hl	= DPCM decode table pointer
 ;	ixl	= Remaining length in ROM bank - 1 (LOW) + 1
-;	ixh	= Remaining length in ROM bank - 1 (HIGH) + 1
+;	ixh	= Remaining length in ROM bank - 1 (HIGH)
 ; --------------------------------------------------------------
 
 DPCMLoop_NormalPhase_NoCycleStealing:
@@ -117,7 +118,7 @@ DPCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 .ChkReadAheadExhausted_DI:
 	dec	ixh				; 8	decrement high byte of length
-	jp	nz, .Playback_DI		; 10	if no borrow, back to playback
+	jp	p, .Playback_DI			; 10	if no borrow, back to playback
 
 .ReadAheadExhausted_DI:
 	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
@@ -183,10 +184,11 @@ DPCMLoop_NormalPhase_LoadNextBank:
 
 	; Setup sample source and length
 	ld	de, ROMWindow			; de = 8000h (alt: ld b, ROMWindow<<8)
-	ld	ix, 8000h			; ix = 8000h (7Fh+1, FFh+1)
+	ld	ix, 7F00h			; ix = 7F00h (7Fh+0, FFh+1)
 	cp	(hl)				; current bank is the last one?
 	jr	nz, .lengh_ok			; if not, branch
 	ld	ix, (ActiveSample+sActiveSample.endLength)
+	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
 .lengh_ok:
 	ld	h, DPCMTables>>8
 
