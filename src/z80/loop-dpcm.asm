@@ -96,7 +96,7 @@ DPCMLoop_NormalPhase:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	Playback_ChkReadaheadOk	c, b, DPCMLoop_NormalPhase	; 18
-	; Total cycles: 46
+	; Total cycles: 82-83
 
 	; Total "DPCMLoop_NormalPhase" cycles: ~169-170 + 3.3*
 	; *) additional cycles lost due to M68K bus access on average
