@@ -47,12 +47,22 @@ dcSample: macro	SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 		dc.l	SAMPLEPTR								; $04	- start offset
 		dc.l	SAMPLEPTR_End							; $08	- end offset
 
+	elseif SAMPLETYPE=TYPE_DPCM_TURBO
+		if ((SAMPLERATE+0)<>TYPE_DPCM_TURBO_MAX_RATE)&((SAMPLERATE+0)<>0)
+			fatal "Invalid sample rate: SAMPLERATE. TYPE_DPCM_TURBO only supports sample rate of 25800 Hz"
+		endif
+		dc.b	SAMPLEFLAGS+FLAGS_SAMPLE				; $01	- flags (optional)
+		dc.b	$FF										; $02	- pitch (optional for .WAV files)
+		dc.b	0										; $03	- <RESERVED>
+		dc.l	SAMPLEPTR								; $04	- start offset
+		dc.l	SAMPLEPTR_End							; $08	- end offset
+
 	elseif SAMPLETYPE=TYPE_NONE
 		dc.b	0, 0, 0
 		dc.l	0, 0
 
 	else
-		fatal "Unknown sample type. Please use one of: TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_NONE"
+		fatal "Unknown sample type. Please use one of: TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_DPCM_TURBO, TYPE_NONE"
 	endif
 	endm
 

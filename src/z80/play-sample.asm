@@ -122,7 +122,7 @@ EnterPlaybackLoop:
 	dw	PCMLoop					; +02h
 	dw	PCMTurboLoop				; +04h
 	dw	DPCMLoop				; +06h
-	dw	StopSamplePlayback_NR			; +08h
+	dw	DPCMTurboLoop				; +08h
 	dw	StopSamplePlayback_NR			; +0Ah
 	dw	StopSamplePlayback_NR			; +0Ch
 	dw	StopSamplePlayback_NR			; +0Eh

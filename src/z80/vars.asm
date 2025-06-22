@@ -41,6 +41,7 @@ TYPE_NONE:	equ	0
 TYPE_PCM:	equ	2
 TYPE_PCM_TURBO:	equ	4
 TYPE_DPCM:	equ	6
+TYPE_DPCM_TURBO:equ	8
 
 PRIORITY_0:	equ	0
 PRIORITY_1:	equ	10h
@@ -103,6 +104,7 @@ LOOP_PAUSE:		equ	02h		; - `PauseLoop` (see `loop-pause.asm`)
 LOOP_PCM:		equ	10h		; - `PCMLoop` (see `loop-pcm.asm`)
 LOOP_PCM_TURBO:		equ	18h		; - `PCMTurboLoop (see `loop-pcm-turbo.asm`)
 LOOP_DPCM:		equ	20h		; - `DPCMLoop` (see `loop-dpcm.asm`)
+LOOP_DPCM_TURBO:	equ	28h		; - `DPCMTurboLoop` (see `loop-dpcm-turbo.asm`)
 LOOP_CALIBRATION:	equ	80h		; - `CalibrationLoop` (see `loop-calibration.asm`)
 LoopIdCopy:		ds	1		; id of previously active loop (saved by `PauseLoop` for instance)
 

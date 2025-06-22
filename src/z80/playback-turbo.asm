@@ -27,6 +27,15 @@
 	endm
 
 ; -----------------------------------------------------------------------------
+
+	macro	PlaybackTurbo_Init_EXX_DI readaheadPtr
+	ld	hl, readaheadPtr		; hl = readaheadPtr
+	ld	de, YM_Port0_Data
+	exx
+	endm
+
+
+; -----------------------------------------------------------------------------
 ; Executes playback tick/iteration in "normal" mode (playback + readahead)
 ;
 ; WARNING! This doesn't check if playback and readhead pointers clash!
@@ -43,6 +52,17 @@
 	ld	a, l				; 4	a = buffer position
 	exx					; 4
 	; Cycles: 30 (playback)
+	endm
+
+; -----------------------------------------------------------------------------
+
+	macro	PlaybackTurbo_Run_EXX_DI
+	ld	a, (hl)				; 7	load sample
+	ld	(de), a				; 7	send it to YM
+	inc	l				; 4	advance playback pointer
+	ld	a, l				; 4	a = buffer position
+	exx					; 4
+	; Cycles: 26 (playback)
 	endm
 
 ; -----------------------------------------------------------------------------
