@@ -254,7 +254,7 @@ DPCMLoop_VBlankPhase_Sync:
 	pop	hl					; 10
 	nop						; 4
 	djnz	DPCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 169-170 + 3*
+	; Total "DPCMLoop_VBlankPhase" cycles: 169-170 + 3*
 	; *) emulated lost cycles on M68K bus access on average
 
 ; --------------------------------------------------------------
