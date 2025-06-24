@@ -109,6 +109,12 @@ static inline uint8_t Z80VM_ReadROMByte(uint16_t address, Z80VM_Context * contex
 	return context->ROM[absoluteAddress];
 }
 
+static inline void Z80VM_DumpCPURegisters(Z80VM_Context * context) {
+	fprintf(stderr, "AF=%04X,  BC=%04X,  DE=%04X,  HL=%04X\n", context->z80State.registers.word[Z80_AF], context->z80State.registers.word[Z80_BC], context->z80State.registers.word[Z80_DE], context->z80State.registers.word[Z80_HL]);
+	fprintf(stderr, "AF'=%04X, BC'=%04X, DE'=%04X, HL'=%04X\n", context->z80State.alternates[Z80_AF], context->z80State.alternates[Z80_BC], context->z80State.alternates[Z80_DE], context->z80State.alternates[Z80_HL]);
+	fprintf(stderr, "IX=%04X,  IY=%04X\n", context->z80State.registers.word[Z80_IX], context->z80State.registers.word[Z80_IY]);
+}
+
 
 /* -------------------------------------------- */
 /* Inline functions to provide API for "z80emu" */
