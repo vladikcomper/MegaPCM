@@ -149,9 +149,9 @@ PCMTurboLoop_NormalPhase_LoadNextBank:
 	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
 	ld	b, h				; bc = 8000h (alt: ld b, 80h)
 	cp	(ix+sActiveSample.endBank)	; current bank is the last one?
-	jr	nz, .lengh_ok			; if not, branch
+	jr	nz, .length_ok			; if not, branch
 	ld	bc, (ActiveSample+sActiveSample.endLength)
-.lengh_ok:
+.length_ok:
 
 	; Switch to the next ROM bank
 	rst	SetBank2
