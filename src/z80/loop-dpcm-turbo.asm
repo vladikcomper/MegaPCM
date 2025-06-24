@@ -48,7 +48,10 @@ DPCMTurboLoop_Reload:
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	exx
 	ld	bc, (ActiveSample+sActiveSample.startLength)
-	inc	c
+	; TODO: Do this in `LoadActiveSampleData_DI` (create DPCM-specific version)
+	; or in `MegaPCM_LoadSampleTable` on 68k side.
+	dec	bc				; bc' = Remaining length in ROM bank - 1
+	inc	c				; c' = Remaining length in ROM bank - 1 (LOW) + 1
 
 	; Init playback registers ...
 	PlaybackTurbo_Init_EXX_DI	SampleBuffer
@@ -97,6 +100,11 @@ DPCMTurboLoop_NormalPhase:
 .Playback_EXX_DI:
 	PlaybackTurbo_Run_EXX_DI				; 26	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
+	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
+	; as an optimization (because DPCM decoder re-fetches last sample),
+	; so `ChkReadaheadOk` check thinks read ahead buffr is full
+	; 1 sample early, but this isn't a big deal for us, since buffer
+	; is 256 samples large anyways.
 	PlaybackTurbo_ChkReadaheadOk	c, b, DPCMTurboLoop_NormalPhase	; 18
 	; Total cycles: 48
 
@@ -146,17 +154,24 @@ DPCMTurboLoop_NormalPhase:
 DPCMTurboLoop_DrainPhase:
 	; Handle playback in draining mode
 	di							; 4
+	; NOTE: We correct "sample buffer pos" pointer here (`bc`)
+	; As an optimization, in the normal phase loop (`DPCMLoop_NormalPhase`)
+	; "sample buffer pos" points to the start of the last sample, not the
+	; next sample to write (because DPCM decoder needs to re-fetch it)
+	; Why can't we do this correction permanently when reaching drain phase?
+	; Because VBlank also does the same correction and applying it twice
+	; may break it.
+	inc	c						; 4	correct `bc` pointer
 	PlaybackTurbo_Run_Draining	c, .Drained_EXX_DI	; 41
+	dec	c						; 4	undo `bc` pointer correction
 	ei							; 4
 
-	; Waste 86 + 3* cycles
+	; Waste 78 + 3* cycles
 	push	af						; 11
 	pop	af						; 10
 	push	af						; 11
 	pop	af						; 10
 	push	hl						; 11
-	inc	hl						; 6
-	inc	hl						; 6
 	inc	hl						; 6
 	pop	hl						; 10
 	jr	DPCMTurboLoop_DrainPhase			; 12
@@ -193,10 +208,11 @@ DPCMTurboLoop_NormalPhase_LoadNextBank:
 	di					; we can't allow interrupts when using shadow registers
 	exx
 	ld	bc, 7F00h			; bc' = 7F00h (7Fh+0, FFh+1)
-	jr	nz, .lengh_ok			; if not the last bank, branch
+	jr	nz, .length_ok			; if not the last bank, branch
 	ld	bc, (ActiveSample+sActiveSample.endLength)
-	inc	c
-.lengh_ok:
+	dec	bc				; bc' = Remaining length in ROM bank - 1
+	inc	c				; c' = Remaining length in ROM bank - 1 (LOW) + 1
+.length_ok:
 	exx
 	ei
 
@@ -240,6 +256,7 @@ DPCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:
 DPCMTurboLoop_VBlank:
 	push	af
 	push	bc
+	inc	c					; correct "read ahead" pointer (see comment on previous `inc c` instruction)
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 144 samples to survive VBlank.
@@ -276,7 +293,7 @@ DPCMTurboLoop_VBlankPhase:
 	ld	(VBlankActive), a			; 13	report we're out of VBlank
 
 	ld	bc, 0					; 10
-	pop	bc					; 10
+	pop	bc					; 10	also undoes "read ahead" pointer correction
 	pop	af					; 10
 	ei						; 4
 	ret						; 10

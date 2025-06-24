@@ -1,11 +1,11 @@
 
 ; ==============================================================
 ; --------------------------------------------------------------
-; Mega PCM 2.0
+; Mega PCM 2.1
 ; --------------------------------------------------------------
 ; DPCM loop module
 ;
-; (c) 2023-2024, Vladikcomper
+; (c) 2023-2025, Vladikcomper
 ; --------------------------------------------------------------
 
 ; --------------------------------------------------------------
@@ -29,7 +29,7 @@ DPCMLoop:
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table
+	; Load DPCM delta table ###
 	ld	hl, DPCM_DeltaTable_00
 	call	LoadDPCMTable_DI
 
@@ -47,6 +47,9 @@ DPCMLoop_Reload:
 	ld	h, DPCMTables>>8
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	ld	ix, (ActiveSample+sActiveSample.startLength)
+	; TODO: Do this in `LoadActiveSampleData_DI` (create DPCM-specific version)
+	; or in `MegaPCM_LoadSampleTable` on 68k side.
+	dec	ix				; ix = Remaining length in ROM bank - 1
 	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
 
 	; Init playback registers ...
@@ -96,6 +99,11 @@ DPCMLoop_NormalPhase:
 .Playback_DI:
 	Playback_Run_DI						; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
+	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
+	; as an optimization (because DPCM decoder re-fetches last sample),
+	; so `ChkReadaheadOk` check thinks read ahead buffr is full
+	; 1 sample early, but this isn't a big deal for us, since buffer
+	; is 256 samples large anyways.
 	Playback_ChkReadaheadOk	c, b, DPCMLoop_NormalPhase	; 18
 	; Total cycles: 82-83
 
@@ -142,18 +150,25 @@ DPCMLoop_NormalPhase:
 DPCMLoop_DrainPhase:
 	; Handle playback in draining mode
 	di							; 4
+	; NOTE: We correct "sample buffer pos" pointer here (`bc`)
+	; As an optimization, in the normal phase loop (`DPCMLoop_NormalPhase`)
+	; "sample buffer pos" points to the start of the last sample, not the
+	; next sample to write (because DPCM decoder needs to re-fetch it)
+	; Why can't we do this correction permanently when reaching drain phase?
+	; Because VBlank also does the same correction and applying it twice
+	; may break it.
+	inc	c						; 4	correct `bc` pointer
 	Playback_Run_Draining	c, .Drained_EXX_DI		; 71-72
+	dec	c						; 4	undo `bc` pointer correction
 	ei							; 4
 
-	; Waste 90 + 3* cycles
+	; Waste 82 + 3* cycles
 	push	af						; 11
 	pop	af						; 10
 	push	af						; 11
 	pop	af						; 10
 	push	hl						; 11
-	inc	hl						; 6
-	inc	hl						; 6
-	inc	hl						; 6
+	ld	hl, 0						; 10
 	pop	hl						; 10
 	jr	DPCMLoop_DrainPhase				; 12
 	; Total "DPCMLoop_DrainPhase" cycles: ~169-170 + 3*
@@ -184,12 +199,13 @@ DPCMLoop_NormalPhase_LoadNextBank:
 
 	; Setup sample source and length
 	ld	de, ROMWindow			; de = 8000h (alt: ld b, ROMWindow<<8)
-	ld	ix, 7F00h			; ix = 7F00h (7Fh+0, FFh+1)
+	ld	ix, 7F00h			; ix = 7F00h (7Fh+0, 0FFh+1)
 	cp	(hl)				; current bank is the last one?
-	jr	nz, .lengh_ok			; if not, branch
+	jr	nz, .length_ok			; if not, branch
 	ld	ix, (ActiveSample+sActiveSample.endLength)
+	dec	ix				; ix = Remaining length in ROM bank - 1
 	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
-.lengh_ok:
+.length_ok:
 	ld	h, DPCMTables>>8
 
 	; Switch to the next ROM bank
@@ -232,6 +248,7 @@ DPCMLoop_VBlank_Loop_DrainDoneSync_EXX:
 DPCMLoop_VBlank:
 	push	af
 	push	bc
+	inc	c					; correct "read ahead" pointer (see comment on previous `inc c` instruction)
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 116 samples to survive VBlank.
@@ -277,7 +294,7 @@ DPCMLoop_VBlankPhase_LastIteration:
 	xor	a
 	ld	(VBlankActive), a			; 13
 
-	pop	bc					; 10
+	pop	bc					; 10	also undoes "read ahead" pointer correction
 	pop	af					; 10
 	ei						; 4
 	ret						; 10
