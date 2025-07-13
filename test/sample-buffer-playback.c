@@ -203,6 +203,8 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0);
 	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0);
 	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0);
 
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7F00);
 
@@ -215,6 +217,8 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0x7FFE);
 	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE);
 	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE);
 
 	Z80VM_Destroy(context);
 
