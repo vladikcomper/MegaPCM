@@ -65,8 +65,10 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 ## Existing implementations
 
 - Sonic 1 Github AS disassembly with Mega PCM 2 pre-installed: https://github.com/vladikcomper/s1disasm-megapcm2
-- Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integration in Sonic Clean Engine (S.C.E.) by TheBlad768: https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
-
+- Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integrations by TheBlad768:
+   - Sonic Clean Engine (S.C.E.): https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
+   - Sonic 3 & Knuckles, Sonic & Knuckles, Sonic 3: https://github.com/TheBlad768/skdisasm-clone-driver
+   - Sonic 2: https://github.com/TheBlad768/s2disasm-flamedriver
 
 ## Building from source code
 
