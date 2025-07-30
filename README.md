@@ -14,28 +14,28 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 - High quality crystal-clear PCM playback with DMA protection;
     - Games usually DMA 6-8 Kb of data at most; Mega PCM 2 can survive up to 24 Kb (!) of DMA transfers;
 - Volume control and smooth pitch control;
-	- 16 volume levels;
-	- 256 pitch levels;
+   - 16 volume levels;
+   - 256 pitch levels;
 - Complex inside, user-friendly outside:
-	- Zero-config DMA protection (no extra flags to set and unset, simply don't stop Z80 on DMA's);
-	- Native WAVE file support, native PCM format (no custom converters required!);
-	- Auto-detects issues with sample formats or configuration on startup;
+   - Zero-config DMA protection (no extra flags to set and unset, simply don't stop Z80 on DMA's);
+   - Native WAVE file support, native PCM format (no custom converters required!);
+   - Auto-detects issues with sample formats or configuration on startup;
 - Several supported sample formats:
-	- WAVE files in 8-bit unsigned PCM format (sample rate can be detected from header);
-	- Raw 8-bit unsigned PCM (headless);
-	- Raw 4-bit DPCM (headless);
+   - WAVE files in 8-bit unsigned PCM format (sample rate can be detected from header);
+   - Raw 8-bit unsigned PCM (headless);
+   - Raw 4-bit DPCM (headless);
 - Playback control, priority settings and SFX support:
-	- Pause, Stop and Loop supported for all sample types;
-	- Differentiates between "normal" (usually BGM drums) and SFX samples;
-	- SFX samples aren't interrupted by BGM drums, they have separate volume and pan settings;
+   - Pause, Stop and Loop supported for all sample types;
+   - Differentiates between "normal" (usually BGM drums) and SFX samples;
+   - SFX samples aren't interrupted by BGM drums, they have separate volume and pan settings;
 - Tested to the extreme:
-	- Z80 portion of Mega PCM is unique in that it's extensively auto-tested in a virtual machine;
-	- A special Z80 emulator was created to emulate Mega PCM and carefully test its core and various functions;
-	- Tests also verify that all Mega PCM playback loops and branches are cycle-accurate;
+   - Z80 portion of Mega PCM is unique in that it's extensively auto-tested in a virtual machine;
+   - A special Z80 emulator was created to emulate Mega PCM and carefully test its core and various functions;
+   - Tests also verify that all Mega PCM playback loops and branches are cycle-accurate;
 - High playback rates:
-	- 8-bit PCM playback up to 25.1 kHz with pitch and volume effects;
-	- 4-bit DPCM playback up to 20.5 kHz with pitch and volume effects;
-	- **Turbo mode!** 8-bit PCM playback at 32 kHz (without pitch and volume effects);
+   - 8-bit PCM playback up to 25.1 kHz with pitch and volume effects;
+   - 4-bit DPCM playback up to 20.5 kHz with pitch and volume effects;
+   - **Turbo mode!** 8-bit PCM playback at 32 kHz (without pitch and volume effects);
 
 ## Installation and Documentation
 
@@ -68,7 +68,8 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 - Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integrations by TheBlad768:
    - Sonic Clean Engine (S.C.E.): https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
    - Sonic 3 & Knuckles, Sonic & Knuckles, Sonic 3: https://github.com/TheBlad768/skdisasm-clone-driver
-   - Sonic 2: https://github.com/TheBlad768/s2disasm-flamedriver
+   - Sonic 2: https://github.com/TheBlad768/s2disasm-clone-driver
+   - Sonic 1: https://github.com/TheBlad768/s1disasm-clone-driver
 
 ## Building from source code
 
