@@ -1,8 +1,10 @@
 
+#include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_stdinc.h>
 #include <assert.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,10 +18,24 @@
 #include "z80vm.h"
 #include "megapcm-emu.h"
 
+static inline int min(int a, int b) {
+	return a < b ? a : b;
+}
+
+static inline int max(int a, int b) {
+	return a > b ? a : b;
+}
+
 static Z80VM_Context* z80vm = NULL;
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
 
+/* Vizualizer state */
+typedef struct {
+	int8_t max_dac_sample_value;	// max DAC sample this frame
+	uint8_t selected_sample;
+} VizState;
+static VizState g_state = { .selected_sample = 0x81, .max_dac_sample_value = 0 };
 
 /* Vizualizer graph support */
 typedef struct {
@@ -32,6 +48,7 @@ typedef struct {
 	SDL_Color fg_color;
 } VizGraph;
 static VizGraph* g_buffer = NULL;
+static VizGraph* g_sample = NULL;
 
 static inline VizGraph* VizGraph_Init(SDL_Renderer* renderer, int width, int height, SDL_Color* bg_color, SDL_Color* fg_color) {
 	VizGraph* vizgraph = calloc(sizeof(VizGraph), 1);
@@ -85,6 +102,26 @@ static inline void VizGraph_PutMeasure(VizGraph* vizgraph, float val) {
 	vizgraph->current_pos++;
 }
 
+static inline void VizGraph_PutMeasure2(VizGraph* vizgraph, float val) {
+	assert(val <= 1.0f);
+	SDL_Rect rect = { vizgraph->current_pos % (vizgraph->width * 2), 0, 1, vizgraph->height };
+
+	SDL_Color *pixels = NULL;
+	int pitch_bytes = 0;
+	SDL_LockTexture(vizgraph->texture, &rect, (void**)&pixels, &pitch_bytes);
+	assert(pitch_bytes % sizeof(SDL_Color) == 0);
+
+	const int num_fg_pixels = min(max((int)(vizgraph->height * fabsf(val)), 1), vizgraph->height);
+	const int num_bg_pixels_pt1 = (vizgraph->height - num_fg_pixels) / 2;
+	const int num_bg_pixels_pt2 = vizgraph->height - num_fg_pixels - num_bg_pixels_pt1;
+	for (int i = 0; i < num_bg_pixels_pt1; ++i) { *pixels = vizgraph->bg_color; pixels += pitch_bytes / sizeof(SDL_Color); }
+	for (int i = 0; i < num_fg_pixels; ++i) { *pixels = vizgraph->fg_color; pixels += pitch_bytes / sizeof(SDL_Color); }
+	for (int i = 0; i < num_bg_pixels_pt2; ++i) { *pixels = vizgraph->bg_color; pixels += pitch_bytes / sizeof(SDL_Color); }
+	SDL_UnlockTexture(vizgraph->texture);
+
+	vizgraph->current_pos++;
+}
+
 static inline void VizGraph_Render(VizGraph* vizgraph, int x, int y) {
 	int start_pos = vizgraph->current_pos - vizgraph->width;
 	if (start_pos < 0) start_pos += vizgraph->width * 2;
@@ -129,6 +166,10 @@ static inline void YM_DAC_RenderOutput(YM_DAC_Device * ym_dac_device, Z80VM_Cont
 	if (z80vm->ymGlobalRegValues[0x2B-0x20] & 0x80) { // DAC is enabled
 		const uint8_t pan_register = z80vm->ymPort1ChRegValues[0xB6 - 0xA0];
 		const uint8_t dac_sample = z80vm->ymGlobalRegValues[0x2A - 0x20];
+
+		const int8_t dac_sample_s8 = abs((signed)dac_sample - 0x80);
+		if (dac_sample_s8 > g_state.max_dac_sample_value) g_state.max_dac_sample_value = dac_sample_s8;
+
 		left_sample = (pan_register & 0x80) ? dac_sample : 0x80;
 		right_sample = (pan_register & 0x40) ? dac_sample : 0x80;
 	}
@@ -172,37 +213,13 @@ void Z80VM_Extension_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Co
 void Z80VM_Extension_VBlankCallback(Z80VM_Context * z80vm) {
 	Z80VM_Extension* extension = z80vm->stateExtension;
 
+	const uint8_t loopId = z80vm->programRAM[Z_MPCM_LoopId];
+
 	const uint8_t playbackPos = z80vm->z80State.alternates[Z80_HL] & 0xFF;
-	const uint8_t readaheadPos = z80vm->z80State.registers.byte[Z80_E];
+	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_TURBO))
+		? z80vm->z80State.registers.byte[Z80_C]
+		: z80vm->z80State.registers.byte[Z80_E];
 	extension->mpcm_buffer_health = 0xFF - (playbackPos - readaheadPos);
-}
-
-/* SDL 3.2.0 */
-bool SDL_RenderDebugTextFormat(SDL_Renderer *renderer, float x, float y, SDL_PRINTF_FORMAT_STRING const char *fmt, ...)
-{
-
-    va_list ap;
-    va_start(ap, fmt);
-
-    // fast path to avoid unnecessary allocation and copy. If you're going through the dynapi, there's a good chance
-    // you _always_ hit this path, since it probably had to process varargs before calling into the jumptable.
-    if (SDL_strcmp(fmt, "%s") == 0) {
-        const char *str = va_arg(ap, const char *);
-        va_end(ap);
-        return SDL_RenderDebugText(renderer, x, y, str);
-    }
-
-    char *str = NULL;
-    const int rc = SDL_vasprintf(&str, fmt, ap);
-    va_end(ap);
-
-    if (rc == -1) {
-        return false;
-    }
-
-    const bool retval = SDL_RenderDebugText(renderer, x, y, str);
-    SDL_free(str);
-    return retval;
 }
 
 static inline bool handle_events(void) {
@@ -214,9 +231,25 @@ static inline bool handle_events(void) {
 			case SDL_EVENT_KEY_DOWN:
 				if (e.key.key == SDLK_Q) {
 					return false;	// also stop running
+				} else if (e.key.key == SDLK_LEFT && g_state.selected_sample > 0x81) {
+					g_state.selected_sample -= 1;
+				} else if (e.key.key == SDLK_RIGHT && g_state.selected_sample < 0xFF) {
+					g_state.selected_sample += 1;
+				} else if (e.key.key == SDLK_UP && (e.key.mod & SDL_KMOD_SHIFT)) {
+					const uint8_t volume = Z80_ReadByte(Z_MPCM_VolumeInput, z80vm);
+					if (volume < 8) MPCM_SetVolume(z80vm, volume+1);
+				} else if (e.key.key == SDLK_DOWN && (e.key.mod & SDL_KMOD_SHIFT)) {
+					const uint8_t volume = Z80_ReadByte(Z_MPCM_VolumeInput, z80vm);
+					if (volume > 0) MPCM_SetVolume(z80vm, volume-1);
+				} else if (e.key.key == SDLK_UP) {
+					const uint8_t volume = Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm);
+					if (volume < 8) MPCM_SetSFXVolume(z80vm, volume+1);
+				} else if (e.key.key == SDLK_DOWN) {
+					const uint8_t volume = Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm);
+					if (volume > 0) MPCM_SetSFXVolume(z80vm, volume-1);
 				} else if (e.key.key == SDLK_RETURN) {
-					MPCM_PlaySample(z80vm, 0x81);	// start playin'
-					fprintf(stderr, "Playing\n");
+					MPCM_PlaySample(z80vm, g_state.selected_sample);
+					fprintf(stderr, "Request sample %02X\n", g_state.selected_sample);
 				} else if (e.key.key == SDLK_P) {
 					if (MPCM_IsPlaybackPaused(z80vm)) {
 						MPCM_UnpausePlayback(z80vm);
@@ -225,6 +258,8 @@ static inline bool handle_events(void) {
 						MPCM_PausePlayback(z80vm);
 						fprintf(stderr, "Paused\n");
 					}
+				} else if (e.key.key == SDLK_ESCAPE) {
+					MPCM_StopPlayback(z80vm);
 				} else if (e.key.key == SDLK_LEFTBRACKET && (e.key.mod & SDL_KMOD_SHIFT)) {
 					MPCM_SetPan(z80vm, 0x80);
 					fprintf(stderr, "Pan left\n");
@@ -269,15 +304,24 @@ static inline void render_video_frame(void) {
 
 		case 1: {			
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-			SDL_RenderDebugTextFormat(renderer, 8.0f, 8.0f, "Volume: %X", Z80_ReadByte(Z_MPCM_VolumeInput, z80vm));
-			SDL_RenderDebugTextFormat(renderer, 8.0f, 16.0f, "SFX Volume: %X", Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm));
-			SDL_RenderDebugTextFormat(renderer, 8.0f, 24.0f, "CurrentLoop: %02X", Z80_ReadByte(Z_MPCM_LoopId, z80vm));
-			SDL_RenderDebugTextFormat(renderer, 8.0f, 32.0f, "CurrentBank: %02X", Z80_ReadByte(Z_MPCM_CurrentBank, z80vm));
-			SDL_RenderDebugTextFormat(renderer, 8.0f, 40.0f, "LastError: %02X", Z80_ReadByte(Z_MPCM_LastErrorCode, z80vm));
 
-			SDL_RenderDebugText(renderer, 8.0f, 64-8, "BufferHealth:");
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 8.0f, "SAMPLE: %X", g_state.selected_sample);
+
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 24.0f, "Volume: %X", Z80_ReadByte(Z_MPCM_VolumeInput, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 32.0f, "SFX Volume: %X", Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 40.0f, "CurrentLoop: %02X", Z80_ReadByte(Z_MPCM_LoopId, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 48.0f, "CurrentBank: %02X", Z80_ReadByte(Z_MPCM_CurrentBank, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 8.0f, 56.0f, "LastError: %02X", Z80_ReadByte(Z_MPCM_LastErrorCode, z80vm));
+
+			SDL_RenderDebugTextFormat(renderer, 160.0f, 24.0f, "PanInput: %X", Z80_ReadByte(Z_MPCM_PanInput, z80vm));
+			SDL_RenderDebugTextFormat(renderer, 160.0f, 32.0f, "SFX PanInput: %X", Z80_ReadByte(Z_MPCM_SFXPanInput, z80vm));
+
+			SDL_RenderDebugText(renderer, 8.0f, 80.0f, "BUFFER HEALTH:");
 			VizGraph_PutMeasure(g_buffer, ((Z80VM_Extension*)(z80vm->stateExtension))->mpcm_buffer_health / 256.0f);
-			VizGraph_Render(g_buffer, 0, 64);
+			VizGraph_Render(g_buffer, 0, 88);
+
+			VizGraph_PutMeasure2(g_sample, (g_state.max_dac_sample_value / 128.0f));
+			VizGraph_Render(g_sample, 0, 160+4);
 
 			break;
 		}
@@ -345,7 +389,8 @@ int main(int argc, char** argv) {
 
 	/* Create ROM and a sample table */
 	static const MPCM_SampleMetadata samples[] = {
-		{ .type = Z_MPCM_TYPE_PCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
+		{ .type = Z_MPCM_TYPE_PCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../__example-rom/jump.wav" },
+		{ .type = Z_MPCM_TYPE_DPCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 25800, .sample_path = "../../__example-rom/jump.dpcm" },
 	};
 	MPCM_Sample sample_table[SDL_arraysize(samples)];
 	size_t rom_size = 0;
@@ -363,6 +408,7 @@ int main(int argc, char** argv) {
 		SDL_Color fg = { 0xFF, 0xFF, 0xFF, 0xFF };
 		SDL_Color bg = { 0x80, 0x80, 0x80, 0xFF };
 		g_buffer = VizGraph_Init(renderer, 320, 64, &bg, &fg);
+		g_sample = VizGraph_Init(renderer, 320, 64, &bg, &fg);
 	}
 
 	/* Emulation loop */
@@ -377,8 +423,9 @@ int main(int argc, char** argv) {
 		running = handle_events();
 
 		// Emulate shit
+		g_state.max_dac_sample_value = 0;
 		prevFrameOvershootCycles = Z80VM_EmulateTVFrame(z80vm, prevFrameOvershootCycles);
-		
+
 		// Render audio
 		YM_DAC_RenderOutput(&ym_dac_device, z80vm);
 		SDL_PutAudioStreamData(audio_stream, ym_dac_device.buffer, ym_dac_device.buffer_pos);
