@@ -28,7 +28,7 @@ v_snddriver_ram:		rs.b	$600
 Main:
 	Console.SetXY #1, #1
 	Console.WriteLine "%<pal1>Sonic 1 SMPS + Mega PCM 2 Example"
-	Console.WriteLine "(c) 2024, Vladikcomper"
+	Console.WriteLine "(c) 2024-2026, Vladikcomper"
 
 	; Display header
 	Console.SetXY #1, #6

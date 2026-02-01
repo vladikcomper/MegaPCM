@@ -11,8 +11,8 @@
 ; ------------------------------------------------------------------------------
 Main:
 	Console.SetXY #1, #1
-	Console.WriteLine "Mega PCM 2.0 Simple tester"
-	Console.WriteLine "(c) 2024, Vladikcomper%<endl>"
+	Console.WriteLine "Mega PCM 2.1 Simple tester"
+	Console.WriteLine "(c) 2024-2026, Vladikcomper%<endl>"
 
 	Console.Write "Loading Mega PCM driver... "
 	jsr		MegaPCM_LoadDriver

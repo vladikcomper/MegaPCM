@@ -40,8 +40,8 @@ VDP_Ctrl:				equ 	$C00004
 ; ------------------------------------------------------------------------------
 Main:
 	Console.SetXY #1, #1
-	Console.WriteLine "%<pal1>Mega PCM 2.0 - DMA Test"
-	Console.WriteLine "(c) 2024, Vladikcomper"
+	Console.WriteLine "%<pal1>Mega PCM 2.1 - DMA Test"
+	Console.WriteLine "(c) 2024-2026, Vladikcomper"
 
 	jsr		MegaPCM_LoadDriver
 	lea		SampleTable(pc), a0
