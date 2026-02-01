@@ -63,10 +63,10 @@ LoadDPCMTable_DI:
 	; Total cycles: 20 + 1918 + 1986 + 20 + 10 = 3954 (~7.72 cycles per byte)
 
 ; --------------------------------------------------------------
-DPCM_DeltaTable_00:	; standard DPCM table
+DPCM_DeltaTable_0:	; standard DPCM table / DPCM-HQ table #0
 	db	000h, 001h, 002h, 004h, 008h, 010h, 020h, 040h
 	db	080h, 0FFh, 0FEh, 0FCh, 0F8h, 0F0h, 0E0h, 0C0h
 
-DPCM_DeltaTable_02:	; DPCM-HQ table
+DPCM_DeltaTable_1:	; DPCM-HQ table #1
 	db	0DEh, 0EBh, 0F3h, 0F8h, 0FBh, 0FDh, 0FEh, 0FFh
 	db	000h, 001h, 002h, 003h, 005h, 008h, 00Dh, 015h

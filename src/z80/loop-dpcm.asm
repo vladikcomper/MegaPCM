@@ -5,7 +5,7 @@
 ; --------------------------------------------------------------
 ; DPCM loop module
 ;
-; (c) 2023-2025, Vladikcomper
+; (c) 2023-2026, Vladikcomper
 ; --------------------------------------------------------------
 
 ; --------------------------------------------------------------
@@ -15,44 +15,43 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
-DPCMHQLoop:
+DPCM0Loop:	; Classic DPCM / DPCM-HQ Table #0
 	di
 
-	TraceMsg "Entering DPCMHQLoop"
+	TraceMsg "Entering DPCM0Loop"
 
 	ld	a, LOOP_DPCM
 	ld	(LoopId), a
 
-	; Setup VInt ...
-	ld	hl, DPCMLoop_VBlank
-	ld	(VBlankRoutine), hl
-
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table
-	ld	hl, DPCM_DeltaTable_02
+	; Load DPCM delta table #0
+	ld	hl, DPCM_DeltaTable_0
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMLoop_Reload
+	jp	DPCMLoop_Cont
 
 ; --------------------------------------------------------------
-DPCMLoop:
+DPCM1Loop:	; DPCM-HQ Table #1
 	di
 
-	TraceMsg "Entering DPCMLoop"
+	TraceMsg "Entering DPCM1Loop"
 
 	ld	a, LOOP_DPCM
 	ld	(LoopId), a
 
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
+
+	; Load DPCM delta table #1
+	ld	hl, DPCM_DeltaTable_1
+	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+	; fallthrough
+
+; --------------------------------------------------------------
+DPCMLoop_Cont:
 	; Setup VInt ...
 	ld	hl, DPCMLoop_VBlank
 	ld	(VBlankRoutine), hl
-
-	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
-
-	; Load DPCM delta table
-	ld	hl, DPCM_DeltaTable_00
-	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
 ; --------------------------------------------------------------
 DPCMLoop_Reload:

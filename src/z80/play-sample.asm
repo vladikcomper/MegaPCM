@@ -5,7 +5,7 @@
 ; -----------------------------------------------------------------------------
 ; Functions for starting and stopping sample playback
 ;
-; (c) 2023-2025, Vladikcomper
+; (c) 2023-2026, Vladikcomper
 ; -----------------------------------------------------------------------------
 
 ; -----------------------------------------------------------------------------
@@ -121,10 +121,10 @@ EnterPlaybackLoop:
 	dw	StopSamplePlayback_NR			; +00h
 	dw	PCMLoop					; +02h
 	dw	PCMTurboLoop				; +04h
-	dw	DPCMLoop				; +06h
-	dw	DPCMTurboLoop				; +08h
-	dw	DPCMHQLoop				; +0Ah
-	dw	DPCMHQTurboLoop				; +0Ch
+	dw	DPCM0Loop				; +06h	Classic DPCM / DPCM-HQ Table #0
+	dw	DPCM0TurboLoop				; +08h	''
+	dw	DPCM1Loop				; +0Ah	DPCM-HQ Table #1
+	dw	DPCM1TurboLoop				; +0Ch	''
 	dw	StopSamplePlayback_NR			; +0Eh
 .LoopTable_End:
 

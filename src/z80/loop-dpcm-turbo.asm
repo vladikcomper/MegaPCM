@@ -15,13 +15,10 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
-DPCMHQTurboLoop:
+DPCM0TurboLoop:	; Classic DPCM / DPCM-HQ Table #0
 	di
 
-	TraceMsg "Entering DPCMHQTurboLoop"
-
-	ld	a, LOOP_DPCM_TURBO
-	ld	(LoopId), a
+	TraceMsg "Entering DPCM0TurboLoop"
 
 	; Setup VInt ...
 	ld	hl, DPCMTurboLoop_VBlank
@@ -29,20 +26,17 @@ DPCMHQTurboLoop:
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table
-	ld	hl, DPCM_DeltaTable_02
+	; Load DPCM delta table #0
+	ld	hl, DPCM_DeltaTable_0
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMTurboLoop_Reload
+	jp	DPCMTurboLoop_Cont
 
 ; --------------------------------------------------------------
-DPCMTurboLoop:
+DPCM1TurboLoop:	; DPCM-HQ Table #1
 	di
 
-	TraceMsg "Entering DPCMTurboLoop"
-
-	ld	a, LOOP_DPCM_TURBO
-	ld	(LoopId), a
+	TraceMsg "Entering DPCM1TurboLoop"
 
 	; Setup VInt ...
 	ld	hl, DPCMTurboLoop_VBlank
@@ -50,9 +44,14 @@ DPCMTurboLoop:
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table
-	ld	hl, DPCM_DeltaTable_00
+	; Load DPCM delta table #1
+	ld	hl, DPCM_DeltaTable_1
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+
+; --------------------------------------------------------------
+DPCMTurboLoop_Cont:
+	ld	a, LOOP_DPCM_TURBO
+	ld	(LoopId), a
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_Reload:

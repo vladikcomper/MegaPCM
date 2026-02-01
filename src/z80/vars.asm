@@ -40,10 +40,10 @@ MASK_TYPE:	equ	%00001110	; applied to mask type bits only
 TYPE_NONE:		equ	0
 TYPE_PCM:		equ	2
 TYPE_PCM_TURBO:		equ	4
-TYPE_DPCM:		equ	6
-TYPE_DPCM_TURBO:	equ	8
-TYPE_DPCM_HQ:		equ	0Ah
-TYPE_DPCM_HQ_TURBO:	equ	0Ch
+TYPE_DPCM_TBL0:		equ	6	; classic DPCM / DPCM-HQ table #0
+TYPE_DPCM_TBL0_TURBO:	equ	8
+TYPE_DPCM_TBL1:		equ	0Ah	; DPCM-HQ table #1
+TYPE_DPCM_TBL1_TURBO:	equ	0Ch
 
 PRIORITY_0:	equ	0
 PRIORITY_1:	equ	10h
