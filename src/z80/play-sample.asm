@@ -123,8 +123,8 @@ EnterPlaybackLoop:
 	dw	PCMTurboLoop				; +04h
 	dw	DPCMLoop				; +06h
 	dw	DPCMTurboLoop				; +08h
-	dw	StopSamplePlayback_NR			; +0Ah
-	dw	StopSamplePlayback_NR			; +0Ch
+	dw	DPCMHQLoop				; +0Ah
+	dw	DPCMHQTurboLoop				; +0Ch
 	dw	StopSamplePlayback_NR			; +0Eh
 .LoopTable_End:
 

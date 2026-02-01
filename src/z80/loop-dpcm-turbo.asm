@@ -15,6 +15,27 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
+DPCMHQTurboLoop:
+	di
+
+	TraceMsg "Entering DPCMHQTurboLoop"
+
+	ld	a, LOOP_DPCM_TURBO
+	ld	(LoopId), a
+
+	; Setup VInt ...
+	ld	hl, DPCMTurboLoop_VBlank
+	ld	(VBlankRoutine), hl
+
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
+
+	; Load DPCM delta table
+	ld	hl, DPCM_DeltaTable_02
+	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+
+	jp	DPCMTurboLoop_Reload
+
+; --------------------------------------------------------------
 DPCMTurboLoop:
 	di
 
@@ -29,9 +50,9 @@ DPCMTurboLoop:
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table ###
+	; Load DPCM delta table
 	ld	hl, DPCM_DeltaTable_00
-	call	LoadDPCMTable_DI
+	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_Reload:

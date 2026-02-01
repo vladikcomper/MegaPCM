@@ -187,6 +187,7 @@ DPCMTables:
 ; --------------------------------------------------------------
 
 	include	'loop-dpcm.asm'
+	include	'load-dpcm-table.asm'
 	include	'loop-dpcm-turbo.asm'
 	include	'loop-pause.asm'
 

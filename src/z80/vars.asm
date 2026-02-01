@@ -37,13 +37,13 @@ pitch:		byte			; pitch of the sample
 MASK_PRIORITY:	equ	%11110000	; applied to mask priority bits only
 MASK_TYPE:	equ	%00001110	; applied to mask type bits only
 
-TYPE_NONE:	equ	0
-TYPE_PCM:	equ	2
-TYPE_PCM_TURBO:	equ	4
-TYPE_DPCM:	equ	6
-TYPE_DPCM_TURBO:equ	8
-;TODO: TYPE_DPCM_HQ
-;TODO: TYPE_DPCM_HQ_TURBO
+TYPE_NONE:		equ	0
+TYPE_PCM:		equ	2
+TYPE_PCM_TURBO:		equ	4
+TYPE_DPCM:		equ	6
+TYPE_DPCM_TURBO:	equ	8
+TYPE_DPCM_HQ:		equ	0Ah
+TYPE_DPCM_HQ_TURBO:	equ	0Ch
 
 PRIORITY_0:	equ	0
 PRIORITY_1:	equ	10h
