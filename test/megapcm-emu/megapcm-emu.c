@@ -45,6 +45,9 @@ static inline uint8_t MPCM_SampleRateToPitch(uint8_t type, uint16_t sample_rate)
 	if (type == Z_MPCM_TYPE_PCM_TURBO && sample_rate == 32000) {
 		result = 0xFF;
 	}
+	else if (type == Z_MPCM_TYPE_DPCM_TURBO && sample_rate == 25800) {
+		result = 0xFF;
+	}
 	else if (type == Z_MPCM_TYPE_PCM) {
 		result = sample_rate / 25208;	// TYPE_PCM_BASE_RATE
 	}
