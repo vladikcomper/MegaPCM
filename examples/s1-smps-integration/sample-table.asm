@@ -14,6 +14,7 @@ SampleTable:
 	dcSample	TYPE_DPCM, 		Timpani, 	7150				; $8A
 	dcSample	TYPE_DPCM, 		Timpani, 	7000				; $8B
 	dcSample	TYPE_PCM_TURBO,	Voice,		32000, FLAGS_SFX	; $8C
+SampleTable_End:
 	dc.w	-1	; end marker
 
 ; ---------------------------------------------------------------

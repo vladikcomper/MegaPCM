@@ -19,8 +19,8 @@ Menu.SelectedItem:		rs.b	1
 Menu.SelectedBGM:		rs.b	1
 Menu.SelectedSFX:		rs.b	1
 Menu.SelectedCMD:		rs.b	1
+Menu.SelectedDAC:		rs.b	1
 Menu.RedrawFlag:		rs.b	1
-						rs.b	1
 
 v_snddriver_ram:		rs.b	$600
 
@@ -152,6 +152,11 @@ Menu.Items:
 	dc.b	$E0, $E4				; min, max
 	dc.l	@Draw_SelectedCMD		; draw function
 	dc.l	PlaySound				; execute function
+
+	dc.w	Menu.SelectedDAC		; address
+	dc.b	$81, $80+(SampleTable_End-SampleTable)/12	; min, max
+	dc.l	@Draw_SelectedDAC		; draw function
+	dc.l	MegaPCM_PlaySample		; execute function
 @Items_End:
 	dc.w	0						; end of list
 
@@ -165,6 +170,10 @@ Menu.Items:
 
 @Draw_SelectedCMD:
 	Console.WriteLine "  %<pal2>CMD: %<pal0>%<.b Menu.SelectedCMD>"
+	rts
+
+@Draw_SelectedDAC:
+	Console.WriteLine "  %<pal2>DAC: %<pal0>%<.b Menu.SelectedDAC>"
 	rts
 
 ; ------------------------------------------------------------------------------
