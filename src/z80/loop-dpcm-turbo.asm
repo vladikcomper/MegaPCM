@@ -82,7 +82,7 @@ DPCMTurboLoop_Reload:
 	ld	(bc), a				; ''
 
 ; --------------------------------------------------------------
-; DPCM: Main playback loop (readahead & playback)
+; DPCM Turbo: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
 ;	bc 	= Sample buffer pos (read-ahead)
@@ -118,11 +118,11 @@ DPCMTurboLoop_NormalPhase:
 
 	; Handle playback
 .Playback_EXX_DI:
-	PlaybackTurbo_Run_EXX_DI				; 26	playback a buffered sample
+	PlaybackTurbo_Run_EXX_DI2				; 26	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
 	; as an optimization (because DPCM decoder re-fetches last sample),
-	; so `ChkReadaheadOk` check thinks read ahead buffr is full
+	; so `ChkReadaheadOk` check thinks read ahead buffer is full
 	; 1 sample early, but this isn't a big deal for us, since buffer
 	; is 256 samples large anyways.
 	PlaybackTurbo_ChkReadaheadOk	c, b, DPCMTurboLoop_NormalPhase	; 18

@@ -66,6 +66,18 @@
 	endm
 
 ; -----------------------------------------------------------------------------
+
+	; "DPCM" version, assumes `bc` being one sample behind
+	macro	PlaybackTurbo_Run_EXX_DI2
+	ld	a, (hl)				; 7	load sample
+	ld	(de), a				; 7	send it to YM
+	ld	a, l				; 4	a = buffer position
+	inc	l				; 4	advance playback pointer
+	exx					; 4
+	; Cycles: 26 (playback)
+	endm
+
+; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
 ; Should be used after `PlaybackTurbo_Run_DI`
 ; -----------------------------------------------------------------------------

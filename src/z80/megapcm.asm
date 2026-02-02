@@ -91,7 +91,7 @@ Driver_Start:
 ; Driver version magic string
 ; --------------------------------------------------------------
 
-	db	'MegaPCM v.2.0', 0
+	db	'MegaPCM v.2.1', 0
 
 ; --------------------------------------------------------------
 ; Vertical interrupts handler with dynamic jump
@@ -121,13 +121,22 @@ VoidInterrupt:
 	include	'playback-turbo.asm'
 
 ; --------------------------------------------------------------
+; Misc. modules (Part 1)
+; --------------------------------------------------------------
+
+	include	'init.asm'
+	include 'process-command.asm'
+
+; --------------------------------------------------------------
 ; Mega PCM loops (Part 1)
 ; --------------------------------------------------------------
 
-	include	'loop-pcm.asm'
-	include	'loop-pcm-turbo.asm'
 	include	'loop-calibration.asm'
 	include	'loop-idle.asm'
+	include	'loop-pause.asm'
+	include	'loop-pcm.asm'
+	include	'loop-pcm-turbo.asm'
+	include	'loop-dpcm.asm'
 
 ; --------------------------------------------------------------
 ; Mega PCM buffers and tables (aligned on 256-byte boundaries)
@@ -142,16 +151,21 @@ VoidInterrupt:
 SampleBuffer:
 	ds	100h, 0
 
-	; Playback loops use high byte of `SampleBuffer` offset
-	; for an insane optimization, so it should be 03h
-	assert	(SampleBuffer>>8) == 3
+	; Playback loops use high byte of `SampleBuffer` offset for
+	; an insane optimization, where its value is used for "readahead full" check
+	; This value cannot be <=2 of PCM loops and <=3 for DPCM loops.
+	; It acts as a safe boundary between "read ahead" and "current playback" pointers.
+	; For DPCM, "read ahead" pointer is also 1 byte behind and it pushes
+	; 2 samples per "read ahead" iteration, which makes values <= 3 trigger edge cases.
+	assert	(SampleBuffer>>8) == 5
 
-; -----------------
-; Volume tables
-; -----------------
+; -------------------------
+; DPCM decode tables
+; -------------------------
 
-VolumeTables:
-	include	'volume-tables.asm'
+DPCMTables:
+	ds	100h, 0	; for nibble 0
+	ds	100h, 0	; for nibble 1
 
 ; -----------------
 ; Sample table
@@ -166,16 +180,15 @@ SampleTable:				; slots >=81h
 SampleTable_End:
 
 	; Sample table's base offset (including the dynamic sample) must be
-	; a multiple of 4000h for an insane optimization
+	; a multiple of 400h for an insane optimization
 	assert	((SampleInput>>8) % 4) == 0
 
-; -------------------------
-; DPCM decode tables
-; -------------------------
+; -----------------
+; Volume tables
+; -----------------
 
-DPCMTables:
-	ds	100h, 0	; for nibble 0
-	ds	100h, 0	; for nibble 1
+VolumeTables:
+	include	'volume-tables.asm'
 
 ; --------------------------------------------------------------
 ; Cycle waster (aligned on 256-byte boundary)
@@ -189,18 +202,14 @@ DPCMTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
-	include	'loop-dpcm.asm'
-	include	'load-dpcm-table.asm'
 	include	'loop-dpcm-turbo.asm'
-	include	'loop-pause.asm'
 
 ; --------------------------------------------------------------
-; Misc. modules
+; Misc. modules (Part 2)
 ; --------------------------------------------------------------
 
-	include	'init.asm'
 	include	'play-sample.asm'
-	include 'process-command.asm'
+	include	'load-dpcm-table.asm'
 
 Driver_End:
 

@@ -117,11 +117,11 @@ DPCMLoop_NormalPhase:
 
 	; Handle playback
 .Playback_DI:
-	Playback_Run_DI						; 60-61	playback a buffered sample
+	Playback_Run_DI2					; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
 	; as an optimization (because DPCM decoder re-fetches last sample),
-	; so `ChkReadaheadOk` check thinks read ahead buffr is full
+	; so `ChkReadaheadOk` check thinks read ahead buffer is full
 	; 1 sample early, but this isn't a big deal for us, since buffer
 	; is 256 samples large anyways.
 	Playback_ChkReadaheadOk	c, b, DPCMLoop_NormalPhase	; 18
