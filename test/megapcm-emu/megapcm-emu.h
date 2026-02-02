@@ -11,7 +11,7 @@
 #include <megapcm.symbols.h>
 
 /**
- * Mega PCM 2.0 sample record format, as presented in Z80 definitions
+ * Mega PCM 2.1 sample record format, as presented in Z80 definitions
  */
 typedef struct {
 	uint8_t flags;
@@ -29,6 +29,20 @@ typedef struct {
 	uint16_t sample_rate;
 	char * sample_path;
 } MPCM_SampleMetadata;
+
+
+/* Higher-level constants for `MPCM_SampleMetadata` struct */
+
+#define MPCM_FLAGS_LOOP			0x01		// loop sample indefinitely
+#define MPCM_FLAGS_SFX			0x40		// sample is SFX, normal drums cannot interrupt it
+#define MPCM_FLAGS_SAMPLE		0x80		// marks slot as a playable sample
+
+#define MPCM_TYPE_NONE			0x00
+#define MPCM_TYPE_PCM			0x02
+#define MPCM_TYPE_PCM_TURBO		0x04
+#define MPCM_TYPE_DPCM			0x06
+#define MPCM_TYPE_DPCM_TURBO	0x08
+
 
 /**
  * Loads Mega PCM driver to Z80VM. Note that Z80VM must be initialized at this point

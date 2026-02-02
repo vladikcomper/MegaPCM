@@ -1,6 +1,5 @@
 
 #include "megapcm-emu.h"
-#include "macros.h"
 #include "z80vm.h"
 
 #include <assert.h>
@@ -42,17 +41,17 @@ void MPCM_LoadDriver(Z80VM_Context * context, const char * path) {
 
 static inline uint8_t MPCM_SampleRateToPitch(uint8_t type, uint16_t sample_rate) {
 	int result = 0;	// invalid pitch
-	if (type == Z_MPCM_TYPE_PCM_TURBO && sample_rate == 32000) {
+	if (type == MPCM_TYPE_PCM_TURBO && sample_rate == 32000) {
 		result = 0xFF;
 	}
-	else if (type == Z_MPCM_TYPE_DPCM_TURBO && sample_rate == 25800) {
+	else if (type == MPCM_TYPE_DPCM_TURBO && sample_rate == 25800) {
 		result = 0xFF;
 	}
-	else if (type == Z_MPCM_TYPE_PCM) {
-		result = sample_rate / 25208;	// TYPE_PCM_BASE_RATE
+	else if (type == MPCM_TYPE_PCM) {
+		result = 0x100 * sample_rate / 25208;	// TYPE_PCM_BASE_RATE
 	}
-	else if (type == Z_MPCM_TYPE_DPCM) {
-		result = sample_rate / 20691;	// TYPE_DPCM_BASE_RATE
+	else if (type == MPCM_TYPE_DPCM) {
+		result = 0x100 * sample_rate / 20691;	// TYPE_DPCM_BASE_RATE
 	}
 	return result > 0xFF ? 0 : result;
 }
@@ -97,7 +96,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		out_sample_table[i].endOffset = (rom_pos + sample_size) & 0x7FFF;
 
 		/* Read WAVE files */
-		if (input_records[i].type == Z_MPCM_TYPE_PCM_TURBO || input_records[i].type == Z_MPCM_TYPE_PCM) {
+		if (input_records[i].type == MPCM_TYPE_PCM_TURBO || input_records[i].type == MPCM_TYPE_PCM) {
 			if (
 				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
 				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
@@ -135,7 +134,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				/* If pitch wasn't set, auto-calculate it */
 				if (!out_sample_table[i].pitch) {
 					const uint16_t sample_rate = *(uint16_t*)&rom[rom_pos+12+12];
-					out_sample_table[i].pitch = MPCM_SampleRateToPitch(Z_MPCM_TYPE_PCM_TURBO, sample_rate);
+					out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, sample_rate);
 				}
 
 				/* Locate "data" chunk */
@@ -158,6 +157,27 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				out_sample_table[i].endOffset = end_pos & 0x7FFF;
 			}
 		}
+		/* Read DPCM and DPCM-HQ files */
+		else if (input_records[i].type == MPCM_TYPE_DPCM || input_records[i].type == MPCM_TYPE_DPCM_TURBO) {
+			if (strncmp((char*)&rom[rom_pos], "DPHQ", 4) == 0) {
+				const uint8_t version = rom[rom_pos+4];
+				if (version != 1) {
+					fprintf(stderr, "Unsupported DPCM-HQ version: %s\n", input_records[i].sample_path);
+					goto failure;
+				}
+
+				/* If pitch wasn't set, auto-calculate it */
+				if (!out_sample_table[i].pitch) {
+					const uint16_t sample_rate = *(uint16_t*)&rom[rom_pos+6];
+					out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, sample_rate);
+				}
+
+				/* Correct sample start pointer */
+				const size_t start_pos = rom_pos+8;
+				out_sample_table[i].startBank = start_pos >> 15;
+				out_sample_table[i].startOffset = start_pos & 0x7FFF;
+			}
+		}
 
 		/* Auto-detect pitch if needed */
 		if (!out_sample_table[i].pitch) {
@@ -166,6 +186,11 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		}
 
 		rom_pos += sample_size;
+
+		if (rom_pos > 0x800000) {
+			fprintf(stderr, "ROM exceeds 8 MB after sample: %s\n", input_records[i].sample_path);
+			goto failure;
+		}
 	}
 
 	*out_rom_size = rom_size;
