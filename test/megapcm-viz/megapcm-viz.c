@@ -277,15 +277,17 @@ static inline void Viz_RenderVideoFrame(VizState* viz) {
 			SDL_RenderDebugTextFormat(renderer, 160.0f, 24.0f, "PanInput: %X", Z80_ReadByte(Z_MPCM_PanInput, z80vm));
 			SDL_RenderDebugTextFormat(renderer, 160.0f, 32.0f, "SFX PanInput: %X", Z80_ReadByte(Z_MPCM_SFXPanInput, z80vm));
 
-			SDL_RenderDebugText(renderer, 8.0f, 80.0f, "BUFFER HEALTH:");
-			SDL_RenderDebugTextFormat(renderer, 208.0f, 80.0f, "[%03zX samples]", viz->z80vm_ext->mpcm_buffer_health_sampled_pos);
 
 			{
+				SDL_RenderDebugText(renderer, 8.0f, 80.0f, "BUFFER HEALTH:");
+				SDL_RenderDebugTextFormat(renderer, 208.0f, 80.0f, "[%03zX samples]", viz->z80vm_ext->mpcm_buffer_health_sampled_pos);
 				SDL_FRect dstrect = { .x = 0.0f, .y = 88.0f, .w = 320, .h = 64 };
 				Viz_PlotSamplesToTexture(viz->tex_health_buffer, 320, 64, viz->z80vm_ext->mpcm_buffer_health_sampled, viz->z80vm_ext->mpcm_buffer_health_sampled_pos);
 				SDL_RenderTexture(renderer, viz->tex_health_buffer, NULL, &dstrect);
 			}
 			{
+				SDL_RenderDebugText(renderer, 8.0f, 156.0f, "DAC OUTPUT:");
+				SDL_RenderDebugTextFormat(renderer, 224.0f, 156.0f, "[%05zu kHz]", viz->z80vm_ext->mpcm_buffer_health_sampled_pos * 60);
 				SDL_FRect dstrect = { .x = 0, .y = 164, .w = 320, .h = 64 };
 				Viz_PlotSamplesToTexture2(viz->tex_dac_output, &dstrect, viz->z80vm_ext->ym_dac_output_sampled, viz->z80vm_ext->ym_dac_output_sampled_pos);
 				SDL_RenderTexture(renderer, viz->tex_dac_output, NULL, &dstrect);
@@ -359,8 +361,12 @@ int main(int argc, char** argv) {
 
 	/* Create ROM and a sample table */
 	static const MPCM_SampleMetadata samples[] = {
-		{ .type = Z_MPCM_TYPE_PCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 0, .sample_path = "../../__example-rom/jump.wav" },
-		{ .type = Z_MPCM_TYPE_DPCM_TURBO, .flags = (1<<Z_MPCM_FLAGS_SFX), .sample_rate = 25800, .sample_path = "../../__example-rom/jump.dpcm" },
+		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_LOOP, .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
+		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_LOOP, .sample_rate = 0, .sample_path = "../../examples/sample-tester/sample-loop.wav" },
+		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_SFX, .sample_rate = 0, .sample_path = "../../examples/s1-smps-integration/dac/voice.wav" },
+		{ .type = MPCM_TYPE_DPCM, .flags = 0, .sample_rate = 8000, .sample_path = "../../examples/s1-smps-integration/dac/kick.dpcm" },
+		{ .type = MPCM_TYPE_PCM,  .flags = 0, .sample_rate = 24000, .sample_path = "../../examples/s1-smps-integration/dac/snare.pcm" },
+		{ .type = MPCM_TYPE_DPCM, .flags = 0, .sample_rate = 7250, .sample_path = "../../examples/s1-smps-integration/dac/timpani.dpcm" },
 	};
 	MPCM_Sample sample_table[SDL_arraysize(samples)];
 	size_t rom_size = 0;
