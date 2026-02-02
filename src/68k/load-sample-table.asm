@@ -77,11 +77,11 @@ MegaPCM_LoadSampleTable:
 
 		KDebug.WriteLine "Sample: type=%<.b @sample_type>, flags=%<.b @sample_flags>, pitch=%<.b @sample_pitch>, start=%<.l @sample_start sym>, end=%<.l @sample_end sym>"
 
-		; If sample type is DPCM, we don't have to check if it's a WAVE file
+		; Check if sample is DPCM
 		cmp.b	#TYPE_DPCM, @sample_type
-		beq.w	@WriteSampleData
+		beq.w	@Sample_DPCM_or_DPCM_HQ
 
-		; Here, make sure sample is PCM or PCM Turbo
+		; If not DPCM, make sure sample is PCM or PCM Turbo
 		cmp.b	#TYPE_PCM, @sample_type
 		beq.s	@Sample_PCM_or_PCM_Turbo
 		cmp.b	#TYPE_PCM_TURBO, @sample_type
@@ -160,6 +160,42 @@ MegaPCM_LoadSampleTable:
 		move.w	@sample_end, @var0
 		and.w	#1, @var0
 		suba.w	@var0, @sample_end					; this subtracts 1 if address was ODD, so it gets EVEN
+		bra.s	@WriteSampleData
+
+	@Sample_DPCM_or_DPCM_HQ:
+		; For DPCM samples, check if it's a DPCM-HQ file
+		cmp.l	#'DPHQ', (@sample_start)			; is this a DPCM-HQ file?
+		bne.s	@WriteSampleData					; if not, consider this headless classic DPCM
+
+		KDebug.WriteLine "Detected DPCM-HQ header"
+
+		cmp.b	#1, 4(@sample_start)				; check DPCM-HQ header version
+		bne.w	@Err_DPCM_HQ_UnsupportedVersion		; we only support version 1, so fail otherwise
+		moveq	#%100, @var1
+		and.b	5(@sample_start), @var1				; @var1 = DPCM-HQ table id (0 or 1) * 4
+
+		; If pitch isn't set, auto-calucate based on DPCM-HQ sample rate ...
+		tst.b	@sample_pitch						; is pitch set in the sample table?
+		bne.s	@DPCM_HQ_Header_Done				; if yes, branch
+		move.w	6(@sample_start), @var0				; @var0 = sample rate (e.g. 16000)
+		cmp.b	#TYPE_DPCM_TURBO, @sample_type		; is sample TYPE_DPCM_TURBO?
+		bne.s	@DPCM_HQ_CalcPitch					; if not, branch
+		cmp.w	#TYPE_DPCM_TURBO_MAX_RATE, @var0	; TYPE_DPCM_TURBO should use rate of TYPE_DPCM_TURBO_MAX_RATE
+		bne.w	@Err_DPCM_HQ_BadSampleRate			; if it doesn't, raise an error
+		moveq	#-1, @sample_pitch					; set pitch to $FF (max)
+		bra.s	@DPCM_HQ_Header_Done
+
+	@DPCM_HQ_CalcPitch:
+		cmp.w	#TYPE_DPCM_MAX_RATE, @var0			; TYPE_DPCM should use rate <= TYPE_DPCM_MAX_RATE
+		bhi.w	@Err_DPCM_HQ_BadSampleRate			; if it doesn't, raise an error
+		ext.l	@var0
+		lsl.l	#8, @var0
+		divu.w	#TYPE_DPCM_BASE_RATE, @var0
+		move.b	@var0, @sample_pitch
+
+	@DPCM_HQ_Header_Done:
+		add.b	@var1, @sample_type					; add table index to sample type
+		addq.w	#8, @sample_start
 
 	@WriteSampleData:
 		tst.b	@sample_pitch
@@ -262,4 +298,12 @@ MegaPCM_LoadSampleTable:
 ; ------------------------------------------------------------------------------
 @Err_PitchNotSet:
 	moveq	#MPCM_ST_PITCH_NOT_SET, @error_code
+	bra		@Quit
+; ------------------------------------------------------------------------------
+@Err_DPCM_HQ_UnsupportedVersion:
+	moveq	#MPCM_ST_DPCM_HQ_UNSUPPORTED_VERSION, @error_code
+	bra		@Quit
+; ------------------------------------------------------------------------------
+@Err_DPCM_HQ_BadSampleRate:
+	moveq	#MPCM_ST_DPCM_HQ_BAD_SAMPLE_RATE, @error_code
 	bra		@Quit
