@@ -15,10 +15,10 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
-DPCM0TurboLoop:	; Classic DPCM / DPCM-HQ Table #0
+DPCMTurboLoop:	; Classic DPCM (Turbo mode)
 	di
 
-	TraceMsg "Entering DPCM0TurboLoop"
+	TraceMsg "Entering DPCMTurboLoop"
 
 	; Setup VInt ...
 	ld	hl, DPCMTurboLoop_VBlank
@@ -28,15 +28,18 @@ DPCM0TurboLoop:	; Classic DPCM / DPCM-HQ Table #0
 
 	; Load DPCM delta table #0
 	ld	hl, DPCM_DeltaTable_0
-	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+	call	LoadDPCMTable2_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMTurboLoop_Cont
+	jp	DPCMTurboLoop_Reload
 
 ; --------------------------------------------------------------
-DPCM1TurboLoop:	; DPCM-HQ Table #1
+DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
 	di
 
-	TraceMsg "Entering DPCM1TurboLoop"
+	TraceMsg "Entering DPCMHQTurboLoop"
+
+	ld	a, LOOP_DPCM_HQ_TURBO
+	ld	(LoopId), a
 
 	; Setup VInt ...
 	ld	hl, DPCMTurboLoop_VBlank
@@ -44,24 +47,27 @@ DPCM1TurboLoop:	; DPCM-HQ Table #1
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Load DPCM delta table #1
-	ld	hl, DPCM_DeltaTable_1
+	; Set initial ROM bank ...
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
+
+	; Load DPCM delta table based on last byte from the header (read back to header)
+	ld	hl, (ActiveSample+sActiveSample.startOffset)
+	dec	l				; move back to read last byte of the header (we're sure this won't cross the bank boundary or even 256-byte boundary)
+	ld	a, (hl)				; a = Delta table index * 10h
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-; --------------------------------------------------------------
-DPCMTurboLoop_Cont:
-	ld	a, LOOP_DPCM_TURBO
-	ld	(LoopId), a
+	jp	DPCMTurboLoop_Cont		; skip over `DPCMTurboLoop_Reload` because we've already set the bank
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_Reload:
-
 	; Set initial ROM bank ...
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
 	di
 
+DPCMTurboLoop_Cont:
 	; Init read ahead registers ...
 	ld	bc, SampleBuffer
 	ld	h, DPCMTables>>8

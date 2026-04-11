@@ -118,14 +118,14 @@ EnterPlaybackLoop:
 
 ; -----------------------------------------------------------------------------
 .LoopTable:
-	dw	StopSamplePlayback_NR			; +00h
-	dw	PCMLoop					; +02h
-	dw	PCMTurboLoop				; +04h
-	dw	DPCM0Loop				; +06h	Classic DPCM / DPCM-HQ Table #0
-	dw	DPCM0TurboLoop				; +08h	''
-	dw	DPCM1Loop				; +0Ah	DPCM-HQ Table #1
-	dw	DPCM1TurboLoop				; +0Ch	''
-	dw	StopSamplePlayback_NR			; +0Eh
+	dw	StopSamplePlayback_NR			; +00h	<RESERVED>
+	dw	PCMLoop					; +02h  PCM
+	dw	PCMTurboLoop				; +04h	PCM (Turbo mode)
+	dw	DPCMLoop				; +06h	DPCM
+	dw	DPCMTurboLoop				; +08h	DPCM (Turbo mode)
+	dw	DPCMHQLoop				; +0Ah	DPCM-HQ
+	dw	DPCMHQTurboLoop				; +0Ch	DPCM-HQ (Turbo mode)
+	dw	StopSamplePlayback_NR			; +0Eh	<RESERVED>
 .LoopTable_End:
 
 	; Loop table shouldn't cross 256-byte boundary for 8-bit addition to work

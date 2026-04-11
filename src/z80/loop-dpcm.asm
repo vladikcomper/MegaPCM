@@ -15,53 +15,62 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
-DPCM0Loop:	; Classic DPCM / DPCM-HQ Table #0
+DPCMLoop:	; Classic DPCM
 	di
 
-	TraceMsg "Entering DPCM0Loop"
+	TraceMsg "Entering DPCMLoop"
 
 	ld	a, LOOP_DPCM
 	ld	(LoopId), a
+
+	; Setup VInt ...
+	ld	hl, DPCMLoop_VBlank
+	ld	(VBlankRoutine), hl
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
 	; Load DPCM delta table #0
 	ld	hl, DPCM_DeltaTable_0
-	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+	call	LoadDPCMTable2_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMLoop_Cont
+	jp	DPCMLoop_Reload
 
 ; --------------------------------------------------------------
-DPCM1Loop:	; DPCM-HQ Table #1
+DPCMHQLoop:	; DPCM-HQ
 	di
 
-	TraceMsg "Entering DPCM1Loop"
+	TraceMsg "Entering DPCMHQLoop"
 
-	ld	a, LOOP_DPCM
+	ld	a, LOOP_DPCM_HQ
 	ld	(LoopId), a
 
-	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
-
-	; Load DPCM delta table #1
-	ld	hl, DPCM_DeltaTable_1
-	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
-	; fallthrough
-
-; --------------------------------------------------------------
-DPCMLoop_Cont:
 	; Setup VInt ...
 	ld	hl, DPCMLoop_VBlank
 	ld	(VBlankRoutine), hl
 
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
+
+	; Set initial ROM bank ...
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
+
+	; Load DPCM delta table based on last byte from the header (read back to header)
+	ld	hl, (ActiveSample+sActiveSample.startOffset)
+	dec	l				; move back to read last byte of the header (we're sure this won't cross the bank boundary or even 256-byte boundary)
+	ld	a, (hl)				; a = Delta table index * 10h
+	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
+
+	jp	DPCMLoop_Cont			; skip over `DPCMLoop_Reload` because we've already set the bank
+
 ; --------------------------------------------------------------
 DPCMLoop_Reload:
-
 	; Set initial ROM bank ...
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
 	di
 
+DPCMLoop_Cont:
 	; Init read ahead registers ...
 	ld	bc, SampleBuffer
 	ld	h, DPCMTables>>8

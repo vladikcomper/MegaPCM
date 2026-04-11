@@ -160,19 +160,19 @@ MegaPCM_LoadSampleTable:
 		move.w	@sample_end, @var0
 		and.w	#1, @var0
 		suba.w	@var0, @sample_end					; this subtracts 1 if address was ODD, so it gets EVEN
-		bra.s	@WriteSampleData
+		bra		@WriteSampleData
 
 	@Sample_DPCM_or_DPCM_HQ:
 		; For DPCM samples, check if it's a DPCM-HQ file
-		cmp.l	#'DPHQ', (@sample_start)			; is this a DPCM-HQ file?
+		cmp.w	#'DQ', (@sample_start)				; is this a DPCM-HQ file?
 		bne.s	@WriteSampleData					; if not, consider this headless classic DPCM
 
 		KDebug.WriteLine "Detected DPCM-HQ header"
 
-		cmp.b	#1, 4(@sample_start)				; check DPCM-HQ header version
+		addq.w	#4, @sample_type					; alter DPCM type for Z80-side sample table (use DPCMHQLoop instead of DPCMLoop, or its "turbo" counterpart)
+		cmp.b	#'1', 2(@sample_start)				; is this DPCM-HQ version 1?
 		bne.w	@Err_DPCM_HQ_UnsupportedVersion		; we only support version 1, so fail otherwise
-		moveq	#%100, @var1
-		and.b	5(@sample_start), @var1				; @var1 = DPCM-HQ table id (0 or 1) * 4
+		move.l	2(@sample_start), @var1				; @var1 = $xxSS SSSS, where SS SSSS is stream length
 
 		; If pitch isn't set, auto-calucate based on DPCM-HQ sample rate ...
 		tst.b	@sample_pitch						; is pitch set in the sample table?
@@ -194,8 +194,11 @@ MegaPCM_LoadSampleTable:
 		move.b	@var0, @sample_pitch
 
 	@DPCM_HQ_Header_Done:
-		add.b	@var1, @sample_type					; add table index to sample type
-		addq.w	#8, @sample_start
+		lea		9(@sample_start), @sample_start
+		lea		(@sample_start, @var1.l), @sample_end
+
+		; NOTE: @sample_end has high-byte corrupted by version (as read from the header), but we have only 24-bit address bus anyways...
+		KDebug.WriteLine "DPCM-HQ data offsets: start=%<.l @sample_start sym>, end=%<.l @sample_end sym>"
 
 	@WriteSampleData:
 		tst.b	@sample_pitch

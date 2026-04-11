@@ -76,10 +76,10 @@ def decode(deltaNibbles: np.ndarray, deltaTable: np.ndarray):
 
 def runDecoder(path: str) -> np.ndarray:
 	input_buff = np.fromfile(path, dtype=np.uint8)
-	if input_buff[0] != 0xD0:
+	if input_buff[0:3] != 'DQ1':
 		return decode(input_buff, deltaTables[0])
 	else:
-		return decode(input_buff[2:], deltaTables[int(input_buff[1])])
+		return decode(input_buff[9:], deltaTables[int(input_buff[8] // 0x10)])
 
 def readFromFile(path: str):
 	buff = np.fromfile(path, dtype=np.uint8)
@@ -139,7 +139,11 @@ if __name__ == '__main__':
 				print(f"rmse={rmse:f}")
 
 			with open(args.output_filename, 'wb') as output_file:
-				output_file.write(bytes((0xD0,table_index)))
+				stream_len = output_buff.size
+				output_file.write(b"DQ1")
+				output_file.write(bytes([stream_len&0xFF0000<<16,stream_len&0xFF00<<8,stream_len&0xFF])) # stream size (Big-Endian)
+				output_file.write(bytes([0, 0])) # sample rate
+				output_file.write(bytes([table_index * 0x10])) # table type
 				output_buff.tofile(output_file)
 
 		else:

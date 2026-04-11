@@ -35,7 +35,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 - High playback rates:
 	- 8-bit PCM playback up to 25.1 kHz with pitch and volume effects;
 	- 4-bit DPCM playback up to 20.5 kHz with pitch and volume effects;
-	- **Turbo mode!** 8-bit PCM playback at 32 kHz (without pitch and volume effects);
+	- **Turbo mode!** 8-bit PCM playback at 32 kHz, 4-bit DPCM playback at 25.8 kHz (without pitch and volume effects);
 
 ## Installation and Documentation
 

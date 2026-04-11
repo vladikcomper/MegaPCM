@@ -1,15 +1,43 @@
 
+; ==============================================================
+; --------------------------------------------------------------
+; Mega PCM 2.1
+; --------------------------------------------------------------
+; Fast DPCM decode table generation
+;
+; (c) 2023-2026, Vladikcomper
+; --------------------------------------------------------------
+
 ; --------------------------------------------------------------
 ; Generates fast DPCM decode tables
 ; --------------------------------------------------------------
 ; INPUT:
-;	hl	Source deltas array
+;	a	= DPCM table index * 10h
 ;
 ; USES:
 ;	af, bc, de, hl, bc', de', hl', ix, iy, Blast processing
 ; --------------------------------------------------------------
 
+	; All DPCM delta tables (tables 0 though 2) should be within the same 256-byte block for the below optimization to work
+	assert (DPCM_DeltaTable_0>>8)==(DPCM_DeltaTable_2>>8)
+
 LoadDPCMTable_DI:
+	add	DPCM_DeltaTable_0 & 0FFh
+	ld	h, DPCM_DeltaTable_0>>8		; hl = DPCM Delta table offset
+	ld	l, a				; ''
+	; fallthrough
+
+; --------------------------------------------------------------
+; Generates fast DPCM decode tables
+; --------------------------------------------------------------
+; INPUT:
+;	hl	= Source deltas array
+;
+; USES:
+;	af, bc, de, hl, bc', de', hl', ix, iy, Blast processing
+; --------------------------------------------------------------
+
+LoadDPCMTable2_DI:
 	; TODO: Catch nested attempts to use `(StackCopy)`
 	ld	(StackCopy), sp			; 20
 
@@ -63,10 +91,14 @@ LoadDPCMTable_DI:
 	; Total cycles: 20 + 1918 + 1986 + 20 + 10 = 3954 (~7.72 cycles per byte)
 
 ; --------------------------------------------------------------
-DPCM_DeltaTable_0:	; standard DPCM table / DPCM-HQ table #0
+DPCM_DeltaTable_0:	; standard DPCM table / DPCM-HQ table type 0x00
 	db	000h, 001h, 002h, 004h, 008h, 010h, 020h, 040h
 	db	080h, 0FFh, 0FEh, 0FCh, 0F8h, 0F0h, 0E0h, 0C0h
 
-DPCM_DeltaTable_1:	; DPCM-HQ table #1
+DPCM_DeltaTable_1:	; DPCM-HQ table type 0x10
 	db	0DEh, 0EBh, 0F3h, 0F8h, 0FBh, 0FDh, 0FEh, 0FFh
 	db	000h, 001h, 002h, 003h, 005h, 008h, 00Dh, 015h
+
+DPCM_DeltaTable_2:	; DPCM-HQ table type 0x20
+	db	0ECh, 0F4h, 0F8h, 0FAh, 0FCh, 0FDh, 0FEh, 0FFh
+	db	000h, 001h, 002h, 003h, 004h, 006h, 008h, 00Ch
