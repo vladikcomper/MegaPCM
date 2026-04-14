@@ -231,6 +231,9 @@ PCMLoop_VBlankPhase_Sync:
 	; Total "PCMLoop_VBlankPhase" cycles: 135-136 + 7*
 	; *) emulated lost cycles on M68K bus access
 
+	nop						; 4
+	; WARNING! Should've wasted 1 more cycle!
+
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback and reload volume
@@ -239,7 +242,8 @@ PCMLoop_VBlankPhase_LastIteration:
 	Playback_LoadVolume_EXX				; 45
 	exx						; 4
 	nop						; 4
-	; WARNING! This should've wasted 1 more cycle!
+	or	00h					; 7
+	or	00h					; 7
 
 	; Handle sample playback and reload pitch
 	Playback_Run_Draining_NoSync	e		; 71-72/28
@@ -250,6 +254,7 @@ PCMLoop_VBlankPhase_LastIteration:
 	; Slightly early, but report we're out of VBlank
 	; TODO: assert a=0
 	ld	(VBlankActive), a			; 13
+	nop						; 4
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28
