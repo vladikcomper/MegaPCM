@@ -141,7 +141,7 @@ if __name__ == '__main__':
 			with open(args.output_filename, 'wb') as output_file:
 				stream_len = output_buff.size
 				output_file.write(b"DQ1")
-				output_file.write(bytes([stream_len&0xFF0000<<16,stream_len&0xFF00<<8,stream_len&0xFF])) # stream size (Big-Endian)
+				output_file.write(bytes([stream_len&0xFF0000>>16,stream_len&0xFF00>>8,stream_len&0xFF])) # stream size (Big-Endian)
 				output_file.write(bytes([0, 0])) # sample rate
 				output_file.write(bytes([table_index * 0x10])) # table type
 				output_buff.tofile(output_file)
