@@ -285,8 +285,8 @@ uint8_t emulateSamplePlayback(Z80VM_Context * context) {
 
 	/* Apply pitch */
 	if ((playbackState->sampleType == Z_MPCM_TYPE_PCM_TURBO) 
-			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_TBL0_TURBO)
-			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_TBL1_TURBO)
+			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_TURBO)
+			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_HQ_TURBO)
 			|| ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)
 	) {
 		playbackState->pos++;
@@ -377,7 +377,7 @@ void runTest(
 	memset(&context->programRAM[Z_MPCM_SampleBuffer], 0, 0x100);
 
 	/* Setup playback emulation state */
-	bool is_dpcm_sample = (sampleType == Z_MPCM_TYPE_DPCM_TBL0) || (sampleType == Z_MPCM_TYPE_DPCM_TBL0_TURBO) || (sampleType == Z_MPCM_TYPE_DPCM_TBL1) || (sampleType == Z_MPCM_TYPE_DPCM_TBL1_TURBO);
+	bool is_dpcm_sample = (sampleType == Z_MPCM_TYPE_DPCM) || (sampleType == Z_MPCM_TYPE_DPCM_TURBO) || (sampleType == Z_MPCM_TYPE_DPCM_HQ) || (sampleType == Z_MPCM_TYPE_DPCM_HQ_TURBO);
 	EmulatedPlaybackState playbackState = {
 		.sampleType = sampleType,
 		.pos = 0,
@@ -443,16 +443,16 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0, 0xFF);
 
@@ -460,7 +460,7 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_2, sample_pcm_2, sizeof(sample_pcm_2), 0, 0x01);
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0, 0x01);
 	runTest(context, Z_MPCM_TYPE_PCM, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0, 0x40);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0x40);
+	runTest(context, Z_MPCM_TYPE_DPCM, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0, 0x40);
 
 	/* Middle of the bank */
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7F00, 0xFF);
@@ -469,8 +469,8 @@ int main(int argc, char * argv[]) {
 	/* Aligned to the end of bank */
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FF8, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0x7F02, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FF8, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0x7FF0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FF8, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_16, sample_dpcm_16_output, sizeof(sample_dpcm_16), 0x7FF0, 0xFF);
 
 	/* With bankswitching */
 	runTest(context, Z_MPCM_TYPE_PCM, sample_pcm_2, sample_pcm_2, sizeof(sample_pcm_2), 0x7FFE, 0xFF);
@@ -481,14 +481,14 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FFE, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0x7FFE, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_4, sample_dpcm_4_output, sizeof(sample_dpcm_4), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, sample_dpcm_8, sample_dpcm_8_output, sizeof(sample_dpcm_8), 0x7FFE, 0xFF);
 
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0x7FFE, 0xFF);
-	runTest(context, Z_MPCM_TYPE_DPCM_TBL0_TURBO, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0x7FFE, 0xFF);
+	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0x7FFE, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0x7FFE, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0x7FFE, 0xFF);
 
