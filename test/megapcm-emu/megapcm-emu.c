@@ -288,10 +288,6 @@ void MPCM_ThrowLastErrorCode(Z80VM_Context * context) {
 	fputs("Mega PCM exception: ", stderr);
 
 	switch (lastErrorCode) {
-	case Z_MPCM_ERROR__BAD_INTERRUPT:
-		fputs("Bad Interrupt\n", stderr);
-		break;
-
 	case Z_MPCM_ERROR__UNKNOWN_COMMAND:
 		fputs("Unkown command\n", stderr);
 		break;

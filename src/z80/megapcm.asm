@@ -59,11 +59,10 @@
 	export	TYPE_NONE
 	export	TYPE_PCM
 	export	TYPE_PCM_TURBO
-	export	TYPE_DPCM_TBL0
-	export	TYPE_DPCM_TBL0_TURBO
-	export	TYPE_DPCM_TBL1
-	export	TYPE_DPCM_TBL1_TURBO
-	export	ERROR__BAD_INTERRUPT
+	export	TYPE_DPCM
+	export	TYPE_DPCM_TURBO
+	export	TYPE_DPCM_HQ
+	export	TYPE_DPCM_HQ_TURBO
 	export	ERROR__BAD_SAMPLE_TYPE
 	export	ERROR__UNKNOWN_COMMAND
 
@@ -106,11 +105,6 @@ VBlankRoutine:	equ	VBlank+1
 ; --------------------------------------------------------------
 VoidInterrupt:
 	TraceException	"Invalid interrupt"
-
-	push	af
-	ld	a, ERROR__BAD_INTERRUPT
-	ld	(LastErrorCode), a
-	pop	af
 	ret
 
 ; --------------------------------------------------------------

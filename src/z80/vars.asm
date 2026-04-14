@@ -121,7 +121,6 @@ CalibrationScore_ROM:	dw	1		; ROM read count per frame reported by calibration l
 CalibrationScore_RAM:	dw	1		; RAM read count per frame reported by calibration loop
 
 LastErrorCode:		ds	1	; last error code
-ERROR__BAD_INTERRUPT:	equ	02h
 ERROR__BAD_SAMPLE_TYPE:	equ	01h
 ERROR__UNKNOWN_COMMAND:	equ	80h
 
