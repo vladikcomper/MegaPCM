@@ -101,7 +101,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
 				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
 			) {
-				fprintf(stderr, "Invalid contianer (AIFF/NIST): %s\n", input_records[i].sample_path);
+				fprintf(stderr, "Invalid container (AIFF/NIST): %s\n", input_records[i].sample_path);
 				goto failure;
 			}
 			if (strncmp((char*)&rom[rom_pos], "RIFF", 4) == 0) {
