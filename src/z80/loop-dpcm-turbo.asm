@@ -20,6 +20,9 @@ DPCMTurboLoop:	; Classic DPCM (Turbo mode)
 
 	TraceMsg "Entering DPCMTurboLoop"
 
+	ld	a, LOOP_DPCM_TURBO
+	ld	(LoopId), a
+
 	; Setup VInt ...
 	ld	hl, DPCMTurboLoop_VBlank
 	ld	(VBlankRoutine), hl
