@@ -127,7 +127,7 @@ static inline void Z80VM_Extension_SampleBufferHealth(Z80VM_Context * z80vm) {
 
 	const uint8_t loopId = z80vm->programRAM[Z_MPCM_LoopId];
 	const uint8_t playbackPos = z80vm->z80State.registers.byte[Z80_L];
-	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_TURBO))
+	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_TURBO) || (loopId == Z_MPCM_LOOP_DPCM_HQ) || (loopId == Z_MPCM_LOOP_DPCM_HQ_TURBO))
 		? (z80vm->z80State.alternates[Z80_BC] & 0xFF)
 		: (z80vm->z80State.alternates[Z80_DE] & 0xFF);
 
@@ -361,7 +361,6 @@ int main(int argc, char** argv) {
 
 	/* Create ROM and a sample table */
 	static const MPCM_SampleMetadata samples[] = {
-		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_LOOP, .sample_rate = 0, .sample_path = "../../examples/dma-survival-test/music.wav" },
 		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_LOOP, .sample_rate = 0, .sample_path = "../../examples/sample-tester/sample-loop.wav" },
 		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_SFX, .sample_rate = 0, .sample_path = "../../examples/s1-smps-integration/dac/voice.wav" },
 		{ .type = MPCM_TYPE_DPCM, .flags = 0, .sample_rate = 8000, .sample_path = "../../examples/s1-smps-integration/dac/kick.dpcm" },
@@ -378,6 +377,11 @@ int main(int argc, char** argv) {
 	z80vm->ROM = rom;	// attach ROM to Z80VM
 	z80vm->ROMsize = rom_size;
 	MPCM_LoadSampleTable(z80vm, sample_table, SDL_arraysize(samples));
+	for (int i = 0; i < SDL_arraysize(samples); ++i) {
+		fprintf(stderr, "Sample %02X: flags=%02X, pitch=%02X, startBank=%02X, startOffset=%04X, endBank=%02X, endOffset=%04X\n",
+			0x81+i, sample_table[i].flags, sample_table[i].pitch, sample_table[i].startBank, sample_table[i].startOffset, sample_table[i].endBank, sample_table[i].endOffset
+		);
+	}
 
 	/* Setup main program data */
 	VizState viz = {

@@ -73,7 +73,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		size_t sample_size = ftell(sample_data);
 		fseek(sample_data, 0, SEEK_SET);
 
-		rom_size += sample_size;
+		rom_size = rom_pos + sample_size;
 		rom = realloc(rom, rom_size);
 		if (!rom) {
 			fprintf(stderr, "Out of memory\n");
@@ -91,12 +91,12 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		out_sample_table[i].flags = (1<<Z_MPCM_FLAGS_SAMPLE) | input_records[i].type | input_records[i].flags;
 		out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, input_records[i].sample_rate);
 		out_sample_table[i].startBank = rom_pos >> 15;
-		out_sample_table[i].startOffset = rom_pos & 0x7FFF;
+		out_sample_table[i].startOffset = 0x8000 | (rom_pos & 0x7FFF);
 		out_sample_table[i].endBank = (rom_pos + sample_size) >> 15;
-		out_sample_table[i].endOffset = (rom_pos + sample_size) & 0x7FFF;
+		out_sample_table[i].endOffset = 0x8000 | ((rom_pos + sample_size) & 0x7FFF);
 
-		/* Read WAVE files */
 		if (input_records[i].type == MPCM_TYPE_PCM_TURBO || input_records[i].type == MPCM_TYPE_PCM) {
+			/* Parse WAVE files */
 			if (
 				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
 				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
@@ -148,23 +148,29 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 
 				/* Correct sample start/end pointers */
 				const size_t data_size = *(uint32_t*)&rom[chunk_pos+4];
-				const size_t start_pos = chunk_pos+8;
-				const size_t end_pos = chunk_pos+8+data_size;
+				const size_t start_pos = chunk_pos + 8;
+				const size_t end_pos = start_pos + data_size;
 
 				out_sample_table[i].startBank = start_pos >> 15;
-				out_sample_table[i].startOffset = start_pos & 0x7FFF;
+				out_sample_table[i].startOffset = 0x8000 | (start_pos & 0x7FFF);
 				out_sample_table[i].endBank = end_pos >> 15;
-				out_sample_table[i].endOffset = end_pos & 0x7FFF;
+				out_sample_table[i].endOffset = 0x8000 | (end_pos & 0x7FFF);
 			}
+
+			/* PCM samples must always be aligned on even boundary */
+			out_sample_table[i].startOffset &= 0xFFFE;
+			out_sample_table[i].endOffset &= 0xFFFE;
 		}
-		/* Read DPCM and DPCM-HQ files */
 		else if (input_records[i].type == MPCM_TYPE_DPCM || input_records[i].type == MPCM_TYPE_DPCM_TURBO) {
+			/* Parse DPCM-HQ files */
 			if (strncmp((char*)&rom[rom_pos], "DQ", 2) == 0) {
 				const uint8_t version = rom[rom_pos+2];
 				if (version != '1') {
 					fprintf(stderr, "Unsupported DPCM-HQ version: %s\n", input_records[i].sample_path);
 					goto failure;
 				}
+
+				out_sample_table[i].flags += 4;
 
 				/* If pitch wasn't set, auto-calculate it */
 				if (!out_sample_table[i].pitch) {
@@ -173,12 +179,12 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				}
 
 				/* Correct sample start/end pointers */
-				const size_t start_pos = rom_pos+9;
+				const size_t start_pos = rom_pos + 9;
 				const size_t end_pos = start_pos + ((rom[rom_pos+3]<<16)|(rom[rom_pos+5]<<8)|(rom[rom_pos+6]));
 				out_sample_table[i].startBank = start_pos >> 15;
-				out_sample_table[i].startOffset = start_pos & 0x7FFF;
+				out_sample_table[i].startOffset = 0x8000 | (start_pos & 0x7FFF);
 				out_sample_table[i].endBank = end_pos >> 15;
-				out_sample_table[i].endOffset = end_pos & 0x7FFF;
+				out_sample_table[i].endOffset = 0x8000 | (end_pos & 0x7FFF);
 			}
 		}
 
@@ -189,6 +195,7 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 		}
 
 		rom_pos += sample_size;
+		if (rom_pos % 2) rom_pos += 1; // automatic `even`
 
 		if (rom_pos > 0x800000) {
 			fprintf(stderr, "ROM exceeds 8 MB after sample: %s\n", input_records[i].sample_path);
