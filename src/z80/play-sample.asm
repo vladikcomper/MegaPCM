@@ -173,14 +173,12 @@ LoadActiveSampleData_DI:
 	ex	af, af'
 
 	set	7, h				; make sure hl points to ROM bank
-	res	0, l				; hl = start offset & 0FFFEh
 	push	hl				; (ActiveSample+sActiveSample.startOffset) = hl
 
 	ld	a, d
 	and	7Fh
 	ld	d, a				; de = end offset & 7FFFh
-	res	0, e				; de = end offset & 7FFEh
-	or	e				; (de & 7FFEh) == 0?
+	or	e				; (de & 7FFFh) == 0?
 	jr	nz, .lengthOk
 	dec	b				; b = endBank - 1 (use previous bank)
 	ld	d, 80h				; de = 8000h (use max end length)
