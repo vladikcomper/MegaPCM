@@ -98,6 +98,7 @@ MegaPCM_LoadSampleTable:
 		bne.w	@PCM_AlignOffsets				; if not RIFF, AIFF or NIST, assume raw PCM stream
 		bra.w	@Err_WAVE_InvalidHeaderFormat
 
+	; ----------------------------------------------------------------------
 	@WAVE_ChkHeader:
 		; Validate WAVE file format ...
 		cmp.l	#'WAVE', 8(@sample_start)		; for RIFF containers, we only accept WAVE type
@@ -129,6 +130,7 @@ MegaPCM_LoadSampleTable:
 		moveq	#-1, @sample_pitch				; set pitch to $FF (max)
 		bra.s	@WAVE_SeekDataChunk
 
+	; ----------------------------------------------------------------------
 	@WAVE_CalcPitch:
 		cmp.w	#TYPE_PCM_MAX_RATE, @var0		; TYPE_PCM should use rate <= TYPE_PCM_MAX_RATE
 		bhi.w	@Err_WAVE_BadSampleRate			; if it doesn't, raise an error
@@ -156,12 +158,20 @@ MegaPCM_LoadSampleTable:
 		KDebug.WriteLine "WAVE data offsets: start=%<.l @sample_start sym>, end=%<.l @sample_end sym>"
 
 	@PCM_AlignOffsets:
-		; Round end offset to even address boundary if needed ...
+		; Round start/end offsets to even address boundary if needed ...
+		moveq	#1, @var1
+
+		move.w	@sample_start, @var0
+		and.w	@var1, @var0
+		suba.w	@var0, @sample_start				; this subtracts 1 if address was ODD, so it gets EVEN
+
 		move.w	@sample_end, @var0
-		and.w	#1, @var0
+		and.w	@var1, @var0
 		suba.w	@var0, @sample_end					; this subtracts 1 if address was ODD, so it gets EVEN
+
 		bra		@WriteSampleData
 
+	; ----------------------------------------------------------------------
 	@Sample_DPCM_or_DPCM_HQ:
 		; For DPCM samples, check if it's a DPCM-HQ file
 		cmp.w	#'DQ', (@sample_start)				; is this a DPCM-HQ file?
