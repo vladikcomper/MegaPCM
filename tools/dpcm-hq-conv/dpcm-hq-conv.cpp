@@ -28,6 +28,7 @@
 
 #include <array>
 #include <future>
+#include <optional>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
@@ -46,8 +47,7 @@ namespace fs = std::filesystem;
 
 /* Basic logging */
 namespace Logger {
-	enum class Level { DEBUG, INFO, WARN, ERROR };
-	static constexpr string_view LevelToString[] = { "DEBUG", "INFO", "WARN", "ERROR" };
+	enum class Level { DEBUG, INFO, WARN, ERROR, QUIET };
 	Level logLevel = Level::INFO;
 
 	inline void debug(const string& msg) {
@@ -66,21 +66,23 @@ namespace Logger {
 	}
 
 	inline void error(const string& msg) {
+		if (logLevel > Level::ERROR) return;
 		cerr << format("[ERROR] {}\n", msg);
 	}
 }
 
 /* Program arguments handling */
 struct Arguments {
-	enum class Mode { AUTO, ENCODE_TO_DPCM, DECODE_TO_WAV };
+	enum class Mode { ENCODE_TO_DPCM, DECODE_TO_WAV };
 	static constexpr string_view ModeToString[] = { "AUTO", "ENCODE_TO_DPCM", "DECODE_TO_WAV" };
 
 	fs::path inputPath = "";
 	fs::path outputPath = "";
-	Mode mode = Mode::AUTO;
-	Logger::Level logLevel = Logger::Level::INFO;
-	size_t forcedSampleRate = 0; 
-	int deltaTableIndex = -1;
+	optional<Mode> mode;
+	optional<Logger::Level> logLevel;
+	optional<size_t> forcedSampleRate;
+	optional<int> deltaTableIndex;
+	optional<float> k;
 
 	static constexpr char programUsageString[] =
 		"DPCM-HQ Encoder and Decoder v.1.0\n"
@@ -97,7 +99,7 @@ struct Arguments {
 		"	Same command, but displays most of default encode options (optional):\n"
 		"		dpcm-hq-conv --mode auto --table best --log info mysample.wav mysample.dpcmq\n"
 		"\n"
-		"	Decode mysample.dpcmq to mysample.wav (if input is .dpcmq, output is .wav by default):\n"
+		"	Decode mysample.dpcmq to mysample.dpcmq.wav (if input is .dpcmq, output is .dpcmq.wav by default):\n"
 		"		dpcm-hq-conv mysample.dpcmq\n"
 		"\n"
 		"	Decode mysample.dpcm (classic DPCM) to mysample-decoded.wav:\n"
@@ -123,11 +125,11 @@ struct Arguments {
 		"\n"
 		"	-l|--log [LOG_LEVEL]\n"
 		"		Sets the logging level, useful for debugging or silencing the output.\n"
-		"		Possible values: d|debug, i|info, w|warn, e|error. Default is i|info.\n"
+		"		Possible values: d|debug, i|info, w|warn, e|error, q|quiet. Default is i|info.\n"
 		"\n";
 
 	static Arguments fromCliArgs(int argc, char* argv[]) {
-		enum class ParserState { OPTION_NAME_OR_PATH, OPTION_MODE, OPTION_LOG_LEVEL, OPTION_DELTA_TABLE_INDEX, OPTION_SAMPLE_RATE };
+		enum class ParserState { OPTION_NAME_OR_PATH, OPTION_MODE, OPTION_LOG_LEVEL, OPTION_DELTA_TABLE_INDEX, OPTION_SAMPLE_RATE, OPTION_K };
 		Arguments arguments;
 
 		ParserState state = ParserState::OPTION_NAME_OR_PATH;
@@ -142,6 +144,7 @@ struct Arguments {
 					else if (*argStart == 't') state = ParserState::OPTION_DELTA_TABLE_INDEX;
 					else if (*argStart == 'l') state = ParserState::OPTION_LOG_LEVEL;
 					else if (*argStart == 'r') state = ParserState::OPTION_SAMPLE_RATE;
+					else if (*argStart == 'k') state = ParserState::OPTION_K; // `-k|--k` option is undocumented
 					else throw runtime_error(format("Unknown option: {}", argv[i]));
 				}
 
@@ -154,7 +157,7 @@ struct Arguments {
 
 			case ParserState::OPTION_MODE:
 				/* -m|--mode option value */
-				if (argv[i][0] == 'a') arguments.mode = Arguments::Mode::AUTO;
+				if (argv[i][0] == 'a') arguments.mode = nullopt;
 				else if (argv[i][0] == 'e') arguments.mode = Arguments::Mode::ENCODE_TO_DPCM;
 				else if (argv[i][0] == 'd') arguments.mode = Arguments::Mode::DECODE_TO_WAV;
 				else throw runtime_error(format("Unknown value for -m|--mode: {} (expected: a|auto, e|encode, d|decode)", argv[i]));
@@ -167,13 +170,14 @@ struct Arguments {
 				else if (argv[i][0] == 'i') arguments.logLevel = Logger::Level::INFO;
 				else if (argv[i][0] == 'w') arguments.logLevel = Logger::Level::WARN;
 				else if (argv[i][0] == 'e') arguments.logLevel = Logger::Level::ERROR;
-				else throw runtime_error(format("Unknown value for -l|--log: {} (expected: d|debug, i|info, w|warn, e|error)", argv[i]));
+				else if (argv[i][0] == 'q') arguments.logLevel = Logger::Level::QUIET;
+				else throw runtime_error(format("Unknown value for -l|--log: {} (expected: d|debug, i|info, w|warn, e|error, q|quiet)", argv[i]));
 		        state = ParserState::OPTION_NAME_OR_PATH;
 				break;
 
 	        case ParserState::OPTION_DELTA_TABLE_INDEX:
 	        	/* -t|--table option value */
-				if (argv[i][0] == 'b') arguments.deltaTableIndex = -1;
+				if (argv[i][0] == 'b') arguments.deltaTableIndex = nullopt;
 				else if (argv[i][0] == '0') arguments.deltaTableIndex = 0;
 				else if (argv[i][0] == '1') arguments.deltaTableIndex = 1;
 				else if (argv[i][0] == '2') arguments.deltaTableIndex = 2;
@@ -190,16 +194,19 @@ struct Arguments {
 				}
 		        state = ParserState::OPTION_NAME_OR_PATH;
 				break;
+
+			case ParserState::OPTION_K:
+				try {
+					arguments.k = stof(argv[i]);
+				}
+				catch (...) {
+					throw runtime_error(format("Failed to parse value for -k|--k: {} (expected a float, e.g. 0.5)", argv[i]));
+				}
+				break;
 	        }
 	    }
+	    if (state != ParserState::OPTION_NAME_OR_PATH) throw runtime_error(format("Value expected after option: {}", argv[argc-1]));
 	    return arguments;
-	}
-
-	string dumpDebugInfo() const {
-		return format(
-			"{{ .inputPath = '{}', .outputPath = '{}', .deltaTableIndex = {}, .rate = {}, .mode = '{}', .log = '{}' }}",
-			inputPath.string(), outputPath.string(), deltaTableIndex, forcedSampleRate, ModeToString[static_cast<int>(mode)], Logger::LevelToString[static_cast<int>(logLevel)]
-		);
 	}
 };
 
@@ -235,6 +242,8 @@ struct EncodedStream {
 	void writeToFile(const string& filePath) const {
 		ofstream file(filePath, ios::binary);
 		if (!file.good()) throw runtime_error("Failed to open output file");
+		file.exceptions(ifstream::failbit | ifstream::badbit);
+
 		const auto streamLength = data.size();
 		const char header[9] = {
 			/* DPCM-HQ V1 magic string */
@@ -256,6 +265,7 @@ struct EncodedStream {
 	static EncodedStream readFromFile(const string& filePath) {
 		ifstream file(filePath, ios::binary);
 		if (!file.good()) throw runtime_error("Failed to open input file");
+
 		uint8_t maybeHeader[9];
 		file.read(reinterpret_cast<char*>(maybeHeader), 9);
 
@@ -264,7 +274,7 @@ struct EncodedStream {
 		size_t streamLength = 0;
 
 		/* If file is a DPCM-HQ file, fill-in the header */
-		if (maybeHeader[0] == 'D' && maybeHeader[1] == 'Q') {
+		if (file.good() && maybeHeader[0] == 'D' && maybeHeader[1] == 'Q') {
 			Logger::info("Detected DPCM-HQ header");
 			sampleRate = (maybeHeader[6] << 8) | maybeHeader[7];
 			streamLength = (maybeHeader[3] << 16) | (maybeHeader[4] << 8) | maybeHeader[5];
@@ -272,11 +282,13 @@ struct EncodedStream {
 		}
 		/* Otherwise, assume classic DPCM */
 		else {
+			file.clear();
 			file.seekg(0, ios::end);
 			streamLength = file.tellg();
 			file.seekg(0, ios::beg);
 		}
 
+		file.exceptions(ifstream::failbit | ifstream::badbit);
 		vector<uint8_t> data(streamLength);
 		file.read(reinterpret_cast<char*>(data.data()), streamLength);
 
@@ -344,6 +356,7 @@ struct DecodedStream {
 	void writeToFile(const string& filePath) const {
 		ofstream file(filePath, ios::binary);
 		if (!file.good()) throw runtime_error("Failed to open output file");
+		file.exceptions(ifstream::failbit | ifstream::badbit);
 		RIFFHeader header {
 			.fileTypeBlockId = {'R','I','F','F'},
 			.fileSize = static_cast<uint32_t>(sizeof(RIFFHeader) + sizeof(RIFFFmtChunk) + sizeof(RIFFDataChunk) + data.size() - 8),
@@ -380,12 +393,13 @@ struct DecodedStream {
 		file.read(reinterpret_cast<char*>(&maybeHeader), sizeof(maybeHeader));
 
 		/* If file is a WAVE file, parse the header */
-		if (strncmp(maybeHeader.fileTypeBlockId, "RIFF", 4) == 0) {
+		if (file.good() && strncmp(maybeHeader.fileTypeBlockId, "RIFF", 4) == 0) {
 			Logger::info("Detected WAVE header");
 			Logger::debug(format("RIFFHeader = {}", maybeHeader.dumpDebugInfo()));
 			if (strncmp(maybeHeader.fileFormatId, "WAVE", 4) != 0) throw runtime_error("Invalid WAVE header");
 
 			RIFFFmtChunk fmtChunk;
+			file.exceptions(ifstream::failbit | ifstream::badbit);
 			file.read(reinterpret_cast<char*>(&fmtChunk), sizeof(fmtChunk));
 			Logger::debug(format("RIFFFmtChunk = {}", fmtChunk.dumpDebugInfo()));
 			if (strncmp(fmtChunk.chunkId, "fmt ", 4) != 0) throw runtime_error("Invalid WAVE: Missing 'fmt' chunk");
@@ -411,6 +425,8 @@ struct DecodedStream {
 		}
 		/* Otherwise, assume raw stream */
 		else {
+			file.clear();
+			file.exceptions(ifstream::failbit | ifstream::badbit);
 			file.seekg(0, ios::end);
 			streamLength = file.tellg();
 			file.seekg(0, ios::beg);			
@@ -452,6 +468,7 @@ namespace Encoder {
 		array<array<uint16_t,16>, 3> deltaClickFactors{};
 	    for (size_t i = 0; i < deltaTables.size(); ++i) {
 	        for (size_t j = 0; j < deltaTables[i].size(); ++j) {
+	        	// FIXME: Turn the threshold of 0x20 into a parameter
 	        	const int16_t threshold = (deltaTables[i][j] < 0 ? -deltaTables[i][j] : deltaTables[i][j]) - 0x20;
 	            deltaClickFactors[i][j] = threshold > 0 ? threshold * threshold : 0;
 	        }
@@ -529,15 +546,14 @@ int main(int argc, char* argv[]) {
 		try {
 			auto arguments = Arguments::fromCliArgs(argc-1, argv+1);
 
-			Logger::logLevel = arguments.logLevel;
-			Logger::info("DPCM-HQ Encoder and Decoder v.1.0\n(c) 2026, Vladikcomper\n");
+			Logger::logLevel = arguments.logLevel.value_or(Logger::Level::INFO);
 
 			if (arguments.inputPath.empty()) {
 				throw runtime_error("Missing input file path");
 			}
 
 			/* Auto-detect mode (encode or decode) if not specified */
-			if (arguments.mode == Arguments::Mode::AUTO) {
+			if (!arguments.mode.has_value()) {
 				const auto extension = arguments.inputPath.extension().string();
 				if (extension == ".dpcm" || extension == ".dpcmq") arguments.mode = Arguments::Mode::DECODE_TO_WAV;
 				else arguments.mode = Arguments::Mode::ENCODE_TO_DPCM;
@@ -546,14 +562,13 @@ int main(int argc, char* argv[]) {
 			/* Auto-fill output file extension if empty */
 			if (arguments.outputPath.empty()) {
 				if (arguments.mode == Arguments::Mode::DECODE_TO_WAV) {
-					arguments.outputPath = fs::path(arguments.inputPath).replace_extension(".wav");
+					arguments.outputPath = fs::path(arguments.inputPath).concat(".wav");
 				}
 				else {
 					arguments.outputPath = fs::path(arguments.inputPath).replace_extension(".dpcmq");
 				}
 			}
 
-			Logger::debug(format("arguments = {}", arguments.dumpDebugInfo()));
 			return arguments;
 		}
 		catch (const runtime_error& err) {
@@ -568,36 +583,44 @@ int main(int argc, char* argv[]) {
 
 	/* Do the thing */
 	try {
-		switch (arguments.mode) {
+		Logger::info("DPCM-HQ Encoder and Decoder v.1.0\n(c) 2026, Vladikcomper\n");
+
+		switch (arguments.mode.value()) {
 			case Arguments::Mode::ENCODE_TO_DPCM: {
 				Logger::info("Initiating encoding from WAV/PCM to DPCM-HQ...");
 
 				Logger::info(format("Reading input file: {}...", arguments.inputPath.string()));
 				auto decodedStream = DecodedStream::readFromFile(arguments.inputPath.string());
-				Logger::debug("decodedStream = "s + decodedStream.dumpDebugInfo());
+				Logger::debug(format("decodedStream = {}", decodedStream.dumpDebugInfo()));
 
 				if (decodedStream.data.size() % 2 != 0) {
 					Logger::info("Padding decoded stream to even number of samples");
 					decodedStream.data.push_back(0x80);
 				}
-				if (arguments.forcedSampleRate) decodedStream.sampleRate = arguments.forcedSampleRate;
-				if (!decodedStream.sampleRate) {
+				if (arguments.forcedSampleRate.has_value()) decodedStream.sampleRate = arguments.forcedSampleRate.value();
+				else if (!decodedStream.sampleRate) {
 					Logger::warn("Sample rate of input file is not specified, defaulting to 16000 Hz (use --rate to override)");
 					decodedStream.sampleRate = 16000;
 				}
 
-				Logger::info("Initiating DPCM-HQ encoding...");
+				Logger::info("Invoking encoder...");
 				Encoder::EncodingResult encodingResult;
-				const auto encodeTask = [](const vector<uint8_t>& samples, size_t deltaTableIndex) -> Encoder::EncodingResult {
-					return Encoder::encode(samples, deltaTableIndex);
+				const auto k = arguments.k.value_or(0.5f);
+				const auto encodeTask = [](const vector<uint8_t>& samples, size_t deltaTableIndex, float k) -> Encoder::EncodingResult {
+					return Encoder::encode(samples, deltaTableIndex, k);
 				};
 
-				/* If delta table is not specified, run encoders in parallel and get the lowest RMSE */
-				if (arguments.deltaTableIndex == -1) {
+				/* If user manually specified delta table, use it */
+				if (arguments.deltaTableIndex.has_value()) {
+					encodingResult = encodeTask(decodedStream.data, arguments.deltaTableIndex.value(), k);
+				}
+
+				/* Otherwise, run encoder against all tables in parallel and guess the best one */
+				else {
 					array<future<Encoder::EncodingResult>, 3> tasks = {
-						async(launch::async, encodeTask, decodedStream.data, 0),
-						async(launch::async, encodeTask, decodedStream.data, 1),
-						async(launch::async, encodeTask, decodedStream.data, 2),
+						async(launch::async, encodeTask, decodedStream.data, 0, k),
+						async(launch::async, encodeTask, decodedStream.data, 1, k),
+						async(launch::async, encodeTask, decodedStream.data, 2, k),
 					};
 				    const std::array<Encoder::EncodingResult, 3> results = {
 				    	tasks[0].get(), tasks[1].get(), tasks[2].get()
@@ -609,17 +632,14 @@ int main(int argc, char* argv[]) {
 
 					/* Select the preferable encoding result (biased) */
 					encodingResult = results[0];
-					if (results[1].rmse.get() - 1.2f <= encodingResult.rmse.get()) { // table 1 has RMSE bias of -1.2
-						encodingResult = results[1];
+					if (encodingResult.rmse.get() > 0.2f) {
+						if (results[1].rmse.get() - 1.2f <= encodingResult.rmse.get()) { // table 1 has RMSE bias of -1.2
+							encodingResult = results[1];
+						}
+						if (results[2].rmse.get() - 0.6f <= encodingResult.rmse.get()) { // table 2 has RMSE bias of -0.6
+							encodingResult = results[2];
+						}
 					}
-					if (results[2].rmse.get() - 0.6f <= encodingResult.rmse.get()) { // table 2 has RMSE bias of -0.6
-						encodingResult = results[2];
-					}
-				}
-
-				/* Otherwise, just use the specified table for encoding */
-				else {
-					encodingResult = encodeTask(decodedStream.data, arguments.deltaTableIndex);
 				}
 
 				Logger::debug(format("encodingResult = {}", encodingResult.dumpDebugInfo()));
@@ -637,27 +657,26 @@ int main(int argc, char* argv[]) {
 			}
 
 			case Arguments::Mode::DECODE_TO_WAV: {
-				Logger::info("Initiating decoding DPCM or DPCM-HQ to WAV...");
+				Logger::info("Initiating decoding of DPCM or DPCM-HQ to WAV...");
 
-				if (arguments.deltaTableIndex != -1) {
+				if (arguments.deltaTableIndex.has_value()) {
 					Logger::warn("-t|--table option has no effect in decode mode");
 				}
-
-				if (fs::exists(arguments.outputPath)) {
-					throw runtime_error(format("Output PCM file already exists, overwriting may result in loss of data: {}", arguments.outputPath.string()));
+				if (arguments.k.has_value()) {
+					Logger::warn("-k|--k option has no effect in decode mode");
 				}
 
 				Logger::info(format("Reading input file: {}...", arguments.inputPath.string()));
 				auto encodedStream = EncodedStream::readFromFile(arguments.inputPath.string());
 				Logger::debug(format("encodedStream = {}", encodedStream.dumpDebugInfo()));
 
-				if (arguments.forcedSampleRate) encodedStream.sampleRate = arguments.forcedSampleRate;
-				if (!encodedStream.sampleRate) {
+				if (arguments.forcedSampleRate.has_value()) encodedStream.sampleRate = arguments.forcedSampleRate.value();
+				else if (!encodedStream.sampleRate) {
 					Logger::warn("Sample rate of input file is not specified, defaulting to 16000 Hz (use --rate to override)");
 					encodedStream.sampleRate = 16000;
 				}
 
-				Logger::info("Initiating DPCM-HQ decoding...");
+				Logger::info("Invoking decoder...");
 				const auto decodedStream = DecodedStream {
 					.sampleRate = encodedStream.sampleRate,
 					.data = Decoder::decode(encodedStream.data, encodedStream.deltaTableIndex)
