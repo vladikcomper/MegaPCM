@@ -1,43 +1,57 @@
 
 # Mega PCM 2
 
-**Mega PCM 2** is a DAC sound driver for Sega Mega-Drive / Genesis. It offers the highest quality playback possible on the hardware, high sample rate (up to 32 kHz), pitch/volume effects and supports several sample formats (WAVE, raw PCM, compressed DPCM).
+**Mega PCM 2** is a DAC sound driver for Sega Mega-Drive / Genesis. It offers the highest quality playback possible on the hardware, high sample rate (up to 32 kHz), pitch/volume effects and supports several sample formats (WAVE, raw PCM, DPCM-HQ and DPCM).
 
 Unlike the majority of DAC drivers on the Mega-Drive with the infamous "scratchy" playback many games are known for, Mega PCM 2 outputs cleanest sounding samples on the hardware thanks to its buffering / DMA protection system.
-
-Mega PCM runs primarily on the Z80 CPU and is DAC only. To take full advantage of Sega's sound chip and also use FM and PSG channels, you need to run it alongside the "main" M68K sound driver. Generally, Mega PCM can be integrated with any M68K sound driver. Currently, only SMPS integration is officially provided.
 
 _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www.youtube.com/watch?v=4RZbvuL2m1c) recorded on real hardware._
 
 ## Features
 
-- High quality crystal-clear PCM playback with DMA protection;
+- **High quality crystal-clear playback:**
+    - Battle-tested on real hardware and emulators alike;
+    - DMA protection / buffering system allows for ideal non-interrupted playback;
     - Games usually DMA 6-8 Kb of data at most; Mega PCM 2 can survive up to 24 Kb (!) of DMA transfers;
-- Volume control and smooth pitch control;
-	- 16 volume levels;
-	- 256 pitch levels;
-- Complex inside, user-friendly outside:
-	- Zero-config DMA protection (no extra flags to set and unset, simply don't stop Z80 on DMA's);
-	- Native WAVE file support, native PCM format (no custom converters required!);
-	- Auto-detects issues with sample formats or configuration on startup;
-- Several supported sample formats:
-	- WAVE files in 8-bit unsigned PCM format (sample rate can be detected from header);
-	- Raw 8-bit unsigned PCM (headless);
-	- Raw 4-bit DPCM (headless);
-- Playback control, priority settings and SFX support:
-	- Pause, Stop and Loop supported for all sample types;
-	- Differentiates between "normal" (usually BGM drums) and SFX samples;
-	- SFX samples aren't interrupted by BGM drums, they have separate volume and pan settings;
-- Tested to the extreme:
-	- Z80 portion of Mega PCM is unique in that it's extensively auto-tested in a virtual machine;
-	- A special Z80 emulator was created to emulate Mega PCM and carefully test its core and various functions;
-	- Tests also verify that all Mega PCM playback loops and branches are cycle-accurate;
-- High playback rates:
-	- 8-bit PCM playback up to 25.1 kHz with pitch and volume effects;
-	- 4-bit DPCM playback up to 20.5 kHz with pitch and volume effects;
-	- **Turbo mode!** 8-bit PCM playback at 32 kHz, 4-bit DPCM playback at 25.8 kHz (without pitch and volume effects);
 
-## Installation and Documentation
+- **Supports several compressed and uncompressed formats:**
+    - **.WAV files** in 8-bit unsigned PCM format;
+    - **Raw PCM** - 8-bit unsigned PCM format (headless);
+    - **DPCM-HQ (compressed)** - new Mega PCM exclusive format, higher quality version of DPCM;
+    - **DPCM (compressed)** - classic 4-bit DPCM format (headless) found in some Sega titles.
+
+- **High playback rates:**
+    - **WAVE/PCM:** up to **25.1 kH** (supporting effects) or **32 kHz** (turbo mode);
+    - **DPCM-HQ/DPCM:** up to **20.5 kHz** (supporting effects) or **25.8 kHz** (turbo mode);
+
+- **Support for volume and pitch effects:**
+    - 16 volume levels;
+    - 256 pitch levels;
+
+- **Playback control, priority levels and SFX support:**
+    - Pause, Stop and Loop supported for all sample types;
+    - Differentiates between "normal" (usually BGM drums) and SFX samples;
+    - 8 total priority levels: 4 for "normal" and 4 for SFX samples (latter always have higher priority);
+    - Separate volume and panning settings for "normal" and SFX samples;
+
+- **Complex inside, user-friendly outside:**
+    - Zero-config DMA protection (no extra flags to set and unset, simply don't stop Z80 on DMA's);
+    - Native .WAV file support, native PCM format (no custom converters required!);
+    - Auto-detects issues with sample formats or configuration on startup;
+
+- **Battle-tested to the extremes:**
+    - Z80 portion of Mega PCM is unique in that it's extensively auto-tested in a virtual machine;
+    - A special Z80 emulator was created to emulate Mega PCM and carefully test its core and various functions;
+    - Tests also verify that all Mega PCM playback loops and branches are cycle-accurate;
+
+## Getting Started
+
+> ![NOTE]
+>
+> Mega PCM is a DAC-only sound driver! It runs primarily on Z80 CPU and was designed to work alongside the "main" M68K sound driver to drive the remaining FM and PSG channels.
+> 
+> Generally speaking, Mega PCM can be integrated with any M68K sound driver. Currently, only SMPS 68K integration is officially provided.
+
 
 ### Installation guides
 
@@ -104,17 +118,21 @@ Almost the same as Linux, however you need to make sure to use GNU version of Ma
 
 ## Licensing
 
-**Mega PCM 2's main source code and its dependencies (`src/` and `lib-68k/`directories) are fully free and open source and are provided under MIT license. See `LICENSE` file.**
+**Mega PCM 2's main source code and its dependencies (`src/` and `lib-68k/` directories) are fully free and open source and are provided under MIT license. See `LICENSE` file.**
+
+DPCM HQ Converter for Mega PCM 2 (`tools/dpcm-hq-conv`) is provided under MIT license.
 
 Source code for Mega PCM 2 implementation examples (`examples/` directory) is also MIT-licensed, however, some included assets and disassembled "SMPS" sound driver may be proprietary and provided for educational purposes only.
 
 Also included in this repo, but not distributed with Mega PCM 2 releases:
 
-- Mega PCM 2's testing suite (see `test/` directory):
+- Mega PCM 2 Vizualizer tool (`tools/megapacm-viz` directory) - MIT-licensed;
 
-    - All tests source code and "MegaPCM-Emu" library retain the same MIT license;
+- Mega PCM 2's testing suite (`test/` directory) - MIT-licensed;
 
-    - "Z80VM" library (`tests/z80vm`) is a custom solution based on a modified z80emu v.1.3.0 (c) by Lin Ke-Fong; the original software comes without a set license.
+- Mega PCM Emu Library (`libs/megapcm-emu`) - MIT-licensed;
+
+- Z80VM Library (`tests/z80vm`) - based on extended and modified z80emu v.1.3.0 (c) by Lin Ke-Fong; comes with permissive free license.
 
 - For developer's convenience this repo also includes a few binary tools (see `toolchain/` directory):
 
