@@ -1,15 +1,13 @@
 
 CC := cc
-CFLAGS := -I./megapcm-emu -I./z80vm -I../build/z80 -O2 -std=c99 -Wall -pedantic-errors
-LDFLAGS := -L./megapcm-emu -L./z80vm -lz80vm -lmegapcm-emu
-
-BUILD_DIR ?= ../build/test
+CFLAGS := -I../lib/megapcm-emu -I../lib/z80vm -I../build/z80 -O2 -std=c99 -Wall -pedantic-errors
+LDFLAGS := -L../lib/megapcm-emu -L../lib/z80vm -lz80vm -lmegapcm-emu
 
 MEGAPCM_SYMBOLS_H := ../build/z80/megapcm.symbols.h
-LIBZ80VM_A := ./z80vm/libz80vm.a
+LIBZ80VM_A := ../lib/z80vm/libz80vm.a
 LIBZ80VM_FILES := $(wildcard z80vm/*.c) $(wildcard z80vm/*.h)
-LIBMEGAPCM_EMU_A := ./megapcm-emu/libmegapcm-emu.a
-LIBMEGAPCM_EMU_FILES := $(wildcard megapcm-emu/*.c) $(wildcard megapcm-emu/*.h) z80vm/z80vm.h $(MEGAPCM_SYMBOLS_H)
+LIBMEGAPCM_EMU_A := ../lib/megapcm-emu/libmegapcm-emu.a
+LIBMEGAPCM_EMU_FILES := $(wildcard ../lib/megapcm-emu/*.c) $(wildcard ../lib/megapcm-emu/*.h) ../lib/z80vm/z80vm.h $(MEGAPCM_SYMBOLS_H)
 
 SRC_FILES := $(wildcard *.c)
 EXE_FILES := $(SRC_FILES:%.c=%)
@@ -35,10 +33,10 @@ $(EXE_FILES):	$(SRC_FILES)
 $(SRC_FILES):	$(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A) $(MEGAPCM_SYMBOLS_H)
 
 $(LIBZ80VM_A):	$(LIBZ80VM_FILES)
-	$(MAKE) -C z80vm
+	$(MAKE) -C ../lib/z80vm
 
 $(LIBMEGAPCM_EMU_A):	$(LIBMEGAPCM_EMU_FILES)
-	$(MAKE) -C megapcm-emu
+	$(MAKE) -C ../lib/megapcm-emu
 
 %: %.c $(LIBZ80VM_A) $(LIBMEGAPCM_EMU_A)
 	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@

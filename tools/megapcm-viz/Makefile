@@ -1,8 +1,7 @@
 
 CC := cc
-CFLAGS := -I../../build/z80 -I../z80vm -I../megapcm-emu -Wall -pedantic -Og -g -fomit-frame-pointer
-# FIXME: -ldl is Linux-only
-LDFLAGS := -L../megapcm-emu -L../z80vm -lz80vm -lmegapcm-emu -lSDL3 -g
+CFLAGS := -I../../build/z80 -I../../lib/z80vm -I../../lib/megapcm-emu -Wall -pedantic -Og -g -fomit-frame-pointer
+LDFLAGS := -L../../lib/megapcm-emu -L../../lib/z80vm -lz80vm -lmegapcm-emu -lSDL3 -g
 
 OBJ_FILES := megapcm-viz.o
 
@@ -18,10 +17,10 @@ run:	megapcm-viz
 	$(CC) $(CFLAGS) -c $< -o $@
 
 megapcm-emu:
-	$(MAKE) -C ../megapcm-emu
+	$(MAKE) -C ../../lib/megapcm-emu
 
 z80vm:
-	$(MAKE) -C ../z80vm
+	$(MAKE) -C ../../lib/z80vm
 
 clean:
 	rm megapcm-viz $(OBJ_FILES)

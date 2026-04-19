@@ -1,4 +1,6 @@
 *
+!megapcm-emu/
+!z80vm/
 !.gitignore
 !.clangd
 !Makefile
