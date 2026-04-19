@@ -38,16 +38,18 @@ MPCM_Debugger_LoadSampleTableException:
 
 ; ------------------------------------------------------------------------------
 @ErrorCodeToDescription:
-	;		Raw error code							  String pointer
-	dc.l	(MPCM_ST_TOO_MANY_SAMPLES<<24) 			| @Str_TooManySamples
-	dc.l	(MPCM_ST_UNKNOWN_SAMPLE_TYPE<<24)		| @Str_UnknownSampleType
-	dc.l	(MPCM_ST_PITCH_NOT_SET<<24)				| @Str_PitchNotSet
-	dc.l	(MPCM_ST_WAVE_INVALID_HEADER<<24)		| @Str_WaveInvalidHeader
-	dc.l	(MPCM_ST_WAVE_BAD_AUDIO_FORMAT<<24)		| @Str_WaveBadAudioFormat
-	dc.l	(MPCM_ST_WAVE_NOT_MONO<<24)				| @Str_WaveNotMono
-	dc.l	(MPCM_ST_WAVE_NOT_8BIT<<24)				| @Str_WaveNot8bit
-	dc.l	(MPCM_ST_WAVE_BAD_SAMPLE_RATE<<24)		| @Str_BadSampleRate
-	dc.l	(MPCM_ST_WAVE_MISSING_DATA_CHUNK<<24)	| @Str_MissingDataChunk
+	;		Raw error code								  String pointer
+	dc.l	(MPCM_ST_TOO_MANY_SAMPLES<<24) 				| @Str_TooManySamples
+	dc.l	(MPCM_ST_UNKNOWN_SAMPLE_TYPE<<24)			| @Str_UnknownSampleType
+	dc.l	(MPCM_ST_PITCH_NOT_SET<<24)					| @Str_PitchNotSet
+	dc.l	(MPCM_ST_WAVE_INVALID_HEADER<<24)			| @Str_WaveInvalidHeader
+	dc.l	(MPCM_ST_WAVE_BAD_AUDIO_FORMAT<<24)			| @Str_WaveBadAudioFormat
+	dc.l	(MPCM_ST_WAVE_NOT_MONO<<24)					| @Str_WaveNotMono
+	dc.l	(MPCM_ST_WAVE_NOT_8BIT<<24)					| @Str_WaveNot8bit
+	dc.l	(MPCM_ST_WAVE_BAD_SAMPLE_RATE<<24)			| @Str_WaveBadSampleRate
+	dc.l	(MPCM_ST_WAVE_MISSING_DATA_CHUNK<<24)		| @Str_WaveMissingDataChunk
+	dc.l	(MPCM_ST_DPCM_HQ_UNSUPPORTED_VERSION<<24)	| @Str_DpcmHqUnsupportedVersion
+	dc.l	(MPCM_ST_DPCM_HQ_BAD_SAMPLE_RATE<<24)		| @Str_DpcmHqBadSampleRate
 	dc.b	$FF, 0		; end marker
 
 ; ------------------------------------------------------------------------------
@@ -65,10 +67,14 @@ MPCM_Debugger_LoadSampleTableException:
 	dc.b	"WAVE error: Audio must be mono", 0
 @Str_WaveNot8bit:
 	dc.b	"WAVE error: Audio must be 8-bit unsigned PCM", 0
-@Str_BadSampleRate:
+@Str_WaveBadSampleRate:
 	dc.b	"WAVE error: Unsupported sample rate. Use <=\#TYPE_PCM_MAX_RATE\ Hz for TYPE_PCM or \#TYPE_PCM_TURBO_MAX_RATE\ Hz for TYPE_PCM_TURBO.", 0
-@Str_MissingDataChunk:
+@Str_WaveMissingDataChunk:
 	dc.b	"WAVE error: Failed to locate 'data' chunk", 0
+@Str_DpcmHqUnsupportedVersion:
+	dc.b	"DPCM-HQ error: Unsupported version specified in header", 0
+@Str_DpcmHqBadSampleRate:
+	dc.b	"DPCM-HQ error: Unsupported sample rate. Use <=\#TYPE_DPCM_MAX_RATE\ Hz for TYPE_DPCM or \#TYPE_DPCM_TURBO_MAX_RATE\ Hz for TYPE_DPCM_TURBO.", 0
 @Str_UnknownError:
 	dc.b	"Uknown error code", 0
 	even

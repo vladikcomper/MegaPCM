@@ -7,63 +7,65 @@
 ; Macro to generate sample record in a sample table
 ; ------------------------------------------------------------------------------
 ; ARGUMENTS:
-;	type - Sample type (TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO or TYPE_NONE)
+;	type - Sample type (e.g. TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_NONE)
 ;	samplePtr - Sample pointer/name (assigned via `incdac` macro)
-;	sampleRateHz? - (Optional) Playback rate in Hz, auto-detected for .WAV
+;	sampleRateHz? - (Optional) Sample rate in Hz, auto-detected for .WAV, .DPCMQ
 ;	flags? - (Optional) Additional flags (e.g. FLAGS_SFX or FLAGS_LOOP)
+;	priority? - (Optional) Sample priority (PRIO_NORMAL is the default)
 ; ------------------------------------------------------------------------------
 
-dcSample: macro	type, samplePtr, sampleRateHz, flags
-	; TODO: Combine flags and type into a single byte
-	if narg>4
-		inform 2, "Too many arguments. USAGE: dcSample type, samplePtr, sampleRateHz, flags"
+dcSample: macro	type, samplePtr, sampleRateHz, flags, priority
+	if (narg>5)|((narg=1)&(\type<>TYPE_NONE))
+		inform 2, "Incorrect number of arguments. USAGE: dcSample type, samplePtr, sampleRateHz?, flags?, priority?"
 	endif
 
-	dc.b	\type					; $00	- type
+	if narg<5	; if "priority" is not set, default to PRIO_NORMAL
+		@desc\@: equ \flags+\type+PRIO_NORMAL
+	else
+		@desc\@: equ \flags+\type+((\priority)&3)
+	endif
 
 	if \type=TYPE_PCM
 		if \sampleRateHz+0>TYPE_PCM_MAX_RATE
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_PCM only supports sample rates <= \#TYPE_PCM_MAX_RATE Hz"
 		endif
-		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
-		dc.b	(\sampleRateHz+0)*256/TYPE_PCM_BASE_RATE; $02	- pitch (optional for .WAV files)
-		dc.b	0										; $03	- <RESERVED>
-		dc.l	\samplePtr								; $04	- start offset
-		dc.l	\samplePtr\_End							; $08	- end offset
+		dc.b	@desc\@									; $00	- type, flags, priority
+		dc.b	(\sampleRateHz+0)*256/TYPE_PCM_BASE_RATE; $01	- pitch (based on sample rate)
+		dc.l	\samplePtr								; $02	- start offset
+		dc.l	\samplePtr\_End							; $06	- end offset
 
 	elseif \type=TYPE_PCM_TURBO
 		if (\sampleRateHz+0<>TYPE_PCM_TURBO_MAX_RATE)&(\sampleRateHz+0<>0)
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_PCM_TURBO only supports sample rate of \#TYPE_PCM_TURBO_MAX_RATE Hz"
 		endif
-		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
-		dc.b	$FF										; $02	- pitch (optional for .WAV files)
-		dc.b	0										; $03	- <RESERVED>
-		dc.l	\samplePtr								; $04	- start offset
-		dc.l	\samplePtr\_End							; $08	- end offset
+		dc.b	@desc\@									; $00	- type, flags, priority
+		dc.b	$FF										; $01	- pitch (ignored in Turbo mode)
+		dc.l	\samplePtr								; $02	- start offset
+		dc.l	\samplePtr\_End							; $06	- end offset
 
 	elseif \type=TYPE_DPCM
-		if \sampleRateHz>TYPE_DPCM_MAX_RATE
+		if \sampleRateHz+0>TYPE_DPCM_MAX_RATE
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_DPCM only supports sample rates <= \#TYPE_DPCM_MAX_RATE Hz"
 		endif
-		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
-		dc.b	(\sampleRateHz)*256/TYPE_DPCM_BASE_RATE	; $02	- pitch
-		dc.b	0										; $03	- <RESERVED>
-		dc.l	\samplePtr								; $04	- start offset
-		dc.l	\samplePtr\_End							; $08	- end offset
+		dc.b	@desc\@									; $00	- type, flags, priority
+		dc.b	(\sampleRateHz+0)*256/TYPE_DPCM_BASE_RATE; $01	- pitch (based on sample rate)
+		dc.l	\samplePtr								; $02	- start offset
+		dc.l	\samplePtr\_End							; $06	- end offset
 
 	elseif \type=TYPE_DPCM_TURBO
 		if (\sampleRateHz+0<>TYPE_DPCM_TURBO_MAX_RATE)&(\sampleRateHz+0<>0)
 			inform 2, "Invalid sample rate: \sampleRateHz\. TYPE_DPCM_TURBO only supports sample rate of \#TYPE_DPCM_TURBO_MAX_RATE Hz"
 		endif
-		dc.b	\flags+FLAGS_SAMPLE						; $01	- flags (optional)
-		dc.b	$FF										; $02	- pitch (optional for .WAV files)
-		dc.b	0										; $03	- <RESERVED>
-		dc.l	\samplePtr								; $04	- start offset
-		dc.l	\samplePtr\_End							; $08	- end offset
+		dc.b	@desc\@									; $00	- type, flags, priority
+		dc.b	$FF										; $01	- pitch (ignored in Turbo mode)
+		dc.l	\samplePtr								; $02	- start offset
+		dc.l	\samplePtr\_End							; $06	- end offset
 
 	elseif \type=TYPE_NONE
-		dc.b	0, 0, 0
-		dc.l	0, 0
+		dc.b	@desc\@									; $00	- type, flags (ignored), priority
+		dc.b	0										; $01	- pitch (ignored for empty samples)
+		dc.l	0										; $02	- start offset (ignored for empty samples)
+		dc.l	0										; $06	- end offset (ignored for empty samples)
 
 	else
 		inform 2, "Unknown sample type. Please use one of: TYPE_PCM, TYPE_DPCM, TYPE_PCM_TURBO, TYPE_DPCM_TURBO, TYPE_NONE"

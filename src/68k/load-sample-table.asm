@@ -35,8 +35,8 @@ MegaPCM_LoadSampleTable:
 
 	@sample_cnt:		equr	d2	;		keeps track of number of samples
 	@sample_pitch:		equr	d3	;		sample pitch
-	@sample_flags:		equr	d4	;		sample flags
-	@sample_type:		equr	d5	;		sample type
+	@sample_desc:		equr	d4	;		sample desc field (flags, type, priority)
+	@sample_type:		equr	d5	;		sample type flags (from @sample_desc)
 	; ----------------------------------------------------------------------
 
 	; ----------------------------------------------------------------------
@@ -66,28 +66,24 @@ MegaPCM_LoadSampleTable:
 
 	@ProcessSampleLoop:
 		; Fetch sample record data ...
-		move.b	(@sample_tbl)+, @sample_type
-		beq.w	@WriteEmptyRecord			; if type is TYPE_NONE, fill everything with zeroes
-		bmi.w	@SampleTableDone			; if type is $FF, quit load loop
-		move.b	(@sample_tbl)+, @sample_flags
+		move.b	(@sample_tbl)+, @sample_desc
+		moveq	#$FFFFFF8E, @sample_type	; byte mask: %1000 TTT0, where T = type bits
+		and.b	@sample_desc, @sample_type
+		beq.w	@WriteEmptyRecord			; if type is TYPE_NONE, write empty slot
+		bmi.w	@SampleTableDone			; if negative (likely -1), quit load loop
 		move.b	(@sample_tbl)+, @sample_pitch
-		addq.w	#1, @sample_tbl				; skip a reserved byte
 		move.l	(@sample_tbl)+, @sample_start
 		move.l	(@sample_tbl)+, @sample_end
 
-		KDebug.WriteLine "Sample: type=%<.b @sample_type>, flags=%<.b @sample_flags>, pitch=%<.b @sample_pitch>, start=%<.l @sample_start sym>, end=%<.l @sample_end sym>"
+		KDebug.WriteLine "Sample: type=%<.b @sample_type>, desc=%<.b @sample_desc>, pitch=%<.b @sample_pitch>, start=%<.l @sample_start sym>, end=%<.l @sample_end sym>"
 
-		; Check if sample is DPCM
-		cmp.b	#TYPE_DPCM, @sample_type
-		beq.w	@Sample_DPCM_or_DPCM_HQ
-
-		; If not DPCM, make sure sample is PCM or PCM Turbo
+		; Check if sample is PCM or PCM Turbo
 		cmp.b	#TYPE_PCM, @sample_type
 		beq.s	@Sample_PCM_or_PCM_Turbo
 		cmp.b	#TYPE_PCM_TURBO, @sample_type
-		bne.w	@Err_UnknownSampleType
-	@Sample_PCM_or_PCM_Turbo:
+		bne.w	@ChkSample_DPCM_or_DPCM_HQ
 
+	@Sample_PCM_or_PCM_Turbo:
 		; For TYPE_PCM and TYPE_PCM_TURBO, detect RIFF header if present
 		move.l	(@sample_start), @var0
 		cmp.l	#'RIFF', @var0					; is this a RIFF container?
@@ -172,6 +168,12 @@ MegaPCM_LoadSampleTable:
 		bra		@WriteSampleData
 
 	; ----------------------------------------------------------------------
+	@ChkSample_DPCM_or_DPCM_HQ:
+		cmp.b	#TYPE_DPCM, @sample_type
+		beq.s	@Sample_DPCM_or_DPCM_HQ
+		cmp.b	#TYPE_DPCM_TURBO, @sample_type
+		bne.w	@Err_UnknownSampleType
+
 	@Sample_DPCM_or_DPCM_HQ:
 		; For DPCM samples, check if it's a DPCM-HQ file
 		cmp.w	#'DQ', (@sample_start)				; is this a DPCM-HQ file?
@@ -179,9 +181,9 @@ MegaPCM_LoadSampleTable:
 
 		KDebug.WriteLine "Detected DPCM-HQ header"
 
-		addq.w	#4, @sample_type					; alter DPCM type for Z80-side sample table (use DPCMHQLoop instead of DPCMLoop, or its "turbo" counterpart)
 		cmp.b	#'1', 2(@sample_start)				; is this DPCM-HQ version 1?
 		bne.w	@Err_DPCM_HQ_UnsupportedVersion		; we only support version 1, so fail otherwise
+		addq.w	#4, @sample_desc					; alter type bits for Z80-side (TYPE_DPCM->TYPE_DPCM_HQ, TYPE_DPCM_TURBO->TYPE_DPCM_TURBO_HQ)
 		move.l	2(@sample_start), @var1				; @var1 = $xxSS SSSS, where SS SSSS is stream length
 
 		; If pitch isn't set, auto-calucate based on DPCM-HQ sample rate ...
@@ -213,7 +215,7 @@ MegaPCM_LoadSampleTable:
 	@WriteSampleData:
 		tst.b	@sample_pitch
 		beq.w	@Err_PitchNotSet					; pitch can't be zero
-		or.b	@sample_type, @sample_flags			; combine type into flags field
+		or.b	#$80, @sample_desc
 
 		; Convert absolute start/end offsets to Z80 banks and window addresses ...
 		move.l	@sample_start, @var0
@@ -234,7 +236,7 @@ MegaPCM_LoadSampleTable:
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
 		MPCM_stopZ80 (@z80_busreq)
-		move.b	@sample_flags, (@z80_sample_tbl)+	; 00h	- sample flags
+		move.b	@sample_desc, (@z80_sample_tbl)+	; 00h	- sample desc field (flags, type, priority)
 		move.b	@sample_pitch, (@z80_sample_tbl)+	; 01h	- pitch
 		move.b	@var0, (@z80_sample_tbl)+			; 02h	- start bank
 		move.b	@var1, (@z80_sample_tbl)+			; 03h	- end bank
@@ -254,7 +256,7 @@ MegaPCM_LoadSampleTable:
 	moveq	#0, @error_code					; no errors to report
 
 @Quit:
-	lea		-$C(@sample_tbl), @sample_tbl	; seek the start of sample record (helps to investiage erros, if any)
+	lea		-10(@sample_tbl), @sample_tbl	; seek the start of sample record (helps to investiage erros, if any)
 	addq.w	#4, sp							; release stack variables
 	movem.l	(sp)+, d2-d5/a2-a4				; release additional registers
 	rts
@@ -265,13 +267,20 @@ MegaPCM_LoadSampleTable:
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
 		MPCM_stopZ80	(@z80_busreq)
-		rept 8
-			move.b	@sample_type, (@z80_sample_tbl)+
-		endr
+		move.b	#$80, (@z80_sample_tbl)+			; 00h	- sample desc field (flags, type, priority)
+		; Note that @sample_type = 0
+		move.b	@sample_type, (@z80_sample_tbl)+	; 01h	- pitch
+		move.b	@sample_type, (@z80_sample_tbl)+	; 02h	- start bank
+		move.b	@sample_type, (@z80_sample_tbl)+	; 03h	- end bank
+		move.b	@sample_type, (@z80_sample_tbl)+	; 04h	- start offset LOW
+		move.b	@sample_type, (@z80_sample_tbl)+	; 05h	- start offset HIGH
+		move.b	@sample_type, (@z80_sample_tbl)+	; 06h	- end offset LOW
+		move.b	@sample_type, (@z80_sample_tbl)+	; 07h	- end offset HIGH
+
 		MPCM_startZ80 (@z80_busreq)
 		move.w	(sp)+, sr							; restore interrupts
 
-		lea		11(@sample_tbl), @sample_tbl		; skip the remaining bytes
+		lea		9(@sample_tbl), @sample_tbl			; skip the remaining bytes
 		dbf		@sample_cnt, @ProcessSampleLoop
 
 	;bra.s	@Err_TooManySamples

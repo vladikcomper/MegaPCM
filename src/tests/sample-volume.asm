@@ -1,11 +1,11 @@
 
 ; ==============================================================================
 ; ------------------------------------------------------------------------------
-; Mega PCM 2.0
+; Mega PCM 2.1
 ;
 ; Sample volume test
 ; ------------------------------------------------------------------------------
-; (c) 2023-2024, Vladikcomper
+; (c) 2023-2026, Vladikcomper
 ; ------------------------------------------------------------------------------
 
 	include	'../lib-68k/mdshell.asm'						; MD Shell library
@@ -92,11 +92,11 @@ Test_SnareSeq:
 SampleTable:
 	;			type			pointer			Hz
 	dcSample	TYPE_PCM,		Snare,			24000							; $81
-	dcSample	TYPE_DPCM,		TestBGM,		20500, FLAGS_LOOP|FLAGS_SFX		; $82
+	dcSample	TYPE_DPCM,		TestBGM,		0,	 FLAGS_LOOP|FLAGS_SFX		; $82
 	dc.w	-1	; end marker
 
 ; ------------------------------------------------------------------------------
 
 	incdac	Snare, "../examples/s1-smps-integration/dac/snare.pcm"
-	incdac	TestBGM, "tests/test-bgm.dpcm"
+	incdac	TestBGM, "tests/test-bgm.dpcmq"
 	even

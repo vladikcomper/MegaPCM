@@ -1,12 +1,12 @@
 
 ; ==============================================================================
 ; ------------------------------------------------------------------------------
-; Mega PCM 2.0 - DAC Sound Driver
+; Mega PCM 2.1 - DAC Sound Driver
 ;
 ; Documentation, examples and source code are available at:
 ; - https://github.com/vladikcomper/MegaPCM/tree/2.x
 ;
-; (c) 2012-2024, Vladikcomper
+; (c) 2012-2026, Vladikcomper
 ; ------------------------------------------------------------------------------
 
 #include Constants.asm
@@ -60,7 +60,7 @@ MegaPCMLibraryBlob:
 ; ------------------------------------------------------------------------------
 ; MIT License
 ;
-; Copyright (c) 2012-2024 Vladikcomper
+; Copyright (c) 2012-2026 Vladikcomper
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal

@@ -1,11 +1,11 @@
 
 ; ==============================================================================
 ; ------------------------------------------------------------------------------
-; Mega PCM 2.0
+; Mega PCM 2.1
 ;
 ; `MegaPCM_LoadSampleTable` test suite
 ; ------------------------------------------------------------------------------
-; (c) 2023-2024, Vladikcomper
+; (c) 2023-2026, Vladikcomper
 ; ------------------------------------------------------------------------------
 
 	include	'../lib-68k/mdshell.asm'						; MD Shell library
@@ -20,13 +20,19 @@
 Main:
 	jsr		MegaPCM_LoadDriver
 
+	lea		@ST_SupportedTurboRate(pc), a0
+	jsr		MegaPCM_LoadSampleTable
+	tst.w   d0                      ; was sample table loaded successfully?
+	bne.s	@TestFailed				; if not, branch
+
 	lea		@ST_UnsupportedSampleRate(pc), a0
 	jsr		MegaPCM_LoadSampleTable
 	tst.w   d0                      ; was sample table loaded successfully?
-	beq.s   @SampleTableOk          ; if yes, branch
+	beq.s   @TestFailed          ; if yes, branch
+
 	RaiseError "TEST SUCCESS%<endl>MegaPCM_LoadSampleTable returned %<.b d0>", MPCM_Debugger_LoadSampleTableException
 
-@SampleTableOk:
+@TestFailed:
 	RaiseError "TEST FAILED"			; ... why we're here?...
 
 ; ------------------------------------------------------------------------------

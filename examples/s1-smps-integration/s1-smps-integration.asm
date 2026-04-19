@@ -154,7 +154,7 @@ Menu.Items:
 	dc.l	PlaySound				; execute function
 
 	dc.w	Menu.SelectedDAC		; address
-	dc.b	$81, $80+(SampleTable_End-SampleTable)/12	; min, max
+	dc.b	$81, $80+(SampleTable_End-SampleTable)/10	; min, max
 	dc.l	@Draw_SelectedDAC		; draw function
 	dc.l	MegaPCM_PlaySample		; execute function
 @Items_End:
