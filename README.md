@@ -46,7 +46,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ## Getting Started
 
-> ![NOTE]
+> [!NOTE]
 >
 > Mega PCM is a DAC-only sound driver! It runs primarily on Z80 CPU and was designed to work alongside the "main" M68K sound driver to drive the remaining FM and PSG channels.
 > 
@@ -130,9 +130,9 @@ Also included in this repo, but not distributed with Mega PCM 2 releases:
 
 - Mega PCM 2's testing suite (`test/` directory) - MIT-licensed;
 
-- Mega PCM Emu Library (`libs/megapcm-emu`) - MIT-licensed;
+- Mega PCM Emu Library (`lib/megapcm-emu`) - MIT-licensed;
 
-- Z80VM Library (`tests/z80vm`) - based on extended and modified z80emu v.1.3.0 (c) by Lin Ke-Fong; comes with permissive free license.
+- Z80VM Library (`lib/z80vm`) - based on extended and modified z80emu v.1.3.0 (c) by Lin Ke-Fong; comes with permissive free license.
 
 - For developer's convenience this repo also includes a few binary tools (see `toolchain/` directory):
 
