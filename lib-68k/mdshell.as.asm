@@ -144,10 +144,10 @@ _eh_align_offset	equ	$80
 ;	static_assert MY_CONST=42
 ; ---------------------------------------------------------------
 
-static_assert:	macro
-	if ALLARGS
+static_assert:	macro EXPR
+	if VAL(EXPR)
 	else
-		inform 2,"Assertion failed: ALLARGS"
+		!error "Assertion failed: EXPR"
 	endif
 	endm
 
