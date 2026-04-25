@@ -10,11 +10,15 @@ examples:	megapcm
 test:	megapcm
 	$(MAKE) -C test
 
-tools:	megapcm
+tools:	dpcm-hq-conv megapcm-viz
+
+dpcm-hq-conv:	megapcm
 	$(MAKE) -C tools/megapcm-viz
+
+megapcm-viz:	megapcm
 	$(MAKE) -C tools/dpcm-hq-conv
 
-all: megapcm examples test tools
+all: megapcm examples tools
 
 clean:
 	$(MAKE) -C src clean
