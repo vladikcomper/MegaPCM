@@ -1,3 +1,9 @@
 __*
 build
 .sublime-project*
+
+*.obj
+*.lst
+*.gen
+*.sym
+*.log

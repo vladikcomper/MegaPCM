@@ -8,8 +8,8 @@
 ; (c) 2023-2026, Vladikcomper
 ; ------------------------------------------------------------------------------
 
-	include	'../lib-68k/mdshell.asm'						; MD Shell library
-	include '../build/bundle/asm68k-linkable/MegaPCM.asm'	; Mega PCM library
+	include	'../../lib-68k/mdshell.asm'							; MD Shell library
+	include '../../build/bundle/asm68k-linkable/MegaPCM.asm'	; Mega PCM library
 
 ; ------------------------------------------------------------------------------
 

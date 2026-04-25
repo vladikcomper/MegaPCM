@@ -12,12 +12,6 @@ SRC_FILES := $(wildcard $(SRC_DIR)/*.asm) 68k/macros.asm 68k/load-sample-table.d
 LIB_SRC_FILES := $(wildcard $(LIB_SRC_DIR)/*.asm)
 Z80_SRC_FILES := $(wildcard $(Z80_SRC_DIR)/*.asm)
 
-TEST_BUILD_DIR := $(BUILD_DIR)/tests
-TEST_SRC_DIR := $(SRC_DIR)/tests
-TEST_FILES := $(wildcard $(TEST_SRC_DIR)/*.asm)
-TEST_LIBS := ../lib-68k/mdshell.obj $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
-TEST_ROMS := $(patsubst $(TEST_SRC_DIR)/%.asm,$(TEST_BUILD_DIR)/%.gen,$(TEST_FILES))
-
 ASMFLAGS := /q /k /m /o c+,ws+,op+,os+,ow+,oz+,oaq+,osq+,omq+,ae-
 
 .PHONY:	all asm68k asm68k-linkable as megapcm-68k tests
@@ -33,17 +27,8 @@ asm68k-linkable:	$(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-li
 
 as:	$(BUILD_DIR)/as/MegaPCM.asm
 
-tests:	$(TEST_ROMS)
-
-$(TEST_ROMS):	$(TEST_FILES) $(BUILD_DIR)/asm68k-linkable/MegaPCM.asm $(BUILD_DIR)/asm68k-linkable/MegaPCM.Debug.obj
-
-$(TEST_BUILD_DIR)/%.obj: $(TEST_SRC_DIR)/%.asm | $(TEST_BUILD_DIR)
-	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /g /l $<,$@
-
-$(TEST_BUILD_DIR)/%.gen: $(TEST_BUILD_DIR)/%.obj
-	$(PSYLINK) /q /p $(TEST_LIBS) $<,$@,$@.sym
-	$(CONVSYM) $@.sym $@ -ref 200 -a
-	rm -rf $@.sym
+tests:
+	$(MAKE) -C tests/
 
 $(BUILD_DIR)/asm68k-linkable/MegaPCM.asm:	$(SRC_FILES) $(LIB_SRC_DIR)/sample-table.defs.asm $(LIB_SRC_DIR)/load-sample-table.defs.asm | $(BUILD_DIR)/asm68k-linkable
 	$(CBUNDLE) $(SRC_DIR)/MegaPCM.asm -def BUNDLE-ASM68K -def LINKABLE -out $@
@@ -78,12 +63,10 @@ $(BUILD_DIR)/asm68k:
 $(BUILD_DIR)/asm68k-linkable:
 	mkdir -p $@
 
-$(TEST_BUILD_DIR):
-	mkdir -p $@
-
 $(LIB_BUILD_DIR)/megapcm.obj $(LIB_BUILD_DIR)/megapcm.debug.obj $(LIB_BUILD_DIR)/megapcm.bin $(LIB_BUILD_DIR)/megapcm.sym:	$(LIB_SRC_FILES) $(Z80_SRC_FILES)
 	$(MAKE) -C 68k
 
 clean:
 	$(MAKE) -C 68k clean
+	$(MAKE) -C tests clean
 	rm -rf $(BUILD_DIR)/*
