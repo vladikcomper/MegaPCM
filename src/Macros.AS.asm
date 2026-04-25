@@ -25,9 +25,9 @@ dcSample: macro	{INTLABEL}, SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 	endif
 
 	; Track sample ID since start of the sample table (supports multiple tables)
-	if (*-__ST_PrevInvokeLoc>10)|(*<__ST_PrevInvokeLoc)
+	if ((*-__ST_PrevInvokeLoc)>10)|(*<__ST_PrevInvokeLoc)
 		__ST_SampleID:		set $80
-		__ST_PrevInvokeLoc:	set *
+		__ST_PrevInvokeLoc:	set *-10
 	endif
 
 	__ST_PrevInvokeLoc:	set	__ST_PrevInvokeLoc+10
@@ -244,12 +244,12 @@ MPCM_stopZ80:	macro OPBUSREQ
 	if ARGCOUNT==1
 		move.w	#$100, OPBUSREQ
 		.wait:
-			bset	#0, OPBUSREQ
+			btst	#0, OPBUSREQ
 			bne.s	.wait
 	else
 		move.w	#$100, (MPCM_Z80_BUSREQ).l
 		.wait:
-			bset	#0, (MPCM_Z80_BUSREQ).l
+			btst	#0, (MPCM_Z80_BUSREQ).l
 			bne.s	.wait
 	endif
 	endm
