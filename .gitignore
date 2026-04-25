@@ -1,4 +1,2 @@
 __*
-build
-!build/.gitkeep
-.sublime-project.sublime-workspace
+.sublime-project
