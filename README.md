@@ -86,35 +86,25 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ### Linux
 
-Make sure Wine is installed. Use the following commands to build:
+You need to have Wine, Python 3, GCC/Clang installed on your system.
+
+The following commands build the bare minimum toolset:
 
 ```
-make
-make examples
+make                # builds Mega PCM bundles
+make dpcm-hq-conv   # builds `dpcm-hq-conv` tool
+make examples       # builds demo ROMs using all Mega PCM bundles (AS, ASM68K, ASM68K-linkable)
 ```
+
+Or run `make all` to build everything, including development artifacts (e.g. Mega PCM Viz tool, which requires SDL3).
 
 ### Windows
 
-You need to have GCC, Make and Python3 installed and availabe via PATH. The easiest way to get everything with one command is to use Chocolatey, but you may choose any other option that works for you:
-
-```
-choco install mingw python3 make
-```
-
-Once dependencies are installed, build process is the same as on Unix-like systems:
-
-```
-make
-make examples
-```
-
-If you need to invoke `make` from individual directories however (not root), be sure to use `make -f Makefile.win` instead (the root Makefile does it automatically).
+Just use WLS2 with Ubuntu, then follow Linux instructions.
 
 ### FreeBSD
 
-Almost the same as Linux, however you need to make sure to use GNU version of Make.
-
-- Install GNU Make; use `gmake` command instead of `make`;
+Almost the same as Linux, however you need to make sure to use GNU version of Make. Install GNU Make and always use `gmake` command instead of `make`.
 
 ## Licensing
 
