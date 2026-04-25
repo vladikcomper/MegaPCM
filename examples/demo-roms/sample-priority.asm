@@ -25,8 +25,8 @@ Demo:
 	Console.WriteLine "%<pal1>Mega PCM 2.1 Sample Priority Demo%<endl>%<endl>%<pal0>"
 
 	jsr		MegaPCM_LoadDriver
-	lea		SampleTable, a0					; load Sonic 1's sample table
-	jsr		MegaPCM_LoadSampleTable				; ''
+	lea		SampleTable, a0
+	jsr		MegaPCM_LoadSampleTable
 
 	; FIXME: AS cannot assemble `cmp (an)+,(an)+`
 	if __AS__=0

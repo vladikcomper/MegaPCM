@@ -4,8 +4,8 @@
 ; ------------------------------------------------------------------------------
 Demo:
 	jsr		MegaPCM_LoadDriver
-	lea		SampleTable(pc), a0					; load Sonic 1's sample table
-	jsr		MegaPCM_LoadSampleTable				; ''
+	lea		SampleTable(pc), a0
+	jsr		MegaPCM_LoadSampleTable
 
 	Console.SetXY #1, #1
 	Console.WriteLine "%<pal1>Mega PCM 2.1 Sample Pitch Demo%<endl>%<endl>%<pal0>"
