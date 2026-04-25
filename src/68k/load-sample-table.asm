@@ -267,7 +267,8 @@ MegaPCM_LoadSampleTable:
 		move.w	sr, -(sp)
 		move.w	#$2700, sr							; disable interrupts
 		MPCM_stopZ80	(@z80_busreq)
-		move.b	#$80, (@z80_sample_tbl)+			; 00h	- sample desc field (flags, type, priority)
+		or.b	#$80, @sample_desc
+		move.b	@sample_desc, (@z80_sample_tbl)+	; 00h	- sample desc field (flags, type, priority)
 		; Note that @sample_type = 0
 		move.b	@sample_type, (@z80_sample_tbl)+	; 01h	- pitch
 		move.b	@sample_type, (@z80_sample_tbl)+	; 02h	- start bank
