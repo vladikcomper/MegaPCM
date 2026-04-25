@@ -181,8 +181,27 @@ _eh_align_offset	equ	$80
 	endif
 
 ; ---------------------------------------------------------------
-; Creates assertions for debugging
+; Creates compile-time assertions
 ; ---------------------------------------------------------------
+; EXAMPLES:
+;	static_assert def(__DEBUG__)
+;	static_assert MY_CONST=42
+; ---------------------------------------------------------------
+
+static_assert:	macro
+	if \_
+	else
+		inform 2,"Assertion failed: \_"
+	endif
+	endm
+
+
+; ---------------------------------------------------------------
+; Creates run-time assertions for debugging
+; ---------------------------------------------------------------
+; NOTE:
+;	Run-time asserts only work if `__DEBUG__` is defined.
+;
 ; EXAMPLES:
 ;	assert.b	d0, eq, #1		; d0 must be $01, or else crash
 ;	assert.w	d5, pl			; d5 must be positive
