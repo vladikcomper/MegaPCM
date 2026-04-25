@@ -21,5 +21,5 @@ SampleTable_End:
 	incdac	Kick, "s1-smps-integration/dac/kick.dpcm"
 	incdac	Snare, "s1-smps-integration/dac/snare.pcm"
 	incdac	Timpani, "s1-smps-integration/dac/timpani.dpcm"
-	incdac	Voice, "s1-smps-integration/dac/voice.wav"
+	incdac	Voice, "common/voice.wav"
 	even

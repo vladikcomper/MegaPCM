@@ -29,10 +29,10 @@ $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.sym &:	$(SRC_FILES) $(Z80_FILES) |
 	$(ASM68K) $(ASMFLAGS) /p $(SRC_DIR)/megapcm.asm,$@,$(BUILD_DIR)/megapcm.sym
 
 $(BUILD_DIR)/megapcm.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
-	$(ASM68K) $(ASMFLAGS) /l $(SRC_DIR)/megapcm.asm,$@
+	$(ASM68K) $(ASMFLAGS) /l /e __LINKABLE__ $(SRC_DIR)/megapcm.asm,$@
 
 $(BUILD_DIR)/megapcm.debug.obj:	$(SRC_FILES) $(Z80_FILES) | $(BUILD_DIR)
-	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /l $(SRC_DIR)/megapcm.asm,$@
+	$(ASM68K) $(ASMFLAGS) /o v+ /e __DEBUG__ /l /e __LINKABLE__ $(SRC_DIR)/megapcm.asm,$@
 
 $(Z80_FILES):	megapcm-z80
 

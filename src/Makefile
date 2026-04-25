@@ -8,7 +8,7 @@ SRC_DIR := .
 LIB_SRC_DIR := ./68k
 Z80_SRC_DIR := ./z80
 
-SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
+SRC_FILES := $(wildcard $(SRC_DIR)/*.asm) 68k/macros.asm 68k/load-sample-table.debugger.asm
 LIB_SRC_FILES := $(wildcard $(LIB_SRC_DIR)/*.asm)
 Z80_SRC_FILES := $(wildcard $(Z80_SRC_DIR)/*.asm)
 
