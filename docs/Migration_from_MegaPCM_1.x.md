@@ -229,16 +229,17 @@ Unfortunately, some pitches from 1.x are incompatible, especially for DPCM. This
 
 **Summary of supported rates:**
 
-|                | **Mega PCM 1.x**      | **Mega PCM 2.0**                                            |
-|----------------|:---------------------:|:-----------------------------------------------------------:|
-| PCM/WAV        | 1050 .. 28500 Hz      | 0 .. 25100 Hz (normal mode)<br/>32000 Hz fixed (turbo mode) |
-| DPCM           | 1050 .. 31450 Hz      | 0 .. 20500 Hz                                               |
+|                  | **PCM/WAV**                                      | **DPCM**                                           |
+|------------------|:------------------------------------------------:|:--------------------------------------------------:|
+| **Mega PCM 1.x** | 1050 .. 28500 Hz                                 | 1050 .. 31450 Hz                                   |
+| **Mega PCM 2.0** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20500 Hz                                    |
+| **Mega PCM 2.1** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20500 Hz<br>25800 Hz fixed (Turbo mode)     |
 
 As you can see, Mega PCM 2 has a higher maximum playback rate in turbo mode. However, due to addition of volume and pitch control in normal modes, max PCM rate is slightly lower and max DPCM rate is noticeably lower because Mega PCM 2's streaming system wasn't designed for DPCM (it was mostly added for feature-parity).
 
 General takeaways from the above table:
 
-- If your DPCM sample's rate is higher than 20500 Hz, you need to convert it to PCM;
+- If your DPCM sample's rate is higher than 20500 Hz, you need to convert it to PCM or upsample to 25800 Hz (since _Mega PCM 2.1_);
 - If your PCM sample's rate is between 25100 and 28500 Hz, you need to either downsample it to 25100 Hz (recommended) or upsample to 32000 Hz.
 - In every other case, you can set the correct sample rate without sample data conversion.
 
@@ -285,22 +286,22 @@ Use this table if your target sample's type is `TYPE_PCM`. Note that allowed pit
 | **Mega PCM 1.x Pitch** | **Converted Mega PCM 2.x Sample rate, Hz**                       |
 |------------------------|------------------------------------------------------------------|
 | $01 (1)                | 28568                                                            |
-| $02 (2)                | 25882 (UNSUPPORTED, round to 25100 Hz)                           |
+| $02 (2)                | 25882 (**UNSUPPORTED!** Round to 25100 Hz)                       |
 | $03 (3)                | 23659                                                            |
-| $04 (4)                | 21787 (can be rounded to 22050 Hz if that was the original rate) |
+| $04 (4)                | 21787 (or round to 22050 Hz if that was the intended rate)       |
 | $05 (5)                | 20189                                                            |
 | $06 (6)                | 18810                                                            |
 | $07 (7)                | 17607                                                            |
-| $08 (8)                | 16549 (can be rounded to 16000 Hz if that was the original rate) |
-| $09 (9)                | 15611 (can be rounded to 16000 Hz if that was the original rate) |
+| $08 (8)                | 16549 (or round to 16000 Hz if that was the intended rate)       |
+| $09 (9)                | 15611 (or round to 16000 Hz if that was the intended rate)       |
 | $0A (10)               | 14773                                                            |
 | $0B (11)               | 14021                                                            |
 | $0C (12)               | 13342                                                            |
 | $0D (13)               | 12725                                                            |
 | $0E (14)               | 12163                                                            |
 | $0F (15)               | 11648                                                            |
-| $10 (16)               | 11176 (can be rounded to 11000 Hz if that was the original rate) |
-| $11 (17)               | 10740 (can be rounded to 11000 Hz if that was the original rate) |
+| $10 (16)               | 11176 (or round to 11000 Hz if that was the intended rate)       |
+| $11 (17)               | 10740 (or round to 11000 Hz if that was the intended rate)       |
 | $12 (18)               | 10337                                                            |
 | $13 (19)               | 9963                                                             |
 | $14 (20)               | 9615                                                             |
@@ -308,8 +309,8 @@ Use this table if your target sample's type is `TYPE_PCM`. Note that allowed pit
 | $16 (22)               | 8987                                                             |
 | $17 (23)               | 8703                                                             |
 | $18 (24)               | 8436                                                             |
-| $19 (25)               | 8186 (can be rounded to 8000 Hz if that was the original rate)   |
-| $1A (26)               | 7949 (can be rounded to 8000 Hz if that was the original rate)   |
+| $19 (25)               | 8186 (or round to 8000 Hz if that was the intended rate)         |
+| $1A (26)               | 7949 (or round to 8000 Hz if that was the intended rate)         |
 | $1B (27)               | 7726                                                             |
 | $1C (28)               | 7515                                                             |
 | $1D (29)               | 7316                                                             |
@@ -343,8 +344,8 @@ Use this table if your target sample's type is `TYPE_PCM`. Note that allowed pit
 | $39 (57)               | 4195                                                             |
 | $3A (58)               | 4132                                                             |
 | $3B (59)               | 4071                                                             |
-| $3C (60)               | 4012 (can be rounded to 4000 Hz if that was the original rate)   |
-| $3D (61)               | 3954 (can be rounded to 4000 Hz if that was the original rate)   |
+| $3C (60)               | 4012 (or round to 4000 Hz if that was the intended rate)         |
+| $3D (61)               | 3954 (or round to 4000 Hz if that was the intended rate)         |
 | $3E (62)               | 3898                                                             |
 | $3F (63)               | 3844                                                             |
 
@@ -353,71 +354,71 @@ Use this table if your target sample's type is `TYPE_PCM`. Note that allowed pit
 
 Use this table if your target sample's type is `TYPE_DPCM`. Note that allowed pitches in 1.x are $01..$FF, but only $01..$3F are covered here, because anything above is so low, it's not practically usable.
 
-| **Mega PCM 1.x Pitch** | **Converted Mega PCM 2.x Sample rate, Hz**                                    |
-|------------------------|-------------------------------------------------------------------------------|
-| $01 (1)                | 31455 (UNSUPPORTED! Convert to `TYPE_PCM_TURBO` at ~32000 Hz)                 |
-| $02 (2)                | 28230 (UNSUPPORTED! Convert to `TYPE_PCM_TURBO` at ~32000 Hz)                 |
-| $03 (3)                | 25605 (UNSUPPORTED! Convert to `TYPE_PCM` at ~25100 Hz)                       |
-| $04 (4)                | 23426 (UNSUPPORTED! Convert to `TYPE_PCM` at 23426 Hz)                        |
-| $05 (5)                | 21590 (UNSUPPORTED! Convert to `TYPE_PCM` at 21590 Hz or 22050 Hz if rounded) |
-| $06 (6)                | 20020                                                                         |
-| $07 (7)                | 18663                                                                         |
-| $08 (8)                | 17478                                                                         |
-| $09 (9)                | 16435 (can be rounded to 16000 Hz if that was the original rate)              |
-| $0A (10)               | 15509 (can be rounded to 16000 Hz if that was the original rate)              |
-| $0B (11)               | 14682                                                                         |
-| $0C (12)               | 13939                                                                         |
-| $0D (13)               | 13267                                                                         |
-| $0E (14)               | 12658                                                                         |
-| $0F (15)               | 12101                                                                         |
-| $10 (16)               | 11592                                                                         |
-| $11 (17)               | 11124 (can be rounded to 11025 Hz if that was the original rate)              |
-| $12 (18)               | 10692 (can be rounded to 11025 Hz if that was the original rate)              |
-| $13 (19)               | 10292                                                                         |
-| $14 (20)               | 9921                                                                          |
-| $15 (21)               | 9576                                                                          |
-| $16 (22)               | 9254                                                                          |
-| $17 (23)               | 8953                                                                          |
-| $18 (24)               | 8671                                                                          |
-| $19 (25)               | 8407                                                                          |
-| $1A (26)               | 8158 (can be rounded to 8000 Hz if that was the original rate)                |
-| $1B (27)               | 7923 (can be rounded to 8000 Hz if that was the original rate)                |
-| $1C (28)               | 7701                                                                          |
-| $1D (29)               | 7492                                                                          |
-| $1E (30)               | 7293                                                                          |
-| $1F (31)               | 7105                                                                          |
-| $20 (32)               | 6926                                                                          |
-| $21 (33)               | 6756                                                                          |
-| $22 (34)               | 6595                                                                          |
-| $23 (35)               | 6440                                                                          |
-| $24 (36)               | 6293                                                                          |
-| $25 (37)               | 6153                                                                          |
-| $26 (38)               | 6018                                                                          |
-| $27 (39)               | 5889                                                                          |
-| $28 (40)               | 5766                                                                          |
-| $29 (41)               | 5648                                                                          |
-| $2A (42)               | 5534                                                                          |
-| $2B (43)               | 5425                                                                          |
-| $2C (44)               | 5320                                                                          |
-| $2D (45)               | 5220                                                                          |
-| $2E (46)               | 5122                                                                          |
-| $2F (47)               | 5029                                                                          |
-| $30 (48)               | 4939                                                                          |
-| $31 (49)               | 4852                                                                          |
-| $32 (50)               | 4768                                                                          |
-| $33 (51)               | 4686                                                                          |
-| $34 (52)               | 4608                                                                          |
-| $35 (53)               | 4532                                                                          |
-| $36 (54)               | 4459                                                                          |
-| $37 (55)               | 4388                                                                          |
-| $38 (56)               | 4319                                                                          |
-| $39 (57)               | 4252                                                                          |
-| $3A (58)               | 4188                                                                          |
-| $3B (59)               | 4125                                                                          |
-| $3C (60)               | 4064 (can be rounded to 4000 Hz if that was the original rate)                |
-| $3D (61)               | 4005 (can be rounded to 4000 Hz if that was the original rate)                |
-| $3E (62)               | 3947 (can be rounded to 4000 Hz if that was the original rate)                |
-| $3F (63)               | 3892                                                                          |
+| **Mega PCM 1.x Pitch** | **Converted Mega PCM 2.x Sample rate, Hz**                                        |
+|------------------------|-----------------------------------------------------------------------------------|
+| $01 (1)                | 31455 (**UNSUPPORTED!** Convert to `TYPE_PCM_TURBO` at ~32000 Hz)                 |
+| $02 (2)                | 28230 (**UNSUPPORTED!** Convert to `TYPE_PCM_TURBO` at ~32000 Hz)                 |
+| $03 (3)                | 25605 (**UNSUPPORTED!** Set type to `TYPE_DPCM_TURBO` at ~25800 Hz)               |
+| $04 (4)                | 23426 (**UNSUPPORTED!** Convert to `TYPE_PCM` at 23426 Hz)                        |
+| $05 (5)                | 21590 (**UNSUPPORTED!** Convert to `TYPE_PCM` at 21590 Hz or 22050 Hz if rounded) |
+| $06 (6)                | 20020                                                                             |
+| $07 (7)                | 18663                                                                             |
+| $08 (8)                | 17478                                                                             |
+| $09 (9)                | 16435 (or round to 16000 Hz if that was the intended rate)                        |
+| $0A (10)               | 15509 (or round to 16000 Hz if that was the intended rate)                        |
+| $0B (11)               | 14682                                                                             |
+| $0C (12)               | 13939                                                                             |
+| $0D (13)               | 13267                                                                             |
+| $0E (14)               | 12658                                                                             |
+| $0F (15)               | 12101                                                                             |
+| $10 (16)               | 11592                                                                             |
+| $11 (17)               | 11124 (or round to 11025 Hz if that was the intended rate)                        |
+| $12 (18)               | 10692 (or round to 11025 Hz if that was the intended rate)                        |
+| $13 (19)               | 10292                                                                             |
+| $14 (20)               | 9921                                                                              |
+| $15 (21)               | 9576                                                                              |
+| $16 (22)               | 9254                                                                              |
+| $17 (23)               | 8953                                                                              |
+| $18 (24)               | 8671                                                                              |
+| $19 (25)               | 8407                                                                              |
+| $1A (26)               | 8158 (or round to 8000 Hz if that was the intended rate)                          |
+| $1B (27)               | 7923 (or round to 8000 Hz if that was the intended rate)                          |
+| $1C (28)               | 7701                                                                              |
+| $1D (29)               | 7492                                                                              |
+| $1E (30)               | 7293                                                                              |
+| $1F (31)               | 7105                                                                              |
+| $20 (32)               | 6926                                                                              |
+| $21 (33)               | 6756                                                                              |
+| $22 (34)               | 6595                                                                              |
+| $23 (35)               | 6440                                                                              |
+| $24 (36)               | 6293                                                                              |
+| $25 (37)               | 6153                                                                              |
+| $26 (38)               | 6018                                                                              |
+| $27 (39)               | 5889                                                                              |
+| $28 (40)               | 5766                                                                              |
+| $29 (41)               | 5648                                                                              |
+| $2A (42)               | 5534                                                                              |
+| $2B (43)               | 5425                                                                              |
+| $2C (44)               | 5320                                                                              |
+| $2D (45)               | 5220                                                                              |
+| $2E (46)               | 5122                                                                              |
+| $2F (47)               | 5029                                                                              |
+| $30 (48)               | 4939                                                                              |
+| $31 (49)               | 4852                                                                              |
+| $32 (50)               | 4768                                                                              |
+| $33 (51)               | 4686                                                                              |
+| $34 (52)               | 4608                                                                              |
+| $35 (53)               | 4532                                                                              |
+| $36 (54)               | 4459                                                                              |
+| $37 (55)               | 4388                                                                              |
+| $38 (56)               | 4319                                                                              |
+| $39 (57)               | 4252                                                                              |
+| $3A (58)               | 4188                                                                              |
+| $3B (59)               | 4125                                                                              |
+| $3C (60)               | 4064 (or round to 4000 Hz if that was the intended rate)                          |
+| $3D (61)               | 4005 (or round to 4000 Hz if that was the intended rate)                          |
+| $3E (62)               | 3947 (or round to 4000 Hz if that was the intended rate)                          |
+| $3F (63)               | 3892                                                                              |
 
 ### Converting samples (if needed)
 
@@ -427,9 +428,10 @@ Only follow these steps if tables above instruct you to convert samples themselv
 
 If you have DPCM samples and the table above instructed you to convert some of them to PCM, just follow the instructions below:
 
-1. You need to get `dpcm2pcm.exe` utility, which you can download here: https://vladikcomper.scanf.su/public/dpcm2pcm.7z (it's also available in [SMPS Research Pack](https://forums.sonicretro.org/index.php?threads/valley-bells-smps-research.32473/page-5#post-929100), Linux/MacOS may build it from the source code)
-2. Extract `dpcm2pcm.exe` to your `sound/dac` directory for convenience.
-3. Drag and drop a DPCM sample (e.g. `snare.dpcm`) to convert onto the `dpcm2pcm.exe`, you should see a new file with `.snd` extension next to it (e.g. `snare.dpcm.snd`)
+1. Download `dpcm-hq-conv` utility for Mega PCM Releases page.
+2. Extract `dpcm-hq-conv.exe` to your `sound/dac` directory for convenience.
+3. Change your sample extension to `.dpcm` (if it's not already), so the tool starts in "decode to WAV" mode;
+3. Drag and drop your DPCM sample (e.g. `snare.dpcm`) to convert onto the `dpcm-hq-conv.exe` executable, you should see a new file with `.wav` extension added (e.g. `snare.dpcm.wav`)
 4. Use that new sample instead of an old one. Don't forget to change `TYPE_DPCM` to `TYPE_PCM` in the table!
 
 #### Upsampling or donwsampling PCM
