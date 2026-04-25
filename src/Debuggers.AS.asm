@@ -79,4 +79,4 @@ MPCM_Debugger_LoadSampleTableException:
 	dc.b	"DPCM-HQ error: Unsupported sample rate. Use <=20600 Hz for TYPE_DPCM or 25800 Hz for TYPE_DPCM_TURBO.", 0
 .Str_UnknownError:
 	dc.b	"Uknown error code", 0
-	even
+	align 2

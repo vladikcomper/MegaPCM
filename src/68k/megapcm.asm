@@ -39,9 +39,11 @@
 	if def(__DEBUG__)
 		include	'load-sample-table.debugger.asm'
 	endif
-	include	'play-sample.asm'
-	include	'set-volume.asm'
-	include	'set-pan.asm'
+	if def(__LINKABLE__)
+		; Only include command routines (e.g. MegaPCM_PlaySample) in linkable
+		; builds, because for other builds they are included in the bundle.
+		include	'commands.asm'
+	endif
 	public	off
 
 ; ------------------------------------------------------------------------------
