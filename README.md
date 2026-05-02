@@ -72,9 +72,9 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ## Examples
 
-- [Basic 32 kHz WAVE playback with looping](examples/sample-tester)
+- [Small Demo ROMs](examples/demo-roms)
 - [DMA Protection testing ROM](examples/dma-survival-test)
-- [Complete Sonic 1 SMPS integration as a standalone player](examples/s1-smps-integration)
+- [Sonic 1 SMPS integration as a standalone player](examples/s1-smps-integration)
 
 ## Existing implementations
 
