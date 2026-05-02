@@ -1,4 +1,6 @@
 
+#include <SDL3/SDL_iostream.h>
+#include <SDL3/SDL_messagebox.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -151,13 +153,13 @@ static inline bool Viz_HandleEvents(VizState* viz) {
 					viz->selected_sample += 1;
 				} else if (e.key.key == SDLK_UP && (e.key.mod & SDL_KMOD_SHIFT)) {
 					const uint8_t volume = Z80_ReadByte(Z_MPCM_VolumeInput, z80vm);
-					if (volume < 8) MPCM_SetVolume(z80vm, volume+1);
+					if (volume < 15) MPCM_SetVolume(z80vm, volume+1);
 				} else if (e.key.key == SDLK_DOWN && (e.key.mod & SDL_KMOD_SHIFT)) {
 					const uint8_t volume = Z80_ReadByte(Z_MPCM_VolumeInput, z80vm);
 					if (volume > 0) MPCM_SetVolume(z80vm, volume-1);
 				} else if (e.key.key == SDLK_UP) {
 					const uint8_t volume = Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm);
-					if (volume < 8) MPCM_SetSFXVolume(z80vm, volume+1);
+					if (volume < 15) MPCM_SetSFXVolume(z80vm, volume+1);
 				} else if (e.key.key == SDLK_DOWN) {
 					const uint8_t volume = Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm);
 					if (volume > 0) MPCM_SetSFXVolume(z80vm, volume-1);
@@ -300,21 +302,23 @@ static inline void Viz_RenderVideoFrame(VizState* viz) {
 	SDL_RenderPresent(renderer);
 }
 
-
 int main(int argc, char** argv) {
 	if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		fprintf(stderr, "Failed to initilize SDL: %s\n", SDL_GetError());
 		return 1;
 	}
-	atexit(SDL_Quit);
 
-	if (!SDL_CreateWindowAndRenderer("Mega PCM 2 Visualizer", 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+	int exit_code = 0;
+	const char * title = "Mega PCM 2 Visualizer";
+	if (!SDL_CreateWindowAndRenderer(title, 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
 		fprintf(stderr, "Failed to setup SDL window and renderer: %s\n", SDL_GetError());
-		exit(1);
+		exit_code = 1;
+		goto quit;
 	}
 	if (!SDL_SetRenderLogicalPresentation(renderer, 320, 240, SDL_LOGICAL_PRESENTATION_LETTERBOX)) {
 		fprintf(stderr, "Failed to set renderer logical presentation: %s\n", SDL_GetError());
-		exit(1);
+		exit_code = 1;
+		goto quit;
 	}
 
 	SDL_AudioSpec spec = {
@@ -325,14 +329,16 @@ int main(int argc, char** argv) {
 	SDL_AudioStream* audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
 	if (!audio_stream) {
 		fprintf(stderr, "Failed to initialize audio stream: %s\n", SDL_GetError());
-		exit(2);
+		exit_code = 2;
+		goto quit;
 	}
 
 	/* Setup Z80 VM */
 	z80vm = Z80VM_Init();
 	if (!z80vm) {
-		fprintf(stderr, "Failed to initialize Z80 VM.\n");
-		exit(3);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, "Failed to initialize Z80 VM", window);
+		exit_code = 3;
+		goto quit;
 	}
 
 	YM_DAC_Device ym_dac_device;
@@ -352,32 +358,34 @@ int main(int argc, char** argv) {
 	size_t z80_program_size = 0;
 	uint8_t * z80_program = SDL_LoadFile("../../build/z80/megapcm.bin", &z80_program_size);
 	if (!z80_program || !z80_program_size) {
-		fprintf(stderr, "Failed to load Mega PCM 2 binary.\n");
-		exit(4);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, "Failed to load Mega PCM 2 binary", window);
+		exit_code = 4;
+		goto quit;
 	}
 	Z80VM_LoadProgram(z80vm, z80_program, z80_program_size);
 	Z80VM_LoadTraceData(z80vm, "../../build/z80/megapcm.tracedata.txt");
 	SDL_free(z80_program);
 
-	/* Create ROM and a sample table */
-	static const MPCM_SampleMetadata samples[] = {
-		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_LOOP, .sample_rate = 0, .sample_path = "../../examples/sample-tester/sample-loop.wav" },
-		{ .type = MPCM_TYPE_PCM_TURBO, .flags = MPCM_FLAGS_SFX, .sample_rate = 0, .sample_path = "../../examples/s1-smps-integration/dac/voice.wav" },
-		{ .type = MPCM_TYPE_DPCM, .flags = 0, .sample_rate = 8000, .sample_path = "../../examples/s1-smps-integration/dac/kick.dpcm" },
-		{ .type = MPCM_TYPE_PCM,  .flags = 0, .sample_rate = 24000, .sample_path = "../../examples/s1-smps-integration/dac/snare.pcm" },
-		{ .type = MPCM_TYPE_DPCM, .flags = 0, .sample_rate = 7250, .sample_path = "../../examples/s1-smps-integration/dac/timpani.dpcm" },
-	};
-	MPCM_Sample sample_table[SDL_arraysize(samples)];
+	/* Read Mega PCM Samples ROM */
 	size_t rom_size = 0;
-	uint8_t * rom = MPCM_MakeSamplesROM(samples, SDL_arraysize(samples), sample_table, &rom_size);
+	uint8_t * rom = SDL_LoadFile("megapcm-rom.bin", &rom_size);
 	if (!rom || !rom_size) {
-		fprintf(stderr, "Failed to make Mega PCM 2 sample ROM.\n");
-		exit(5);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, "Failed to load Mega PCM 2 Samples ROM", window);
+		exit_code = 5;
+		goto quit;
+	}
+
+	size_t num_samples = 0;
+	MPCM_Sample* sample_table = MPCM_LoadSamplesROM(rom, rom_size, &num_samples);
+	if (!sample_table || !num_samples) {
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, "Failed to load sample table", window);
+		exit_code = 5;
+		goto quit;
 	}
 	z80vm->ROM = rom;	// attach ROM to Z80VM
 	z80vm->ROMsize = rom_size;
-	MPCM_LoadSampleTable(z80vm, sample_table, SDL_arraysize(samples));
-	for (int i = 0; i < SDL_arraysize(samples); ++i) {
+	MPCM_LoadSampleTable(z80vm, sample_table, num_samples);
+	for (int i = 0; i < num_samples; ++i) {
 		fprintf(stderr, "Sample %02X: flags=%02X, pitch=%02X, startBank=%02X, startOffset=%04X, endBank=%02X, endOffset=%04X\n",
 			0x81+i, sample_table[i].flags, sample_table[i].pitch, sample_table[i].startBank, sample_table[i].startOffset, sample_table[i].endBank, sample_table[i].endOffset
 		);
@@ -429,11 +437,21 @@ int main(int argc, char** argv) {
 	SDL_DestroyTexture(viz.tex_health_buffer);
 	SDL_DestroyTexture(viz.tex_dac_output);
 	SDL_DestroyAudioStream(audio_stream);
-	SDL_DestroyWindow(window);
-	SDL_DestroyRenderer(renderer);
 
-	Z80VM_Destroy(z80vm);
-
+quit:
+	if (window) {
+		SDL_DestroyWindow(window);
+		window = NULL;
+	}
+	if (renderer) {
+		SDL_DestroyRenderer(renderer);
+		renderer = NULL;
+	}
+	if (z80vm) {
+		Z80VM_Destroy(z80vm);
+		z80vm = NULL;
+	}
     SDL_Quit();
-    return 0;
+
+    return exit_code;
 }

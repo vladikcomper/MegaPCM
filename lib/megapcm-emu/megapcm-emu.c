@@ -56,93 +56,95 @@ static inline uint8_t MPCM_SampleRateToPitch(uint8_t type, uint16_t sample_rate)
 	return result > 0xFF ? 0 : result;
 }
 
-uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t input_records_size, MPCM_Sample* out_sample_table, size_t *out_rom_size) {
-	uint8_t* rom = NULL;
-	size_t rom_pos = 0;
-	size_t rom_size = 0;
+MPCM_Sample* MPCM_LoadSamplesROM(uint8_t * rom, size_t rom_size, size_t *out_num_samples) {
+	if (rom_size > 0x800000) {
+		fprintf(stderr, "ROM exceeds 8 MB\n");
+		return NULL;
+	}
 
-	for (size_t i = 0; i < input_records_size; ++i) {
-		/* Append sample data to ROM */
-		FILE * sample_data = fopen(input_records[i].sample_path, "rb");
-		if (!sample_data) {
-			fprintf(stderr, "Failed to open sample file: %s\n", input_records[i].sample_path);
-			goto failure;
+	size_t num_samples = 0;
+	MPCM_Sample* sample_table = NULL;
+	uint8_t rom_pos = 0;
+
+	while (1) {
+		uint8_t desc = rom[rom_pos++];
+		if (desc > 0x80) break;
+
+		num_samples += 1;
+		if (num_samples > 0x7F) {
+			fprintf(stderr, "Too many samples in a sample table\n");
+			return NULL;			
 		}
 
-		fseek(sample_data, 0, SEEK_END);
-		size_t sample_size = ftell(sample_data);
-		fseek(sample_data, 0, SEEK_SET);
-
-		rom_size = rom_pos + sample_size;
-		rom = realloc(rom, rom_size);
-		if (!rom) {
-			fprintf(stderr, "Out of memory\n");
-			goto failure;
+		sample_table = realloc(sample_table, num_samples * sizeof(MPCM_Sample));
+		if (!sample_table) {
+			fprintf(stderr, "Failed to reallocate sample table\n");
+			return NULL;
 		}
 
-		if (!fread(&rom[rom_pos], sample_size, 1, sample_data)) {
-			fprintf(stderr, "Failed to read sample data: %s\n", input_records[i].sample_path);
-			fclose(sample_data);
-			goto failure;
-		}
-		fclose(sample_data);
+		const uint8_t type = desc & 0xE;
+		const uint8_t pitch = rom[rom_pos++];
+		const uint32_t start = ((rom[rom_pos]) << 24) | ((rom[rom_pos+1]) << 16) | ((rom[rom_pos+2]) << 8) | (rom[rom_pos+3]);
+		const uint32_t end = ((rom[rom_pos+4]) << 24) | ((rom[rom_pos+5]) << 16) | ((rom[rom_pos+6]) << 8) | (rom[rom_pos+7]);
+		rom_pos += 8;
 
-		/* Make sample record */
-		out_sample_table[i].flags = (1<<Z_MPCM_FLAGS_SAMPLE) | input_records[i].type | input_records[i].flags;
-		out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, input_records[i].sample_rate);
-		out_sample_table[i].startBank = rom_pos >> 15;
-		out_sample_table[i].startOffset = 0x8000 | (rom_pos & 0x7FFF);
-		out_sample_table[i].endBank = (rom_pos + sample_size) >> 15;
-		out_sample_table[i].endOffset = 0x8000 | ((rom_pos + sample_size) & 0x7FFF);
+		sample_table[num_samples-1] = (MPCM_Sample){
+			.flags = (1<<Z_MPCM_FLAGS_SAMPLE)|desc,
+			.pitch = pitch,
+			.startBank = start>>15,
+			.startOffset = 0x8000|(start&0x7FFF),
+			.endBank = end >> 15,
+			.endOffset = 0x8000|(end & 0x7FFF),
+		};
 
-		if (input_records[i].type == MPCM_TYPE_PCM_TURBO || input_records[i].type == MPCM_TYPE_PCM) {
+		if (type == MPCM_TYPE_PCM_TURBO || type == MPCM_TYPE_PCM) {
 			/* Parse WAVE files */
 			if (
-				strncmp((char*)&rom[rom_pos], "AIFF", 4) == 0 ||
-				strncmp((char*)&rom[rom_pos], "NIST", 4) == 0
+				strncmp((char*)&rom[start], "AIFF", 4) == 0 ||
+				strncmp((char*)&rom[start], "NIST", 4) == 0
 			) {
-				fprintf(stderr, "Invalid container (AIFF/NIST): %s\n", input_records[i].sample_path);
-				goto failure;
+				fprintf(stderr, "Invalid container (AIFF/NIST): sampleId=%zu\n", 0x80 + num_samples);
+				return NULL;
 			}
-			if (strncmp((char*)&rom[rom_pos], "RIFF", 4) == 0) {
+			if (strncmp((char*)&rom[start], "RIFF", 4) == 0) {
 
-				if (strncmp((char*)&rom[rom_pos+8], "WAVE", 4) != 0) {
-					fprintf(stderr, "Invalid WAVE header: %s\n", input_records[i].sample_path);
-					goto failure;
+				if (strncmp((char*)&rom[start+8], "WAVE", 4) != 0) {
+					fprintf(stderr, "Invalid WAVE header: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 				}
-				size_t chunk_pos = rom_pos+12;	// "fmt" chunk
+				size_t chunk_pos = start+12;	// "fmt" chunk
 				if (strncmp((char*)&rom[chunk_pos], "fmt ", 4) != 0) {
-					fprintf(stderr, "Missing 'fmt' chunk: %s\n", input_records[i].sample_path);
-					goto failure;
+					fprintf(stderr, "Missing 'fmt' chunk: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 				}
 				const uint16_t wave_format = *(uint16_t*)&rom[chunk_pos+8];
 				if (wave_format != 1 && wave_format != 0xFFFE) {
-					fprintf(stderr, "Invalid audio format: %s\n", input_records[i].sample_path);
-					goto failure;
+					fprintf(stderr, "Invalid audio format: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 				}
 				const uint16_t num_channels = *(uint16_t*)&rom[chunk_pos+10];
 				if (num_channels != 1) {
-					fprintf(stderr, "Too many channels: %s\n", input_records[i].sample_path);
-					goto failure;					
+					fprintf(stderr, "Too many channels: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 				}
 				const uint16_t bit_depth = *(uint16_t*)&rom[chunk_pos+22];
 				if (bit_depth != 8) {
-					fprintf(stderr, "Not a 8-bit audio stream: %s\n", input_records[i].sample_path);
-					goto failure;
+					fprintf(stderr, "Not a 8-bit audio stream: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 				}
 
 				/* If pitch wasn't set, auto-calculate it */
-				if (!out_sample_table[i].pitch) {
+				if (!pitch) {
 					const uint16_t sample_rate = *(uint16_t*)&rom[rom_pos+12+12];
-					out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, sample_rate);
+					sample_table[num_samples-1].pitch = MPCM_SampleRateToPitch(type, sample_rate);
 				}
 
 				/* Locate "data" chunk */
 				while (strncmp((char*)&rom[chunk_pos], "data", 4) != 0) {
 					chunk_pos += 8 + *(uint32_t*)&rom[chunk_pos+4];
 					if (chunk_pos >= rom_size) {
-						fprintf(stderr, "Missing 'data' chunk: %s\n", input_records[i].sample_path);
-						goto failure;
+						fprintf(stderr, "Missing 'data' chunk: sampleId=%zu\n", 0x80 + num_samples);
+						return NULL;
 					}
 				}
 
@@ -151,64 +153,52 @@ uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t in
 				const size_t start_pos = chunk_pos + 8;
 				const size_t end_pos = start_pos + data_size;
 
-				out_sample_table[i].startBank = start_pos >> 15;
-				out_sample_table[i].startOffset = 0x8000 | (start_pos & 0x7FFF);
-				out_sample_table[i].endBank = end_pos >> 15;
-				out_sample_table[i].endOffset = 0x8000 | (end_pos & 0x7FFF);
+				sample_table[num_samples-1].startBank = start_pos >> 15;
+				sample_table[num_samples-1].startOffset = 0x8000 | (start_pos & 0x7FFF);
+				sample_table[num_samples-1].endBank = end_pos >> 15;
+				sample_table[num_samples-1].endOffset = 0x8000 | (end_pos & 0x7FFF);
 			}
 
 			/* PCM samples must always be aligned on even boundary */
-			out_sample_table[i].startOffset &= 0xFFFE;
-			out_sample_table[i].endOffset &= 0xFFFE;
+			sample_table[num_samples-1].startOffset &= 0xFFFE;
+			sample_table[num_samples-1].endOffset &= 0xFFFE;
 		}
-		else if (input_records[i].type == MPCM_TYPE_DPCM || input_records[i].type == MPCM_TYPE_DPCM_TURBO) {
+		else if (type == MPCM_TYPE_DPCM || type == MPCM_TYPE_DPCM_TURBO) {
 			/* Parse DPCM-HQ files */
-			if (strncmp((char*)&rom[rom_pos], "DQ", 2) == 0) {
-				const uint8_t version = rom[rom_pos+2];
+			if (strncmp((char*)&rom[start], "DQ", 2) == 0) {
+				const uint8_t version = rom[start+2];
 				if (version != '1') {
-					fprintf(stderr, "Unsupported DPCM-HQ version: %s\n", input_records[i].sample_path);
-					goto failure;
+					fprintf(stderr, "Unsupported DPCM-HQ version: sampleId=%zu\n", 0x80 + num_samples);
+					return NULL;
 				}
 
-				out_sample_table[i].flags += 4;
+				sample_table[num_samples-1].flags += 4;
 
 				/* If pitch wasn't set, auto-calculate it */
-				if (!out_sample_table[i].pitch) {
-					const uint16_t sample_rate = (rom[rom_pos+6]<<8) + rom[rom_pos+7];
-					out_sample_table[i].pitch = MPCM_SampleRateToPitch(input_records[i].type, sample_rate);
+				if (!pitch) {
+					const uint16_t sample_rate = (rom[start+6]<<8) + rom[start+7];
+					sample_table[num_samples-1].pitch = MPCM_SampleRateToPitch(type, sample_rate);
 				}
 
 				/* Correct sample start/end pointers */
-				const size_t start_pos = rom_pos + 9;
-				const size_t end_pos = start_pos + ((rom[rom_pos+3]<<16)|(rom[rom_pos+5]<<8)|(rom[rom_pos+6]));
-				out_sample_table[i].startBank = start_pos >> 15;
-				out_sample_table[i].startOffset = 0x8000 | (start_pos & 0x7FFF);
-				out_sample_table[i].endBank = end_pos >> 15;
-				out_sample_table[i].endOffset = 0x8000 | (end_pos & 0x7FFF);
+				const size_t start_pos = start + 9;
+				const size_t end_pos = start_pos + ((rom[start+3]<<16)|(rom[start+4]<<8)|(rom[start+5]));
+				sample_table[num_samples-1].startBank = start_pos >> 15;
+				sample_table[num_samples-1].startOffset = 0x8000 | (start_pos & 0x7FFF);
+				sample_table[num_samples-1].endBank = end_pos >> 15;
+				sample_table[num_samples-1].endOffset = 0x8000 | (end_pos & 0x7FFF);
 			}
 		}
 
 		/* Fail if pitch wasn't auto-detected */
-		if (!out_sample_table[i].pitch) {
-			fprintf(stderr, "Invalid pitch: %s\n", input_records[i].sample_path);
-			goto failure;
-		}
-
-		rom_pos += sample_size;
-		if (rom_pos % 2) rom_pos += 1; // automatic `even`
-
-		if (rom_pos > 0x800000) {
-			fprintf(stderr, "ROM exceeds 8 MB after sample: %s\n", input_records[i].sample_path);
-			goto failure;
+		if (!sample_table[num_samples-1].pitch) {
+			fprintf(stderr, "Invalid pitch: sampleId=%zx\n", 0x80 + num_samples);
+			return NULL;
 		}
 	}
 
-	*out_rom_size = rom_size;
-	return rom;
-
-failure:
-	if (!rom) free(rom);
-	return NULL;
+	*out_num_samples = num_samples;
+	return sample_table;
 }
 
 void MPCM_LoadSampleTable(Z80VM_Context * context, MPCM_Sample* sample_table, size_t sample_table_size) {

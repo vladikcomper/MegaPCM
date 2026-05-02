@@ -50,9 +50,9 @@ typedef struct {
 void MPCM_LoadDriver(Z80VM_Context * context, const char * path);
 
 /**
- * Fills Mega PCM sample table in memory
+ * Loads Mega PCM Sample ROM, returns a pre-processed sample table
  */
-uint8_t* MPCM_MakeSamplesROM(const MPCM_SampleMetadata* input_records, size_t input_records_size, MPCM_Sample* out_sample_table, size_t *out_rom_size);
+MPCM_Sample* MPCM_LoadSamplesROM(uint8_t * rom, size_t rom_size, size_t *out_num_samples);
 
 /**
  * Uploads sample table to Z80 VM
