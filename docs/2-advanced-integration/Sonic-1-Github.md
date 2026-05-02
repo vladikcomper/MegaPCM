@@ -56,10 +56,8 @@ Just **replace** the code above with this:
                 ; Send to DAC panning Mega PCM instead of updating it directly.
                 ; Mega PCM needs to track panning on its own to restore it in
                 ; normal sample is interrupted by an SFX sample
-                MPCM_stopZ80
                 and.b   #$C0, d1
-                move.b  d1, MPCM_Z80_RAM+Z_MPCM_PanInput
-                MPCM_startZ80
+                MPCM_setPan d1
                 rts
 ```
 
@@ -76,8 +74,8 @@ Finally, let's reset panning and other DAC settings when BGM is initialized. Fin
 
 ```m68k
                 MPCM_stopZ80
-                move.b  #0, MPCM_Z80_RAM+Z_MPCM_VolumeInput     ; set DAC volume to maximum
-                move.b  #$C0, MPCM_Z80_RAM+Z_MPCM_PanInput      ; set panning to LR
+                move.b  #0, (MPCM_Z80_RAM+Z_MPCM_VolumeInput).l ; set DAC volume to maximum
+                move.b  #$C0, (MPCM_Z80_RAM+Z_MPCM_PanInput).l  ; set panning to LR
                 MPCM_startZ80
 ```
 
@@ -178,9 +176,7 @@ Finally, find `.unpausedallfm:` line below. Right above it (and before `bra.w   
 
 ```m68k
 .unpausedallfm: ; <-- Make sure new code goes below this line
-                MPCM_stopZ80
-                move.b  #0, MPCM_Z80_RAM+Z_MPCM_CommandInput ; unpause DAC
-                MPCM_startZ80
+                MPCM_unpause
 
 .done:
 ```
@@ -240,9 +236,7 @@ Finally, scroll down until you see these lines:
 Right **above** them, add this:
 
 ```m68k
-                MPCM_stopZ80
-                move.b  #Z_MPCM_COMMAND_STOP, MPCM_Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
-                MPCM_startZ80
+                MPCM_stop
 ```
 
 This is a clean and proper way to stop DAC now, not forcefully disabling the channel.
@@ -288,9 +282,7 @@ Right **below** this snippet, insert the following code:
 .dac_update_volume:
                 move.b  SMPS_Track.Volume(a5), d0
                 lsr.b   #3, d0
-                MPCM_stopZ80
-                move.b  d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
-                MPCM_startZ80
+                MPCM_setVol d0
 .dac_done:
 ```
 
@@ -331,9 +323,7 @@ Right **below** it, insert the following code:
 .dac_update_volume:
                 move.b  SMPS_Track.Volume(a5), d0
                 lsr.b   #3, d0
-                MPCM_stopZ80
-                move.b  d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
-                MPCM_startZ80
+                MPCM_setVol d0
 .dac_done:
 ```
 
