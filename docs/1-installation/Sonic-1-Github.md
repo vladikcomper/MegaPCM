@@ -219,12 +219,12 @@ Another easy one. You need to download a few files and copy them relative to you
 
 ### Step 3.2. Include Mega PCM and Sonic 1 sample table
 
-Open `sonic.asm`. Near very beginning, just above `include "Macros.asm"` include `MegaPCM.Macros.asm` file:
+Open `sonic.asm`. Near the very beginning, just above `include "Macros.asm"` include `MegaPCM.Macros.asm` file:
 
 ```diff
 ; ===========================================================================
 ; Simplifying macros and functions
-+       include "MegaPCM.Macros.asm.asm"
++       include "MegaPCM.Macros.asm"
         include "Macros.asm"
 ```
 
@@ -274,11 +274,11 @@ PlaySegaSound:
                 rts
 ```
 
-We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instantaneously.
-
 > [!NOTE]
 >
 > If you're using a custom `SampleTable.asm`, not the default one from Mega PCM release page, make sure your SEGA sample has `dacSega:` before `dcSample` for `dacSega.id` reference to work.
+
+We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instantaneously.
 
 In `sonic.asm` file, go to `Sega_WaitEnd:` and just **above** it, modify `move.w  #30,(v_generictimer).w` (was `v_demolength` in older disassemblies) as follows:
 
@@ -454,7 +454,7 @@ WriteFMII:
 
 > [!NOTE]
 >
-> If your disassembly is **pre-June 2024**, you should replace some variables in the code > above:
+> If your disassembly is **pre-June 2024**, you should replace some variables in the code above:
 > - `SMPS_Track.PlaybackControl(a5)` (new) -> `TrackPlaybackControl(a5)` (old)
 > - `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
 

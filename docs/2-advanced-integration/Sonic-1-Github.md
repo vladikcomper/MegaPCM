@@ -1,5 +1,5 @@
 
-# Extended Mega PCM 2 integration in Sonic 1 Github Disassembly (AS)
+# Extended Mega PCM 2 integration in Sonic 1 Github Disassembly
 
 In the installation guide we only achieved the most basic integration between SMPS and Mega PCM 2. To take advantage of Mega PCM 2's features like DAC fade in/out and pause/unpause and fix a few potential issues, further SMPS modifications are necessary.
 
@@ -63,10 +63,12 @@ Just **replace** the code above with this:
                 rts
 ```
 
-If your disassembly is **pre-June 2024**, you should rename some of the variables in the example above:
-- `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
-- `SMPS_Track.AMSFMSPan(a5)` (new) -> `TrackAMSFMSPan(a5)` (old)
-- `SMPS_RAM.f_updating_dac(a6)` (new) -> `f_updating_dac(a6)` (old)
+> [!NOTE]
+>
+> If your disassembly is **pre-June 2024**, you should rename some of the variables in the example above:
+> - `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
+> - `SMPS_Track.AMSFMSPan(a5)` (new) -> `TrackAMSFMSPan(a5)` (old)
+> - `SMPS_RAM.f_updating_dac(a6)` (new) -> `f_updating_dac(a6)` (old)
 
 As you can see, this updated code merely extends the original. In fact, we've added a few new lines after the line `move.b d1,TrackAMSFMSPan(a5)` and a few micro-optimization (saves a few CPU cycles).
 

@@ -55,7 +55,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ### Installation guides
 
-- [Sonic 1 Github Disassembly (AS version)](docs/1-installation/Sonic-1-Github-AS.md)
+- [Sonic 1 Github Disassembly](docs/1-installation/Sonic-1-Github.md)
 - [Sonic 1 Hivebrain 2005 Disassembly](docs/1-installation/Sonic-1-Hivebrain-2005.md)
 
 ### Documentation
