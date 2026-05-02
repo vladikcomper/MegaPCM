@@ -11,7 +11,7 @@ Possible reasons:
 
     **How to fix:** Some samples likely have invalid formats. Follow error description provided by the debugger to fix this.
 
-2. `MegaPCM_LoadDriver` or the main sound driver is getting stuck in an inifite loop waiting for Z80 to release bus.
+2. `MegaPCM_LoadDriver` or the main sound driver is getting stuck in an infinite loop waiting for Z80 to release bus.
 
     **How to diagnose:** If you have MD Debugger and there aren't any displayed exceptions, your CPU is most likely stuck in an infinite loop. If your emulator has a built-in M68K debugger, you should be able to verify it.
 
@@ -40,6 +40,6 @@ Your installation of Mega PCM 2 is likely incorrect. Revisit installation guide 
 
 ## Problem: DAC playback is still scratchy!
 
-Mega PCM 2 guarantees that DAC playback is ultra-clean thanks to its "DMA protection" system, but you should guarantee that you eleminate all Z80 stops on DMA (graphic transfers). See "Step 2. Remove Z80 stops globally" of the installation guide.
+Mega PCM 2 guarantees that DAC playback is ultra-clean thanks to its "DMA protection" system, but you should guarantee that you eliminate all Z80 stops on DMA (graphic transfers). See "Step 2. Remove Z80 stops globally" of the installation guide.
 
 Another reason why playback may get slightly worse at times is when the main sound driver writes to YM too frequently (this is the only time where Z80 must be stopped shortly). These shouldn't be too noticeable unless you play a new SFX every frame. Unfortunately, there isn't a proper solution to this, as because there are limits to everything.

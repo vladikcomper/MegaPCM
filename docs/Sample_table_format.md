@@ -1,7 +1,9 @@
 
 # Mega PCM 2 Sample table format
 
-Mega PCM 2's sample table consists of sample record definitions (`dcSample`) and must be terminated by _the end marker_ (`dc.w -1`). Actual samples are usually included after the table in the same file (via `incdac`), though they can be located anywhere in the ROM.
+Mega PCM 2's sample table consists of sample record definitions (`dcSample`) and **must** be terminated by the ___end marker___ (`dc.w -1`). Actual samples are usually included after the table in the same file (via `incdac`), though they can be located anywhere in the ROM.
+
+## Sample Table Overview
 
 > [!NOTE]
 >
@@ -58,12 +60,12 @@ hikick: dcSample    TYPE_DPCM,      Kick,       16000               ; $86 or `hi
     - `TYPE_DPCM_TURBO` - DPCM-HQ or raw DPCM files at 25800 Hz _(since Mega PCM 2.1)_;
 - `<Name>` - sample pointer/name, the one you specify for the `indac` macro, so sample table can reference it;
 - `<SampleRateHz>` (optional for .WAV and .DPCMQ files) - sample rate in Hz, supported rates are:
-    - For `TYPE_PCM`: Anything between 0 and 25100 Hz;
-    - For `TYPE_PCM_TURBO`: Only 32000 Hz;
-    - For `TYPE_DPCM`: Anything between 0 and 20500 Hz;
-    - For `TYPE_DPCM_TURBO`: Only 25800 Hz _(since Mega PCM 2.1)_;
+    - For `TYPE_PCM`: 100 .. 25100 Hz;
+    - For `TYPE_PCM_TURBO`: 32000 Hz fixed;
+    - For `TYPE_DPCM`: 100 ... 20500 Hz;
+    - For `TYPE_DPCM_TURBO`: 25800 Hz fixed _(since Mega PCM 2.1)_;
     - If set to `0` or not specified, Mega PCM attempts to auto-detect sample rate from file header (**WARNING!** This only works for .WAV and .DPCMQ files);
-- `<Flags>` (optional) - can specify playback or priority flags or their combinations:
+- `<Flags>` (optional) - can specify playback/priority flags or their combinations:
     - Playback flags:
         - `FLAGS_LOOP` - loops sample indefinitely;
         - `FLAGS_SFX` - sample is considered an SFX sample and has priority over "normal" samples (without this flag). Normal samples cannot interrupt it. It also uses separate volume and pan settings (see `MegaPCM_SetSFXVolume` and `MegaPCM_SetSFXPan` in [API docs](API.md))
@@ -119,7 +121,7 @@ On top of sample's label (e.g. `mysample`), Mega PCM also generates the followin
         - `TTT` - sample type (set by `TYPE_NONE`, `TYPE_PCM`, `TYPE_PCM_TURBO`, `TYPE_DPCM` or `TYPE_DPCM_TURBO`);
         - `L` - loop sample flag (`FLAGS_LOOP`).
 - `mysample.pitch` - returns sample's internal pitch values (converted from Sample Rate to 0..$FF scale);
-    - **NOTE:** Due to technical limitatation, this setting only works if Sample Rate was specified in the sample table. When you ask Mega PCM to auto-detect rate for you, `.pitch` property isn't available.
+    - **NOTE:** Due to technical limitations this setting only works if Sample Rate was specified in the sample table. When you ask Mega PCM to auto-detect rate for you, `.pitch` property isn't available.
 
 These properties can be used to conveniently replace manually-tracked values:
 

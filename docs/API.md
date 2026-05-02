@@ -1,7 +1,7 @@
 
 # Mega PCM 2 API
 
-This document describes macros and routines exposed by Mega PCM 2 that can you call after installation. While this API is meant for M68K assembly projects, routines are also optimized for possible C/C++ integrations (only uses scratch registers and one argument at most).
+This document describes macros and routines exposed by Mega PCM 2 you can use after installation. While this API is meant for M68K assembly projects, routines are also optimized for possible C/C++ integrations (only uses scratch registers and one argument at most).
 
 The bare minimum you need is `MegaPCM_LoadDriver` and `MegaPCM_LoadSampleTable` routines for setup and `MPCM_play` macro for playback.
 
@@ -73,13 +73,13 @@ See `examples/` directory for more usage examples.
 
 ## Macros Reference
 
-This section documents macro commands exposed by Mega PCM 2 bundles since version 2.1. All these commands have routine equivalents, e.g.: `MPCM_play` is equavalent to `jsr MegaPCM_PlaySample`. Macros are usually faster and more convenient to use as they generate code in-place as opposed to calling routines and returning, but they result in slightly larger code.
+This section documents macro commands exposed by Mega PCM 2 bundles since version 2.1. All these commands have routine equivalents, e.g.: `MPCM_play` is equivalent to `jsr MegaPCM_PlaySample`. Macros are usually faster and more convenient to use as they generate code in-place as opposed to calling routines and returning, but they result in slightly larger code.
 
 For controlling playback, prefer macros over routines unless you really wish to save space.
 
 ### `MPCM_play`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Plays given sample by ID (>=$81). If currently playing sample has a higher priority, this command is ignored.
 
@@ -113,13 +113,13 @@ Plays given sample by ID (>=$81). If currently playing sample has a higher prior
 
 ### `MPCM_pause`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Pauses playback completely until "unpause" command is sent or a new sample is requested.
 
 > [!NOTE]
 >
-> Mega PCM accepts commands (play, pause, stop) once per frame, rougly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
+> Mega PCM accepts commands (play, pause, stop) once per frame, roughly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
 
 **Syntax**
 
@@ -131,7 +131,7 @@ Pauses playback completely until "unpause" command is sent or a new sample is re
 
 ### `MPCM_unpause`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Unpauses playback. If playback wasn't paused, it has no effect (rather than clearing the last sent command).
 
@@ -149,7 +149,7 @@ Unpauses playback. If playback wasn't paused, it has no effect (rather than clea
 
 ### `MPCM_stop`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Stops playback completely, regardless of currently playing sample's priority.
 
@@ -167,7 +167,7 @@ Stops playback completely, regardless of currently playing sample's priority.
 
 ### `MPCM_setPan`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Sets the default panning for normal (non-SFX) samples. SFX samples use a separate pan setting.
 
@@ -194,7 +194,7 @@ Note that Mega PCM 2 will update panning *only when* a new sample starts playing
 
 ### `MPCM_setSfxPan`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Sets the default panning for SFX samples. Normal samples use a separate pan setting and are not affected by this.
 
@@ -221,7 +221,7 @@ Note that Mega PCM 2 will update panning *only when* a new sample starts playing
 
 ### `MPCM_setVol`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Sets volume for normal (non-SFX) samples. SFX samples use a separate volume setting.
 
@@ -249,7 +249,7 @@ Mega PCM 2 updates volume once per frame. This setting is ignored in "turbo play
 
 ### `MPCM_setSfxVol`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
 Sets volume for SFX samples. Normal samples use a separate volume setting and are not affected by this.
 
@@ -278,9 +278,9 @@ Mega PCM 2 updates volume once per frame. This setting is ignored in "turbo play
 
 ### `MPCM_setPitch`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
-Updates pitch of currently playing sample. Mega PCM pull this setting once per frame. This is usually used for pitch effects (e.g. slowdown) and to pull it off properly, you should be aware of which sample is playing and its original (base) pitch value (see example below).
+Updates pitch of currently playing sample. Mega PCM pulls this setting once per frame. This is usually used for pitch effects (e.g. slowdown) and to pull it off properly, you should be aware of which sample is playing and its original (base) pitch value (see example below).
 
 > [!WARNING]
 >
@@ -324,7 +324,7 @@ Loads Mega PCM driver into Z80 memory and waits for its initialization. You only
 
 **Uses:**
 
-- d0-d1, a0-a1
+- `d0-d1`, `a0-a1`
 
 
 ### `MegaPCM_LoadSampleTable`
@@ -371,16 +371,16 @@ SampleTable:
 
 **Input:**
 
-- a0 - sample table pointer
+- `a0` - sample table pointer
 
 **Output:**
 
-- d0 - zero on success, non-zero error code on failure
-- a0 - pointer to a problematic sample in table (if applicable)
+- `d0` - zero on success, non-zero error code on failure
+- `a0` - pointer to a problematic sample in table (if applicable)
 
 **Uses:**
 
-- d0-d1, a0-a1
+- `d0-d1`, `a0-a1`
 
 **Error codes:**
 
@@ -417,7 +417,7 @@ Plays given sample by ID (>=$81). If currently playing sample has a higher prior
 
 **Input:**
 
-- d0 .b - sample id to play (>=$81)
+- `d0 .b` - sample id to play (>=$81)
 
 
 ### `MegaPCM_PausePlayback`
@@ -426,7 +426,7 @@ Pauses playback completely until `MegaPCM_UnpausePlayback` is called or a new sa
 
 > [!NOTE]
 >
-> Mega PCM accepts commands (play, pause, stop) once per frame, rougly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
+> Mega PCM accepts commands (play, pause, stop) once per frame, roughly a few scanlines after VBlank is over. If commands are sent more than once per frame, only the last stored command will be processed.
 
 **Usage:**
 
@@ -480,7 +480,7 @@ Note that Mega PCM 2 will update panning *only when* a new sample starts playing
 
 **Input:**
 
-- d0 .b - panning ($40, $80 or $C0)
+- `d0 .b` - panning (`$40`, `$80` or `$C0`)
 
 
 ### `MegaPCM_SetSFXPan`
@@ -498,7 +498,7 @@ Note that Mega PCM 2 will update panning *only when* a new sample starts playing
 
 **Input:**
 
-- d0 .b - panning ($40, $80 or $C0)
+- `d0 .b` - panning (`$40`, `$80` or `$C0`)
 
 
 ### `MegaPCM_SetVolume`
@@ -516,7 +516,7 @@ Mega PCM 2 updates volume once per frame. This setting is ignored in "turbo play
 
 **Input:**
 
-- d0 .b - volume level (0 = max, $F = min)
+- `d0 .b` - volume level (`0` = max, `$F` = min)
 
 
 ### `MegaPCM_SetSFXVolume`
@@ -534,13 +534,13 @@ Mega PCM 2 updates volume once per frame. This setting is ignored in "turbo play
 
 **Input:**
 
-- d0 .b - volume level (0 = max, $F = min)
+- `d0 .b` - volume level (`0` = max, `$F` = min)
 
 ### `MegaPCM_SetActiveSamplePitch`
 
-***Since Mega PCM 2.1***
+_(Added in Mega PCM 2.1)_
 
-Updates pitch of currently playing sample. Mega PCM pull this setting once per frame. This is usually used for pitch effects (e.g. slowdown) and to pull it off properly, you should be aware of which sample is playing and its original (base) pitch value (see example below).
+Updates pitch of currently playing sample. Mega PCM pulls this setting once per frame. This is usually used for pitch effects (e.g. slowdown) and to pull it off properly, you should be aware of which sample is playing and its original (base) pitch value (see example below).
 
 > [!WARNING]
 >
@@ -550,10 +550,10 @@ Updates pitch of currently playing sample. Mega PCM pull this setting once per f
 
 ```m68k
     move.b  #mysample.pitch/2, d0
-    jsr     MegaPCM_SetActiveSamplePitch        ; 
+    jsr     MegaPCM_SetActiveSamplePitch        ; 50% playback speed
 ```
 
 **Input:**
 
-- d0 .b -  pitch level (`0` = 0%, `$FF` = 100% base rate)
+- `d0 .b` -  pitch level (`0` = 0%, `$FF` = 100% base rate)
 
