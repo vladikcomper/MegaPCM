@@ -9,11 +9,13 @@
 ; ------------------------------------------------------------------------------
 
 	if __AS__
-		include	"../../lib-68k/mdshell.as.asm"						; MD Shell blob
+		include	"../../lib-68k/mdshell.as.asm"					; MD Shell blob
+		include "../../build/bundle/as/MegaPCM.Macros.asm"		; Mega PCM macros
 		include "../../build/bundle/as/MegaPCM.asm"				; Mega PCM blob
 
 	elseif ~def(__LINKABLE__)
-		include	"../../lib-68k/mdshell.asm68k.asm"					; MD Shell blob
+		include	"../../lib-68k/mdshell.asm68k.asm"				; MD Shell blob
+		include "../../build/bundle/asm68k/MegaPCM.Macros.asm"	; Mega PCM macros
 		include "../../build/bundle/asm68k/MegaPCM.asm"			; Mega PCM blob
 		opt l+
 
@@ -46,6 +48,10 @@ SampleTable2_a:
 					dcSample	TYPE_DPCM, 		Kick,		 8000	; $83
 					dcSample	TYPE_DPCM, 		Kick,		 8000	; $84
 					dc.w	-1
+
+					dc.l	0, 0, 0, 0
+					dc.l	0, 0, 0, 0
+
 ; ------------------------------------------------------------------------------
 SampleTable2_b:
 tbl2b_sample_81:	dcSample	TYPE_DPCM,		Kick,		 8000	; $81
@@ -120,6 +126,10 @@ MacroExpansions:
 	MPCM_setSfxVol #$F
 
 	MPCM_setPitch #tbl1_kick_low.pitch
+
+	MPCM_startZ80
+	MPCM_stopZ80
+	MPCM_ensureYMWriteReady
 MacroExpansions_End:
 	rts
 ; ------------------------------------------------------------------------------

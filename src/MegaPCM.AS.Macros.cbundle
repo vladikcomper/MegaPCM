@@ -1,0 +1,19 @@
+##
+## CBundle File for Mega PCM - ASM68K Bundle Macros
+##
+
+; ==============================================================================
+; ------------------------------------------------------------------------------
+; Mega PCM 2.1 - DAC Sound Driver (Macro Definitions)
+;
+; Documentation, examples and source code are available at:
+; - https://github.com/vladikcomper/MegaPCM/tree/2.x
+;
+; (c) 2012-2026, Vladikcomper
+; ------------------------------------------------------------------------------
+
+#include Macros.AS.asm
+
+#include Constants.asm
+
+#include License.asm
