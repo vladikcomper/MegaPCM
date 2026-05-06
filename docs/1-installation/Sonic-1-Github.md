@@ -1,11 +1,11 @@
 
 # Installing Mega PCM 2 in Sonic 1 Github Disassembly
 
-This is a step-by-step guide for installing Mega PCM 2 in [Sonic 1 Github Disassembly](https://github.com/sonicretro/s1disasm), it should work for both **AS** (the default) and **ASM68K** assembler branches, since they were mostly aligned as of 2026.
+This is a step-by-step guide for installing Mega PCM 2 in [Sonic 1 Github Disassembly](https://github.com/sonicretro/s1disasm), it should work for both **AS** (the default) and **ASM68K** assembler branches, since they were aligned starting with 2026 releases.
 
 > [!NOTE]
 >
-> Sonic 1 Github Disassembly is a fast-moving target. While I try to keep this guide up-to-date, there may appear breaking changes over time. If you noticed that disassembly's code style diverged too much from examples here, feel free to open an issue in this repository.
+> This guide was tested against [v.26.03](https://github.com/sonicretro/s1disasm/releases/tag/v26.03) and [v.26.05](https://github.com/sonicretro/s1disasm/releases/tag/v26.05) versions of Sonic 1 Github disassembly. If newer releases introduce breaking changes not compatible with this guide, feel free to open an issue in this repository.
 
 Installing Mega PCM 2 technically only involves adding a few files and several lines of bootstrap code, but quite a few extra steps are required for full integration with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. So we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
@@ -384,9 +384,9 @@ Open `s1.sounddriver.asm` file and find `.gotsampleduration:` label (it's a part
 >
 > In **ASM68K** branch, `DAC_sample_rate` will appear as raw bytes instead of with `timpaniLoopCounter`. Remove it as usual.
 
-### Step 4.3. Patching SMPS for Mega PCM 2: FM routines
+### Step 4.2. Patching SMPS for Mega PCM 2: FM routines
 
-Finally, in the same `s1.sounddriver.asm` file, find this `WriteFMIorII:` label and **replace everything** until `; End of function WriteFMII` with this code:
+Finally, in the same `s1.sounddriver.asm` file, find `WriteFMIorII:` label and **replace everything** until `; End of function WriteFMII` with this code:
 
 ```m68k
 ; ===========================================================================
