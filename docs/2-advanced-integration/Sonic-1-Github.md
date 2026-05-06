@@ -40,6 +40,7 @@ Just **replace** the code above with this:
 
 ```m68k
 ; loc_72ACC:
+cfPanningAMSFMS:
                 move.b  (a4)+,d1                        ; New AMS/FMS/panning value
                 tst.b   SMPS_Track.VoiceControl(a5)     ; Is this a PSG track?
                 bmi.s   locret_72AEA                    ; Return if yes
