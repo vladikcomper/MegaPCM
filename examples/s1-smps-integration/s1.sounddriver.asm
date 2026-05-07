@@ -265,9 +265,7 @@ DACUpdateTrack:
 		move.b	TrackSavedDAC(a5),d0	; Get sample
 		cmpi.b	#$80,d0			; Is it a rest?
 		beq.s	.locret			; Return if yes
-		MPCM_stopZ80
-		move.b	d0, MPCM_Z80_RAM+Z_MPCM_CommandInput	; send DAC sample to Mega PCM
-		MPCM_startZ80
+		MPCM_play d0			; send DAC sample to Mega PCM
 ; locret_71CAA:
 .locret:
 		rts	
@@ -525,9 +523,7 @@ PauseMusic:
 		jsr	WriteFMI(pc)
 		dbf	d3,.noteoffloop
 
-		MPCM_stopZ80
-		move.b	#Z_MPCM_COMMAND_PAUSE, MPCM_Z80_RAM+Z_MPCM_CommandInput ; pause DAC
-		MPCM_startZ80
+		MPCM_pause
 
 		jmp	PSGSilenceAll(pc)
 ; ===========================================================================
@@ -579,9 +575,7 @@ PauseMusic:
 
 ; loc_71EFE:
 .unpausedallfm:
-		MPCM_stopZ80
-		move.b	#0, MPCM_Z80_RAM+Z_MPCM_CommandInput	; unpause DAC
-		MPCM_startZ80
+		MPCM_unpause
 
 .done:
 		rts
@@ -1301,9 +1295,7 @@ DoFadeOut:
 .dac_update_volume:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
-		MPCM_stopZ80
-		move.b	d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
-		MPCM_startZ80
+		MPCM_setVol d0
 .dac_done:
 
 		lea	v_music_fm_tracks(a6),a5
@@ -1403,9 +1395,7 @@ StopAllSound:
 		clr.l	(a0)+
 		dbf	d0,.clearramloop
 
-		MPCM_stopZ80
-		move.b	#Z_MPCM_COMMAND_STOP, MPCM_Z80_RAM+Z_MPCM_CommandInput ; stop DAC playback
-		MPCM_startZ80
+		MPCM_stop
 
 		move.b	#$80,v_sound_id(a6)	; set music to $80 (silence)
 		jsr	FMSilenceAll(pc)
@@ -1561,9 +1551,7 @@ DoFadeIn:
 .dac_update_volume:
 		move.b	TrackVolume(a5), d0
 		lsr.b	#3, d0
-		MPCM_stopZ80
-		move.b	d0, MPCM_Z80_RAM+Z_MPCM_VolumeInput
-		MPCM_startZ80
+		MPCM_setVol d0
 .dac_done:
 
 		lea	v_music_fm_tracks(a6),a5
@@ -2097,10 +2085,8 @@ cfPanningAMSFMS:
 		; Send to DAC panning Mega PCM instead of updating it directly.
 		; Mega PCM needs to track panning on its own to restore it in
 		; normal sample is interrupted by an SFX sample
-		MPCM_stopZ80
 		and.b	#$C0, d1
-		move.b	d1, MPCM_Z80_RAM+Z_MPCM_PanInput
-		MPCM_startZ80
+		MPCM_setPan d1
 		rts
 ; ===========================================================================
 
