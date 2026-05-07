@@ -62,13 +62,6 @@ cfPanningAMSFMS:
                 rts
 ```
 
-> [!NOTE]
->
-> If your disassembly is **pre-June 2024**, you should rename some of the variables in the example above:
-> - `SMPS_Track.VoiceControl(a5)` (new) -> `TrackVoiceControl(a5)` (old)
-> - `SMPS_Track.AMSFMSPan(a5)` (new) -> `TrackAMSFMSPan(a5)` (old)
-> - `SMPS_RAM.f_updating_dac(a6)` (new) -> `f_updating_dac(a6)` (old)
-
 As you can see, this updated code merely extends the original. In fact, we've added a few new lines after the line `move.b d1,TrackAMSFMSPan(a5)` and a few micro-optimization (saves a few CPU cycles).
 
 Finally, let's reset panning and other DAC settings when BGM is initialized. Find `.bgm_fmdone:` and just **below** this line, add the following:
@@ -126,10 +119,6 @@ PauseMusic:
         .notFM6:
 ```
 
-If your disassembly is **pre-June 2024**, you should rename some of the variables in the example above:
-- `SMPS_RAM.f_pausemusic(a6)` (new) -> `f_pausemusic(a6)` (old)
-- `SMPS_RAM.v_music_fm6_track(a6)` (new) -> `v_music_fm6_track(a6)` (old)
-
 With this change, SMPS will no longer take overship of DAC panning, since Mega PCM 2 should completely own the channel.
 
 Next, scroll below until you find this line:
@@ -141,45 +130,32 @@ Next, scroll below until you find this line:
 Just **above** it, insert the following:
 
 ```m68k
-                MPCM_stopZ80
-                move.b  #Z_MPCM_COMMAND_PAUSE, MPCM_Z80_RAM+Z_MPCM_CommandInput ; pause DAC
-                MPCM_startZ80
+                MPCM_pause
 ```
 
 This is our new way of pausing the DAC channel. Instead of just silencing it (and keep the sample playing) we instruct Mega PCM 2 to pause the playback.
 
-Now, scroll down into `.unpausemusic:` section until you see this:
+Now, scroll down until `.unpausemusic:` section and modify it as follows:
 
-```m68k
+```diff
+.unpausemusic:
+                clr.b   SMPS_RAM.f_pausemusic(a6)
+                moveq   #SMPS_Track.len,d3
                 lea     SMPS_RAM.v_music_fmdac_tracks(a6),a5
-                moveq   #SMPS_MUSIC_FM_DAC_TRACK_COUNT-1,d4     ; 6 FM + 1 DAC tracks
+-               moveq   #SMPS_MUSIC_FM_DAC_TRACK_COUNT-1,d4     ; 6 FM + 1 DAC tracks
++               moveq   #6-1,d4                                 ; 6 FM
 ```
-
-In older versions of the disassembly this setion may look like this:
-
-```m68k
-                lea     v_music_fmdac_tracks(a6),a5
-                moveq   #((v_music_fmdac_tracks_end-v_music_fmdac_tracks)/TrackSz)-1,d4 ; 6 FM + 1 DAC tracks
-```
-
-**Replace** it with this:
-
-```m68k
-                lea     SMPS_RAM.v_music_fm_tracks(a6),a5
-                moveq   #6-1,d4                         ; 6 FM
-```
-
-If your disassembly is **pre-June 2024**, replace `SMPS_RAM.v_music_fm_tracks(a6)` with just `v_music_fm_tracks(a6)`.
 
 Again, Mega PCM 2 owns DAC channel now and SMPS should touch it to avoid bugs and synchronization issues.
 
-Finally, find `.unpausedallfm:` line below. Right above it (and before `bra.w   DoStartZ80`) **insert this**:
+Finally, find `.unpausedallfm:` line below add `MPCM_unpause` and `.done:` after it as shown:
 
-```m68k
-.unpausedallfm: ; <-- Make sure new code goes below this line
-                MPCM_unpause
-
-.done:
+```diff
+.unpausedallfm:
++               MPCM_unpause
++
++.done:
+                bra.w   DoStartZ80
 ```
 
 **How to test:**
@@ -226,18 +202,13 @@ Now, find `StopAllSound:` and remove the following lines right below it (don't r
 
 Since Mega PCM 2 now "owns" the DAC channel, we don't need this to avoid issues. Mega PCM will enable and disable DAC automatically for you.
 
-Finally, scroll down until you see these lines:
+Finally, scroll down until you see these lines and add `MPCM_stop` **above** them as shown:
 
-```m68k
+```diff
++               MPCM_stop
                 move.b  #$80,SMPS_RAM.v_sound_id(a6)    ; set music to $80 (silence)
                 jsr     FMSilenceAll(pc)
                 bra.w   PSGSilenceAll
-```
-
-Right **above** them, add this:
-
-```m68k
-                MPCM_stop
 ```
 
 This is a clean and proper way to stop DAC now, not forcefully disabling the channel.
@@ -287,10 +258,6 @@ Right **below** this snippet, insert the following code:
 .dac_done:
 ```
 
-As usual, if your disassembly is **pre-June 2024**, you may need to change some variable names:
-- `SMPS_RAM.v_music_dac_track(a6)` (new) -> `v_music_dac_track(a6)` (old)
-- `SMPS_Track.Volume(a5)` (new) -> `TrackVolume(a5)` (old)
-
 Now, let's give "fade in" sequence the same treatment. Locate the following code below `DoFadeIn:`:
 
 ```m68k
@@ -328,10 +295,6 @@ Right **below** it, insert the following code:
 .dac_done:
 ```
 
-Again, if your disassembly is **pre-June 2024**, you need to rename the following variables in the code above:
-- `SMPS_RAM.v_music_dac_track(a6)` (new) -> `v_music_dac_track(a6)` (old)
-- `SMPS_Track.Volume(a5)` (new) -> `TrackVolume(a5)` (old)
-
 If you try to build now, you'll most likely get "jump distance too big" error on this line under `.continuefade:`:
 
 ```m68k
@@ -346,11 +309,6 @@ At last, we need to fix initialization of "fade in to previous" sequence, which 
 -               bset    #2,SMPS_RAM.v_music_dac_track.PlaybackControl(a6)       ; Set 'SFX overriding' bit
 ```
 
-In older disassemblies, this line may've looked like this:
-```diff
--               bset    #2,v_music_dac_track+TrackPlaybackControl(a6)    ; Set 'SFX overriding' bit
-```
-
 Then right **below** the line you've just removed, insert the following code:
 ```m68k
                 tst.b   SMPS_RAM.v_music_dac_track(a6)                  ; is DAC playing?
@@ -359,23 +317,12 @@ Then right **below** the line you've just removed, insert the following code:
 .dacdone:
 ```
 
-If you're using an older disassembly, replace some variables as follows:
-- `SMPS_RAM.v_music_dac_track(a6)` (new) -> `v_music_dac_track(a6)` (old);
-- `SMPS_RAM.v_music_dac_track.Volume(a6)` (new) -> `v_music_dac_track+TrackVolume(a6)` (old)
-
 Finally, find `.fadedone:` and remove a similar line just below it:
 
 ```diff
 ; loc_726D6:
 .fadedone:
 -               bclr    #2,SMPS_RAM.v_music_dac_track.PlaybackControl(a6)       ; Clear 'SFX overriding' bit
-```
-
-Again, in older disassembly, it may look like this:
-```diff
-; loc_726D6:
-.fadedone:
--               bclr    #2,v_music_dac_track+TrackPlaybackControl(a6)       ; Clear 'SFX overriding' bit
 ```
 
 **How to test:**

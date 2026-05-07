@@ -325,6 +325,10 @@ In the same `sonic.asm` file, insert the following code right **below** the driv
 
 Build your ROM. You should see a black screen and SEGA chant should play.
 
+> [!NOTE]
+>
+> If you get errors related to Mega PCM macros (e.g. `incdac`), make sure you're suing the correct bundle version for your assembler (e.g. `as` for The AS Macro Assembler, `asm68k` for ASM68K).
+
 If everything works, **remove this code now**. It's time to integrate our sound drivers proper!
 
 
@@ -398,7 +402,7 @@ WriteFMIorIIMain:
 ; ===========================================================================
 ; locret_72720:
 .locret:
-                rts     
+                rts
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -589,8 +593,11 @@ Now find `SegaPCM:` label. You need to remove both the sample inclusion and chec
 
 Now the driver is gone, let's remove unnecessary files:
 
-- Remove `sound/z80.asm` file;
-- Remove the entire `sound/dac` directory (we'll replace it with Mega PCM's version soon).
+- Remove `sound/z80.bin` file;
+- Remove old files from `sound/dac` directory:
+  - `sound/dac/sega.pcm`
+  - `sound/dac/snare.dpcm`
+  - `sound/dac/readme.txt`
 
 
 ### Step 4.3. Check yourself: Testing SMPS and Mega PCM 2
