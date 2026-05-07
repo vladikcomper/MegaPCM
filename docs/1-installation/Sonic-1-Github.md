@@ -18,7 +18,7 @@ All steps in the guide are designed to be as simple and short as reasonably poss
 ## Table of Contents
 
 - [Step 1. Remove old DAC driver](#step-1-remove-old-dac-driver)
-  - [Step 1.1. Remove old DAC driver loading subroutine](#step-11-remove-old-dac-driver-loading-subroutine)
+  - [Step 1.1. Remove old DAC driver loading routine](#step-11-remove-old-dac-driver-loading-routine)
   - [Step 1.2. Remove old DAC driver busy check in SMPS](#step-12-remove-old-dac-driver-busy-check-in-smps)
   - [Step 1.3. Check yourself](#step-13-check-yourself)
 - [Step 2. Remove Z80 stops globally](#step-2-remove-z80-stops-globally)
@@ -32,8 +32,8 @@ All steps in the guide are designed to be as simple and short as reasonably poss
   - [Step 3.4. Load Mega PCM 2 and the sample table upon boot](#step-34-load-mega-pcm-2-and-the-sample-table-upon-boot)
   - [Step 3.5. Check yourself: Making sure Mega PCM works](#step-35-check-yourself-making-sure-mega-pcm-works)
 - [Step 4. Integrating SMPS with Mega PCM 2](#step-4-integrating-smps-with-mega-pcm-2)
-  - [Step 4.1. Patching SMPS for Mega PCM 2: DAC playback](#step-41-patching-smps-for-mega-pcm-2--dac-playback)
-  - [Step 4.2. Patching SMPS for Mega PCM 2: FM routines](#step-42-patching-smps-for-mega-pcm-2--fm-routines)
+  - [Step 4.1. Patching SMPS for Mega PCM 2: DAC playback](#step-41-patching-smps-for-mega-pcm-2-dac-playback)
+  - [Step 4.2. Patching SMPS for Mega PCM 2: FM routines](#step-42-patching-smps-for-mega-pcm-2-fm-routines)
   - [Step 4.3. Fully remove the old DAC driver](#step-43-fully-remove-the-old-dac-driver)
   - [Step 4.4. Check yourself: Testing SMPS and Mega PCM 2](#step-44-check-yourself-testing-smps-and-mega-pcm-2)
 - [Next Steps](#next-steps)
@@ -464,7 +464,7 @@ WriteFMII:
 
 You've just replaced `WriteFMIorIIMain`, `WriteFMIorII`, `WriteFMI` and `WriteFMII` routines with better, more optimized versions compatible with Mega PCM 2.
 
-### Step 4.4. Fully remove the old DAC driver
+### Step 4.3. Fully remove the old DAC driver
 
 This step slightly differs between AS and ASM68K branches of Sonic 1 Github disassembly, because AS assembles incorporates assemblying of old DAC driver into its build system. Use instructions relevant for your branch.
 
@@ -541,7 +541,8 @@ Finally, in the same `build.lua` file, remove and alter the following lines as s
 + common.build_rom_and_handle_failure("sonic", "s1built", "", "-p=FF", false, "https://github.com/sonicretro/s1disasm")
 ```
 
-**For ASM68K branch:**
+<details>
+<summary><b>For ASM68K branch:</b></summary>
 
 Open `s1.sounddriver.asm` and search for `DACDriver:`; you should see the following fragment, **remove all the lines shown below**:
 
@@ -598,9 +599,10 @@ Now the driver is gone, let's remove unnecessary files:
   - `sound/dac/sega.pcm`
   - `sound/dac/snare.dpcm`
   - `sound/dac/readme.txt`
+</details>
 
 
-### Step 4.3. Check yourself: Testing SMPS and Mega PCM 2
+### Step 4.4. Check yourself: Testing SMPS and Mega PCM 2
 
 And that concludes the basic integration of Mega PCM 2 with Sonic 1's SMPS!
 
