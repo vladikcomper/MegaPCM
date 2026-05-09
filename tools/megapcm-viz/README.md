@@ -1,7 +1,7 @@
 
 # Mega PCM Vizualizer
 
-**Mega PCM Vizualizer** is a custom-made Z80 and YM2612 DAC emulator to test Mega PCM 2 during development and vizualize it's internal state (e.g. buffer health) across TV-frame. I mostly built this tool for development purposes, so it's not fully user-friendly or convenient. You need to compile it manually, since it's not publicly released.
+**Mega PCM Vizualizer** is a custom-made Z80 and YM2612 DAC emulator to test Mega PCM 2 during development and vizualize its internal state (e.g. buffer health) across TV-frame. I mostly built this tool for development purposes, so it's not fully user-friendly or convenient. You need to compile it manually, since it's not publicly released.
 
 If you just want a glimpse of it in action, refer to this short video (**Volume warning!** Relatively loud sound): https://drive.google.com/file/d/12ceuu8dUHGmrKKK1weNBXXI4GT-cVVNT/view (preview quality is low, I recommend downloading it for 60 fps)
 

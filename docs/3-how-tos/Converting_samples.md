@@ -14,7 +14,7 @@ When converting samples for Mega PCM 2, you should pay attention to 3 factors:
 - **Sample rate**
     - Lower sample rates limit the dynamic range (cut high frequencies), but save a lot of space;
     - Higher sample rates better preserve dynamic range at the cost of space;
-    - 16 kHz is half the size of 32 kHz. 20-22 kHz is usually the "sweet spot" for most of the sounds, 16 kHz and is acceptable for voices and basses.
+    - 16 kHz is half the size of 32 kHz. 20-22 kHz is usually the "sweet spot" for most of the sounds, 16 kHz and below is acceptable for voices and basses.
 
 - **File size**
     - Sega Mega-Drive ROMs usually can't go beyond 4 MB, so you should be careful with total length of your samples (in seconds), here's how much you can fit in 4 MB depending on the format:
@@ -50,11 +50,11 @@ The perceived "sound quality" usually depends on several factors:
 - **Sample rate**
     - Basically number of samples per second. Our hearing range is typically 20 Hz .. 20 kHz. That's why modern sampling rate is 44.1 kHz or 48 kHz (roughly double of that to fit into 20 kHz dynamic range).
     - Unfortunately, just like with *bit depth*, older hardware puts a toll on sample rate as well. Older games typically sampled at 8 kHz .. 16 kHz, but Mega PCM 2 supports up to 32 kHz in turbo mode.
-    - However, high sample rates result in large files, and you may run out of ROM space quickly. To combat this, lower the sample rate and use compressed formats like DPCM. 22.05 kHz is optimal in many situations as it has good dynamic range and moderate size.
+    - However, high sample rates result in large files, and you may run out of ROM space quickly. To combat this, lower the sample rate and use compressed formats like DPCM-HQ. 22.05 kHz is optimal in many situations as it has good dynamic range and moderate size.
 
 - **Conversion tools & settings**
     - Surprisingly, that's often overlooked but insanely important. Conversion tools matter, especially with hardware limitations, where mistakes become audible!
-    - Modern tools like Audacity and FFMpeg come with good defaults and should do good out of the box. Some older/outdated tools, like Sox, may give inferior results, especially for 8-bit quantization on lower sample rates, because they use aggressive dithering, which becomes audible below 32 kHz;
+    - Modern tools like Audacity and FFmpeg come with good defaults and should do good out of the box. Some older/outdated tools, like Sox, may give inferior results, especially for 8-bit quantization on lower sample rates, because they use aggressive dithering, which becomes audible below 32 kHz;
     - If you want absolute control and perfection, you need to play with different sample rates, dithering and downsampling options for best results.
 
 ## Conversion Best Practices
@@ -77,6 +77,11 @@ Here's some tips and rules of thumb for converting samples for old hardware in g
     - "Pitch perfect" rates are (first is "turbo mode" rate, others are "normal mode" rates):
         - **WAV/PCM**: 32000 Hz, 25100 Hz, 12550 Hz, 6275 Hz
         - **DPCM/DPCM-HQ**: 25800 Hz, 20600 Hz, 10300 Hz, 5150 Hz
+
+- **Sample Conversion: Stereo to Mono can be clunky**
+    - Any music that overuses stereo (e.g. altering between left, center and right) may result in subpar sound when averaged to mono;
+    - Awkward results are often related to channel mixing, where anything exclusive to left or right channel will be effectively cut to 50% of volume;
+    - Sometimes it's worth seeing if picking a single channel (e.g. only left or right) or specific mixing algorithm gives better results.
 
 - **Sample Conversion: There will be dithering**
     - All sound converters utilize dithering by default when converting to 8-bit PCM.

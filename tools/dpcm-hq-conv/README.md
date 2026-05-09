@@ -15,17 +15,17 @@ dpcm-hq-conv [OPTIONS]... INPUT_FILE [OUTPUT_FILE]
 
 - `-m|--mode [MODE]`
     - Sets operation MODE. Possible values:
-        - `a|auto` (default) - auto-detect based on input file extension (.dpcmq or .dpcmq implies decode, everything else implies encode)
+        - `a|auto` (default) - auto-detect based on input file extension (`.dpcmq` or `.dpcmq` implies decode, everything else implies encode)
         - `e|encode` - encode WAV or raw PCM file to DPCM-HQ file
         - `d|decode` - decode DPCM or DPCM-HQ file to WAV file
 
 - `-t|--table [DELTA_INDEX_TABLE]`
-    - When in 'encode' MODE, selects the preferred delta table for the encoder. Possible values:
+    - When in `encode` mode (see above), selects the preferred delta table for the encoder. Possible values:
         - `b|best` (default) - try all tables, try to pick the best one based on certain heuristics
         - `0`, `1` or `2` - specify table number manually (higher numbers results in more muffled sounds, but less noise)
 
 - `-r|--rate [FORCED_RATE_HZ]`
-    - Forces the given sample rate on the output file (WAV or DPCM-HQ). This DOES NOT re-sample audio, just overwrites the original rate.
+    - Forces the given sample rate on the output file (WAV or DPCM-HQ). This **does not** re-sample audio, just overwrites the original rate
     - By default, sample rate from input file's header is used. If file is headless, rate defaults to 16000 Hz.
 
 - `-l|--log [LOG_LEVEL]`
@@ -74,13 +74,13 @@ DPCM-HQ Converter aims to select the best encoding table based on certain heuris
 DPCM-HQ currently only has 3 delta tables for encoding (indexed `0`, `1` and `2`, see `--table` option). Different tables may produce better results depending on nature of sound and sample rate:
 
 - `--table 0`
-    - It's he same delta table as classic DPCM (based on powers of 2)
+    - It's he same delta table as classic DPCM (based on powers of 2);
     - Good for lower-rate and sharp sounds, but introduces more quantization noise;
 - `--table 1`
     - Delta table with smaller steps (based on fibonacci numbers);
     - Reduces quantization noise, but may result in a bit "muffled" sections where sounds is loud/sharp;
 - `--table 2`
-    - Delta table with even smaller steps
+    - Delta table with even smaller steps;
     - Better for quiet sounds, absolute minimal quantization noise, but even more "muffled" sounds compared to table `1`.
 
 **Which table does encoder pick by default?**
