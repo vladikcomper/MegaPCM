@@ -72,25 +72,34 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ## Examples
 
-- [Small Demo ROMs](examples/demo-roms)
-- [DMA Protection testing ROM](examples/dma-survival-test)
-- [Sonic 1 SMPS integration as a standalone player](examples/s1-smps-integration)
+- [Small Demo ROMs](examples/demo-roms) - Demonstates Mega PCM API in a simple manner
+- [DMA Survival Test](examples/dma-survival-test) - Advanced tests for surviving large DMA transfers
+- [Sonic 1 SMPS Integration](examples/s1-smps-integration) - Reference integration with Sonic 1's SMPS driver
 
 ## Existing implementations
 
 - Sonic 1 Github AS disassembly with Mega PCM 2 pre-installed: https://github.com/vladikcomper/s1disasm-megapcm2
-- Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integration in Sonic Clean Engine (S.C.E.) by TheBlad768: https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
+- Unofficial Sonic 2 Clone Driver v2 with Mega PCM 2 integrations by TheBlad768:
+   - Sonic Clean Engine (S.C.E.): https://github.com/TheBlad768/Sonic-Clean-Engine-S.C.E.-
+   - Sonic 3 & Knuckles, Sonic & Knuckles, Sonic 3: https://github.com/TheBlad768/skdisasm-clone-driver
+   - Sonic 2: https://github.com/TheBlad768/s2disasm-clone-driver
+   - Sonic 1: https://github.com/TheBlad768/s1disasm-clone-driver
 
 
 ## Building from source code
 
 ### Linux
 
-You need to have Wine, Python 3, GCC/Clang installed on your system.
+You need to have Wine, Python 3, GCC/Clang and Make installed on your system. Here's how to install these under Ubuntu/Debian:
+
+```sh
+sudo apt update && sudo apt upgrade
+sudo apt install gcc make python3 wine
+```
 
 The following commands build the bare minimum toolset:
 
-```
+```sh
 make                # builds Mega PCM bundles
 make dpcm-hq-conv   # builds `dpcm-hq-conv` tool
 make examples       # builds demo ROMs using all Mega PCM bundles (AS, ASM68K, ASM68K-linkable)
@@ -100,7 +109,11 @@ Or run `make all` to build everything, including development artifacts (e.g. Meg
 
 ### Windows
 
-Just use WLS2 with Ubuntu, then follow Linux instructions.
+Please install WSL2 with Ubuntu (see [How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install), then follow Linux instructions.
+
+> ![WARNING]
+>
+> Make sure to install Mega PCM 2 repository on Linux-side file system, otherwise a lot of executables may not run!
 
 ### FreeBSD
 
@@ -125,6 +138,8 @@ Also included in this repo, but not distributed with Mega PCM 2 releases:
 - Z80VM Library (`lib/z80vm`) - based on extended and modified z80emu v.1.3.0 (c) by Lin Ke-Fong; comes with permissive free license.
 
 - For developer's convenience this repo also includes a few binary tools (see `toolchain/` directory):
+
+   - The AS Macro Assembler is available under GPL-2.0 license with link to the source code;
 
    - `asm68k` and `psylink` are (c) by S.N. Systems Software Limited and come with propriatary license, but are considered [abandonware](https://en.wikipedia.org/wiki/Abandonware);
 

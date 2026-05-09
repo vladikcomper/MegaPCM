@@ -41,19 +41,26 @@ hikick: dcSample    TYPE_DPCM,      Kick,       16000               ; $86 or `hi
 **Usage:**
 
 ```m68k
-    dcSample TYPE_PCM, MySampleName, 22050, FLAGS_LOOP+FLAGS_SFX
+            dcSample TYPE_NONE                  ; "null" sample
+            dcSample TYPE_PCM, MySampleName     ; .WAV file, sample rate auto-detected
+mySample:   dcSample TYPE_PCM, MySampleName, 22050, FLAGS_LOOP|FLAGS_SFX|PRIO_HIGH
 ```
 
 **Syntax:**
 
 ```m68k
-    dcSample <Type>, <Name>[, <SampleRateHz>, <Flags>]
+[<Label>:]  dcSample <Type>, <Name>[, <SampleRateHz>, <Flags>]
 ```
 
 **Arguments:**
 
+- `<Label>` (optional) - allows to reference sample record and its properties in the code _(since Mega PCM 2.1)_:
+    - `<Label>.id` - returns ID of the sample in the table (e.g. `$85`);
+    - `<Label>.desc` - returns sample's description field
+    - `<Label>.pitch` - returns sample's internal pitch values (converted from Sample Rate to 0..$FF scale);
+    - See [Name Samples](#named-samples) section below for more information.
 - `<Type>` - sample type:
-    - `TYPE_NONE` - marks empty/null slot
+    - `TYPE_NONE` - marks empty/null slot (can still be "played" to interrupt other samples, depending on priority);
     - `TYPE_PCM` - .WAV/.RAW files;
     - `TYPE_PCM_TURBO` - .WAV/.RAW files at 32000 Hz;
     - `TYPE_DPCM` - DPCM-HQ or raw DPCM files;
@@ -78,7 +85,7 @@ hikick: dcSample    TYPE_DPCM,      Kick,       16000               ; $86 or `hi
 
 ## `incdac` format
 
-`incdac` is a convenience macro to include sample itself.
+`incdac` is a convenience macro to include sample itself. Under the hood, it aligns included data on even address and generates start and end labels, which `dcSample` can reference internally.
 
 **Usage:**
 
@@ -101,7 +108,7 @@ hikick: dcSample    TYPE_DPCM,      Kick,       16000               ; $86 or `hi
 
 ***Since Mega PCM 2.1***
 
-If you optionally can add labels to any records in the sample table, which allows you to reference some of their properties, for example:
+You optionally can add labels to any records in the sample table, which allows you to reference some of their properties, for example:
 
 ```m68k
 SampleTable:
@@ -110,6 +117,10 @@ kick:   dcSample    TYPE_DPCM,      Kick,       8000                   ; $81 or 
 voice:  dcSample    TYPE_PCM_TURBO, VoiceSFX,   0,      FLAGS_SFX      ; $81 or voice.id
         dc.w    -1  ; end marker
 ```
+
+> [!WARNING]
+>
+> Label **must** appear on the same line as `dcSample`! Otherwise it won't be captured and properties won't be generated.
 
 On top of sample's label (e.g. `mysample`), Mega PCM also generates the following properties for the sample (all are byte-sized):
 

@@ -17,7 +17,7 @@ If you are using Mega PCM 1.x, you still can easily replace it with Mega PCM 2 a
     - [Pitches to sample rate for DPCM (`TYPE_DPCM`)](#pitches-to-sample-rate-for-dpcm-type_dpcm)
   - [Converting samples (if needed)](#converting-samples-if-needed)
     - [Converting DPCM to PCM](#converting-dpcm-to-pcm)
-    - [Upsampling or donwsampling PCM](#upsampling-or-donwsampling-pcm)
+    - [Upsampling or downsampling PCM](#upsampling-or-downsampling-pcm)
 
 ## Migration overview
 
@@ -41,7 +41,7 @@ Now let's go over those 3 migration steps one-by-one!
 
 Follow the right installation guide for your disassembly, but bear in mind _important notes_ below:
 
-- [Sonic 1 Github Disassembly (AS version)](1-installation/Sonic-1-Github-AS.md)
+- [Sonic 1 Github Disassembly](1-installation/Sonic-1-Github.md)
 - [Sonic 1 Hivebrain 2005 Disassembly](1-installation/Sonic-1-Hivebrain-2005.md)
 
 **Important notes:**
@@ -428,13 +428,13 @@ Only follow these steps if tables above instruct you to convert samples themselv
 
 If you have DPCM samples and the table above instructed you to convert some of them to PCM, just follow the instructions below:
 
-1. Download `dpcm-hq-conv` utility for Mega PCM Releases page.
+1. Download `dpcm-hq-conv` utility from Mega PCM Releases page.
 2. Extract `dpcm-hq-conv.exe` to your `sound/dac` directory for convenience.
 3. Change your sample extension to `.dpcm` (if it's not already), so the tool starts in "decode to WAV" mode;
 3. Drag and drop your DPCM sample (e.g. `snare.dpcm`) to convert onto the `dpcm-hq-conv.exe` executable, you should see a new file with `.wav` extension added (e.g. `snare.dpcm.wav`)
 4. Use that new sample instead of an old one. Don't forget to change `TYPE_DPCM` to `TYPE_PCM` in the table!
 
-#### Upsampling or donwsampling PCM
+#### Upsampling or downsampling PCM
 
 As mentioned before, if your PCM sample's rate was between 25100 and 28500 Hz, you need to either downsample it to 25100 Hz (recommended) or upsample to 32000 Hz, because any rate in-between isn't supported by Mega PCM 2.
 

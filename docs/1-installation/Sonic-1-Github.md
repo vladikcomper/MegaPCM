@@ -611,4 +611,4 @@ Run `build.bat` or `build.lua` to build your ROM and test it. All music, sounds 
 
 ## Next steps
 
-While this guide completes basic Mega PCM 2 installation, there are still a few exciting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github-AS.md).
+While this guide completes basic Mega PCM 2 installation, there are still a few exciting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github.md).

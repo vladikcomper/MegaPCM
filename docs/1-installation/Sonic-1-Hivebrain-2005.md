@@ -5,7 +5,7 @@
 >
 > Sonic 1 Hivebrain 2005 Disassembly is outdated and its usage is generally not recommended for newer projects. If you're looking to start a fresh project, consider using modern disassemblies like Sonic 1 GitHub Disassembly instead.
 
-This is a step-by-step guide for installing Mega PCM 2 in the old Sonic 1 Hivebrain Disassembly (2005 version). If you're starting a new project, it's highly recommended to use a newer disassembly instead, for example, [Sonic 1 Github Disassembly](Sonic-1-Github-AS.md).
+This is a step-by-step guide for installing Mega PCM 2 in the old Sonic 1 Hivebrain Disassembly (2005 version). If you're starting a new project, it's highly recommended to use a newer disassembly instead, for example, [Sonic 1 Github Disassembly](Sonic-1-Github.md).
 
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
