@@ -34,7 +34,7 @@ OPTIONS:
 			0, 1, 2 - specify table number manually (higher numbers results in more muffled sounds, but less noise)
 
 	-r|--rate [FORCED_RATE_HZ]
-		Forces the given sample rate on the output file (WAV or DPMC-HQ). This DOES NOT re-sample audio, just overwrites the original rate.
+		Forces the given sample rate on the output file (WAV or DPCM-HQ). This DOES NOT re-sample audio, just overwrites the original rate.
 
 	-l|--log [LOG_LEVEL]
 		Sets the logging level, useful for debugging or silencing the output.

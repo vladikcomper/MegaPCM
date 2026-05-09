@@ -62,11 +62,12 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 - [API Documentation](docs/API.md)
 - [Sample table format](docs/Sample_table_format.md)
-- [Migrating from MegaPCM 1.x](docs/Migration_from_MegaPCM_1.x.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 
 ### How-to guides
 
+- [Converting samples for Mega PCM 2](docs/3-how-tos/Converting_samples.md)
+- [Migrating from MegaPCM 1.x](docs/3-how-tos/Migration_from_MegaPCM_1.x.md)
 - [How to play SFX samples](docs/3-how-tos/Playing_DAC_SFX.md)
 - [How to play DAC BGM](docs/3-how-tos/Playing_DAC_BGM_with_SMPS.md)
 

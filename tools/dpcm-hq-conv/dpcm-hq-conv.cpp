@@ -121,7 +121,7 @@ struct Arguments {
 		"			0, 1, 2 - specify table number manually (higher numbers results in more muffled sounds, but less noise)\n"
 		"\n"
 		"	-r|--rate [FORCED_RATE_HZ]\n"
-		"		Forces the given sample rate on the output file (WAV or DPMC-HQ). This DOES NOT re-sample audio, just overwrites the original rate.\n"
+		"		Forces the given sample rate on the output file (WAV or DPCM-HQ). This DOES NOT re-sample audio, just overwrites the original rate.\n"
 		"\n"
 		"	-l|--log [LOG_LEVEL]\n"
 		"		Sets the logging level, useful for debugging or silencing the output.\n"
