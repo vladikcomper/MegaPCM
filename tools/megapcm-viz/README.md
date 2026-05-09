@@ -1,6 +1,10 @@
 
 # Mega PCM Vizualizer
 
+**Mega PCM Vizualizer** is a custom-made Z80 and YM2612 DAC emulator to test Mega PCM 2 during development and vizualize it's internal state (e.g. buffer health) across TV-frame. I mostly built this tool for development purposes, so it's not fully user-friendly or convenient. You need to compile it manually, since it's not publicly released.
+
+If you just want a glimpse of it in action, refer to this short video (**Volume warning!** Relatively loud sound): https://drive.google.com/file/d/12ceuu8dUHGmrKKK1weNBXXI4GT-cVVNT/view (preview quality is low, I recommend downloading it for 60 fps)
+
 ## Building
 
 - You need SDL3 development files (`libsdl3-dev` on Debian, `SDL3-devel` on Fedora).
@@ -8,7 +12,7 @@
 
 ## Usage
 
-Mega PCM Vizualizer comes with a pre-compiled sample table that references existing sample files from this repository. See `const MPCM_SampleMetadata samples[]` definition in `megapcm-viz.c`.
+Mega PCM Vizualizer reads data from a pre-compiled ROM with includes sample table and samples themselves. ROM is compiled using ASM68K and native Mega PCM 2 macros. It's auto-compiled when you run `make`.
 
 It's recommended to `megapcm-viz` from terminal to see driver's debug output.
 

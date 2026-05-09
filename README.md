@@ -62,7 +62,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 - [API Documentation](docs/API.md)
 - [Sample Table Format](docs/Sample_table_format.md)
-- [Sample Priority System](./Sample_priorities.md)
+- [Sample Priority System](docs/Sample_priorities.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 
 ### How-to guides
@@ -111,9 +111,9 @@ Or run `make all` to build everything, including development artifacts (e.g. Meg
 
 ### Windows
 
-Please install WSL2 with Ubuntu (see [How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install), then follow Linux instructions.
+Please install WSL2 with Ubuntu (see [How to install Linux on Windows with WSL](https://learn.microsoft.com/en-us/windows/wsl/install)), then follow Linux instructions.
 
-> ![WARNING]
+> [!WARNING]
 >
 > Make sure to install Mega PCM 2 repository on Linux-side file system, otherwise a lot of executables may not run!
 

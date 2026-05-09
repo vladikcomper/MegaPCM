@@ -1,7 +1,7 @@
 
 # Mega PCM 2 Sample Priority System
 
-Since version 2.1, Mega PCM comes with a proper sample priority system. Here's a brief overview of the system, which is quite straight-forward.
+Since version 2.1 Mega PCM comes with a proper sample priority system. Here's a brief overview of the system, which is quite straight-forward.
 
 ## The Basics
 
@@ -43,19 +43,19 @@ In this example, sample priorities go as follows:
 
 ## Priority Level Table
 
-| Sample Flags            | Internal priority value   | Description                          |
-|-------------------------|---------------------------|--------------------------------------|
-| `PRIO_LOW`              | `00h`                     | non-SFX low                          |
-| `PRIO_NORMAL`           | `10h`                     | non-SFX normal (default)             |
-| `PRIO_HIGH`             | `20h`                     | non-SFX high                         |
-| `PRIO_HIGHEST`          | `30h`                     | non-SFX highest                      |
-| `FLAGS_SFX|PRIO_LOW`    | `40h`                     | SFX low                              |
-| `FLAGS_SFX|PRIO_NORMAL` | `50h`                     | SFX normal (default)                 |
-| `FLAGS_SFX|PRIO_HIGH`   | `60h`                     | SFX high                             |
-| `FLAGS_SFX|PRIO_HIGHEST`| `70h`                     | SFX highest                          |
+| Sample Flags             | Internal priority value   | Description                          |
+|--------------------------|---------------------------|--------------------------------------|
+| `PRIO_LOW`               | `00h`                     | non-SFX low                          |
+| `PRIO_NORMAL`            | `10h`                     | non-SFX normal (default)             |
+| `PRIO_HIGH`              | `20h`                     | non-SFX high                         |
+| `PRIO_HIGHEST`           | `30h`                     | non-SFX highest                      |
+| `FLAGS_SFX\|PRIO_LOW`    | `40h`                     | SFX low                              |
+| `FLAGS_SFX\|PRIO_NORMAL` | `50h`                     | SFX normal (default)                 |
+| `FLAGS_SFX\|PRIO_HIGH`   | `60h`                     | SFX high                             |
+| `FLAGS_SFX\|PRIO_HIGHEST`| `70h`                     | SFX highest                          |
 
 > [!NOTE]
 >
 > 1. `PRIO_NORMAL` flag is optional;
-> 2. `FLAGS_SFX` is technically a part of internal's priorty level bitfield, which helps clear separate of non-SFX and SFX samples into distinct "priority buckets";
+> 2. `FLAGS_SFX` is technically a part of internal's priorty level bitfield, which helps clear separate of non-SFX and SFX samples into distinct "priority buckets" (see `.desc` [field format](./Sample_table_format.md#named-samples));
 > 3. If a new sample is requested while another is playing, Mega PCM will only accept it if new sample's internal priority value is larger or the same as the current one's.

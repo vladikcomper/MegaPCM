@@ -111,7 +111,7 @@ struct Arguments {
 		"OPTIONS:\n"
 		"	-m|--mode [MODE]\n"
 		"		Sets operation MODE. Possible values:\n"
-		"			a|auto (default) - auto-detect based on input file extension (.dpcmq or .dpcmq implies decode, evrything else implies encode)\n"
+		"			a|auto (default) - auto-detect based on input file extension (.dpcmq or .dpcmq implies decode, everything else implies encode)\n"
 		"			e|encode - encode WAV or raw PCM file to DPCM-HQ file\n"
 		"			d|decode - decode DPCM or DPCM-HQ file to WAV file\n"
 		"\n"
