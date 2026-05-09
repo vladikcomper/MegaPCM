@@ -61,7 +61,8 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 ### Documentation
 
 - [API Documentation](docs/API.md)
-- [Sample table format](docs/Sample_table_format.md)
+- [Sample Table Format](docs/Sample_table_format.md)
+- [Sample Priority System](./Sample_priorities.md)
 - [Troubleshooting](docs/Troubleshooting.md)
 
 ### How-to guides

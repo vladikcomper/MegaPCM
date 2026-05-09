@@ -1,5 +1,5 @@
 
-# Mega PCM 2 Sample table format
+# Mega PCM 2 Sample Table Format
 
 Mega PCM 2's sample table consists of sample record definitions (`dcSample`) and **must** be terminated by the ___end marker___ (`dc.w -1`). Actual samples are usually included after the table in the same file (via `incdac`), though they can be located anywhere in the ROM.
 
@@ -81,6 +81,7 @@ mySample:   dcSample TYPE_PCM, MySampleName, 22050, FLAGS_LOOP|FLAGS_SFX|PRIO_HI
         - `PRIO_NORMAL` - sets sample priority to *Normal* (that's the default);
         - `PRIO_HIGH` - sets sample priority to *High*;
         - `PRIO_HIGHEST` - sets sample priority to *Highest*;
+        - Please see [Sample Priority System](./Sample_priorities.md) document for more information.
     - To combine flags, use `|` or `+` operator, e.g.: `FLAGS_SFX|FLAGS_LOOP|PRIO_HIGHEST`
 
 ## `incdac` format
