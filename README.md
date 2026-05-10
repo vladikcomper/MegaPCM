@@ -74,7 +74,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 ## Examples
 
-- [Small Demo ROMs](examples/demo-roms) - Demonstates Mega PCM API in a simple manner
+- [Small Demo ROMs](examples/demo-roms) - Demonstrates Mega PCM API in a simple manner
 - [DMA Survival Test](examples/dma-survival-test) - Advanced tests for surviving large DMA transfers
 - [Sonic 1 SMPS Integration](examples/s1-smps-integration) - Reference integration with Sonic 1's SMPS driver
 
@@ -143,8 +143,8 @@ Also included in this repo, but not distributed with Mega PCM 2 releases:
 
    - The AS Macro Assembler is available under GPL-2.0 license with link to the source code;
 
-   - `asm68k` and `psylink` are (c) by S.N. Systems Software Limited and come with propriatary license, but are considered [abandonware](https://en.wikipedia.org/wiki/Abandonware);
+   - `asm68k` and `psylink` are (c) by S.N. Systems Software Limited and come with proprietary license, but are considered [abandonware](https://en.wikipedia.org/wiki/Abandonware);
 
    - `sjasmplus` is a free and open source Z80 assembler available under BSD-3-Clause license;
 
-   - `convsym`, `cbundle` and others are written by me and are availabe under permissive MIT License.
+   - `convsym`, `cbundle` and others are written by me and are available under permissive MIT License.

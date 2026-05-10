@@ -7,7 +7,7 @@ Mega PCM 2's sample table consists of sample record definitions (`dcSample`) and
 
 > [!NOTE]
 >
-> If you wish to convert your old Mega PCM 1.x sample tables to the new format, check out [Migrating from MegaPCM 1.x](docs/Migration_from_MegaPCM_1.x.md) guide.
+> If you wish to convert your old Mega PCM 1.x sample tables to the new format, check out [Migrating from MegaPCM 1.x](./3-how-tos/Migration_from_MegaPCM_1.x.md) guide.
 
 Table is loaded by calling `MegaPCM_LoadSampleTable`. With Mega PCM 2, you can use more than one sample table and swap them on the fly.
 
