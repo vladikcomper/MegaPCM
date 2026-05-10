@@ -15,7 +15,7 @@ dpcm-hq-conv [OPTIONS]... INPUT_FILE [OUTPUT_FILE]
 
 - `-m|--mode [MODE]`
     - Sets operation MODE. Possible values:
-        - `a|auto` (default) - auto-detect based on input file extension (`.dpcmq` or `.dpcmq` implies decode, everything else implies encode)
+        - `a|auto` (default) - auto-detect based on input file extension (`.dpcmq` or `.dpcm` implies decode, everything else implies encode)
         - `e|encode` - encode WAV or raw PCM file to DPCM-HQ file
         - `d|decode` - decode DPCM or DPCM-HQ file to WAV file
 
