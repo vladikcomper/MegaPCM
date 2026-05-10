@@ -27,74 +27,7 @@ PCMLoop:
 	ld	hl, PCMLoop_VBlank
 	ld	(VBlankRoutine), hl
 
-	ld	(StackCopy), sp			; backup stack
-
-	; Fetch input sample data (see `sSampleInput` struct) ...
-	; TODO: Disable sample input?
-	ld	sp, ix				; load sample in the stack
-	inc	sp				; skip type
-	pop	af				; a = pitch, f = flags
-	pop	bc				; c = startBank
-						; b = endBank
-	pop	hl				; hl = start offset (first bank)
-	pop	de				; de = end offset (last bank)
-
-	; Initialize active sample playback parameters (see `sActiveSample`) ...
-	ld	sp, ActiveSample+sActiveSample
-	push	af				; (ActiveSample+sActiveSample.pitch) = a
-						; (ActiveSample+sActiveSample.flags) = f
-	ex	af, af'
-
-	set	7, h				; make sure hl points to ROM bank
-	res	0, l				; hl = start offset & 0FFFEh
-	push	hl				; (ActiveSample+sActiveSample.startOffset) = hl
-
-	ld	a, d
-	and	7Fh
-	ld	d, a				; de = end offset & 7FFFh
-	res	0, e				; de = end offset & 7FFEh
-	or	e				; (de & 7FFEh) == 0?
-	jr	nz, .lengthOk
-	dec	b				; b = endBank - 1 (use previous bank)
-	ld	d, 80h				; de = 8000h (use max end length)
-.lengthOk:
-	; WARNING! This value is incorrect for single-bank samples; luckily, it's ignored
-	push	de				; (ActiveSample+sActiveSample.endLength) = de
-
-	ld	a, b				; a = endBank
-	cp	c				; endBank == startBank?
-	jr	nz, .isMultibank		; if not, branch
-	jp	c, StopSamplePlayback		; if endBank < startBank, abort playback
-	res	7, h
-	ex	de, hl				; hl = end length, de = start length
-	sbc	hl, de				; hl = length
-	jp	.setFirstBankLen
-
-.isMultibank:
-	; Implements: de = 10000h - hl, or simply de = -hl
-	xor	a				; a = 0
-	sub	l				; a = 0 - l
-	ld	e, a				; e = 0 - l
-	sbc	h				; a = 0 - h - l - carry
-	add	l				; a = 0 - h - carry
-	ld	d, a				; d = 0 - h - carry
-	ex	de, hl
-
-.setFirstBankLen:
-	push	hl				; (ActiveSample+sActiveSample.startLength) = hl
-	push	bc				; (ActiveSample+sActiveSample.startBank) = c
-						; (ActiveSample+sActiveSample.endBank) = b
-
-	assert FLAGS_SFX==0			; we need this assertion to ensure trick below works
-
-	ld	hl, VolumeInput			; hl = VolumeInput
-	ex	af, af'				; a = pitch, f = flags
-	jr	nc, .setVolumeInputPtr		; Carry = FLAGS_SFX
-	inc	l				; hl = SFXVolumeInput
-.setVolumeInputPtr:
-	push	hl				; (ActiveSample+sActiveSample.volumeInputPtr) = hl
-
-	ld	sp, (StackCopy)			; restore stack
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 	ld	ix, ActiveSample
 
 ; --------------------------------------------------------------
@@ -139,8 +72,6 @@ PCMLoop_NormalPhase_NoCycleStealing:
 								;	... that don't emulate cycle-stealing
 
 PCMLoop_NormalPhase:
-	TraceMsg "PCMLoop_NormalPhase iteration"
-
 	; Handle "read-ahead" buffer
 	di							; 4
 	ldi							; 16+3.3*
@@ -158,8 +89,6 @@ PCMLoop_NormalPhase:
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	TraceMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
-
 	; Waste 53+7* cycles (we cannot handle "read-ahead" now)
 	push	af						; 11
 	ld	a, 00h						; 7
@@ -191,8 +120,6 @@ PCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 PCMLoop_DrainPhase:
-	TraceMsg "PCMLoop_DrainPhase iteration"
-
 	; Handle playback in draining mode
 	di								; 4
 	Playback_Run_Draining	e, .Drained_EXX_DI			; 71-72
@@ -236,9 +163,9 @@ PCMLoop_NormalPhase_LoadNextBank:
 	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
 	ld	b, h				; bc = 8000h (alt: ld b, 80h)
 	cp	(ix+sActiveSample.endBank)	; current bank is the last one?
-	jr	nz, .lengh_ok			; if not, branch
+	jr	nz, .length_ok			; if not, branch
 	ld	bc, (ActiveSample+sActiveSample.endLength)
-.lengh_ok:
+.length_ok:
 
 	; Switch to the next ROM bank
 	rst	SetBank2
@@ -287,8 +214,6 @@ PCMLoop_VBlank:
 
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase:
-	TraceMsg "PCMLoop_VBlankPhase iteration"
-
 	; Handle sample playback in draining mode
 	Playback_Run_Draining	e, PCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 
@@ -306,6 +231,9 @@ PCMLoop_VBlankPhase_Sync:
 	; Total "PCMLoop_VBlankPhase" cycles: 135-136 + 7*
 	; *) emulated lost cycles on M68K bus access
 
+	nop						; 4
+	; WARNING! Should've wasted 1 more cycle!
+
 ; --------------------------------------------------------------
 PCMLoop_VBlankPhase_LastIteration:
 	; Handle sample playback and reload volume
@@ -314,30 +242,19 @@ PCMLoop_VBlankPhase_LastIteration:
 	Playback_LoadVolume_EXX				; 45
 	exx						; 4
 	nop						; 4
-	; WARNING! This should've wasted 1 more cycle!
+	or	00h					; 7
+	or	00h					; 7
 
 	; Handle sample playback and reload pitch
 	Playback_Run_Draining_NoSync	e		; 71-72/28
 	Playback_LoadPitch				; 21	reload pitch
 
-PCMLoop_VBlankPhase_CheckCommandOrSample:
-	ld	a, (CommandInput)			; 13	a = command
-	or	a					; 4	is command > 00h?
-	jr	z, .ChkCommandOrSample_Done		; 7/12	if not, branch
-	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
+	rst	ProcessCommandInput			; 11+22	returns a=0 once driver input is processed
 
-	; Only low-priority samples can be overriden
-	bit	FLAGS_SFX, (ix+sActiveSample.flags)	; is sample high priority?
-	jp	z, RequestSamplePlayback		; if not, branch
-
-.ChkCommandOrSample_ResetInput:
-	; Reset command
-	xor	a
-	ld	(CommandInput), a
-
-.ChkCommandOrSample_Done:
 	; Slightly early, but report we're out of VBlank
+	; TODO: assert a=0
 	ld	(VBlankActive), a			; 13
+	nop						; 4
 
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	e		; 71-72/28
@@ -346,24 +263,3 @@ PCMLoop_VBlankPhase_CheckCommandOrSample:
 	pop	af					; 10
 	ei						; 4
 	ret						; 10
-
-; --------------------------------------------------------------
-.ChkCommandOrSample_Command:
-	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, StopSamplePlayback			; if yes, branch
-	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	jr	nz, .UnkownCommand			; if yes, branch
-
-.PausePlayback:
-	; There's a trick to it: While the "pause command" is set,
-	; we reset sample pitch to 0, cancelling pitch reload above.
-	; As soon as this command is unset, the pitch reload will restore it.
-	Playback_ResetPitch				; set pitch to 00h
-	jr	.ChkCommandOrSample_Done
-
-; --------------------------------------------------------------
-.UnkownCommand:
-	TraceException	"Uknown command"
-	ld	a, ERROR__UNKNOWN_COMMAND
-	ld	(LastErrorCode), a
-	jr	.ChkCommandOrSample_ResetInput

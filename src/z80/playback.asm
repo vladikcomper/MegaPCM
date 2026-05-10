@@ -116,12 +116,31 @@
 	endm
 
 ; -----------------------------------------------------------------------------
+
+	; "DPCM" version, assumes `bc` being one sample behind
+	macro	Playback_Run_DI2
+	exx					; 4
+	ld	c, (hl)				; 7	load sample
+	ld	a, (bc)				; 7	apply volume
+	ld	(de), a				; 7	send it to YM
+	ld	a, l				; 4	a = buffer position
+	ex	af, af'				; 4
+	add	iyl				; 8	should we apply pitch?
+	jr	nc, .playback_NoPitch		; 7/12	if not, branch
+	inc	l				; 4	advance playback pointer
+.playback_NoPitch:
+	ex	af, af'				; 4
+	exx					; 4
+	; Cycles: 60-61 (playback)
+	endm
+
+; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
 ; Should be used after `Playback_Run_DI`
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
 ;	regReadAheadPtrLow - Low byte of readahead position (c, e, l)
-;	regValue03h - register that contains value of 03h
+;	regValue05h - register that contains value of 05h
 ;	locReadaheadOk - location to jump if readahead isn't full
 ;
 ; INPUT:
@@ -131,11 +150,11 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	Playback_ChkReadaheadOk	regReadAheadPtrLow, regValue03h, locReadaheadOk
+	macro	Playback_ChkReadaheadOk	regReadAheadPtrLow, regValue05h, locReadaheadOk
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
-	sub	regValue03h			; 4	a = buffer position - regReadAheadPtrLow - 3
+	sub	regValue05h			; 4	a = buffer position - regReadAheadPtrLow - 5
 @.chkReadahead_sm1:		; points to self-modifying code (allows to overwrite `locReadaheadOk` for cycle calibration)
-	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 3), then read ahead is ok
+	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 5), then read ahead is ok
 	; Cycles: 18
 	endm
 

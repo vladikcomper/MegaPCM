@@ -32,7 +32,7 @@ MegaPCM_LoadDriver:
 	move.w	@var0, \@op_z80_reset		; release Z80 reset
 
 	; Loads Mega PCM program into Z80 memory ...
-	KDebug.WriteLine "Loading Mega PCM 2.0 driver..."
+	KDebug.WriteLine "Loading Mega PCM 2.1 driver..."
 	lea		MegaPCM(pc), @src
 	lea		MPCM_Z80_RAM, @dest
 	move.w	#(MegaPCM_End-MegaPCM)-1, @var1

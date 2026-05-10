@@ -6,6 +6,18 @@
 ; (c) 2023-2024, Vladikcomper
 ; --------------------------------------------------------------
 
+; --------------------------------------------------------------
+; Naming convetions:
+;
+; - `SomeLabel_EXX` - routine expects alternative regiters
+;	(`exx` must be executed before calling or jumping to it!)
+; - `SomeLabel_DI` - routine expects interrupts to be disabled
+;	(`di` must be executed before calling or jumping to it!)
+; - `SomeLabel_NR` - routine is a NO RETURN
+;	(it fully resets stack and currently running loop)
+; --------------------------------------------------------------
+
+
 	include	'vars.asm'
 	include	'trace.asm'		; trace support for Z80VM
 
@@ -44,7 +56,13 @@
 	export	LOOP_PCM_TURBO
 	export	LOOP_DPCM
 	export	LOOP_CALIBRATION
-	export	ERROR__BAD_INTERRUPT
+	export	TYPE_NONE
+	export	TYPE_PCM
+	export	TYPE_PCM_TURBO
+	export	TYPE_DPCM
+	export	TYPE_DPCM_TURBO
+	export	TYPE_DPCM_HQ
+	export	TYPE_DPCM_HQ_TURBO
 	export	ERROR__BAD_SAMPLE_TYPE
 	export	ERROR__UNKNOWN_COMMAND
 
@@ -72,7 +90,7 @@ Driver_Start:
 ; Driver version magic string
 ; --------------------------------------------------------------
 
-	db	'MegaPCM v.2.0', 0
+	db	'MegaPCM v.2.1', 0
 
 ; --------------------------------------------------------------
 ; Vertical interrupts handler with dynamic jump
@@ -87,11 +105,6 @@ VBlankRoutine:	equ	VBlank+1
 ; --------------------------------------------------------------
 VoidInterrupt:
 	TraceException	"Invalid interrupt"
-
-	push	af
-	ld	a, ERROR__BAD_INTERRUPT
-	ld	(LastErrorCode), a
-	pop	af
 	ret
 
 ; --------------------------------------------------------------
@@ -102,37 +115,74 @@ VoidInterrupt:
 	include	'playback-turbo.asm'
 
 ; --------------------------------------------------------------
+; Misc. modules (Part 1)
+; --------------------------------------------------------------
+
+	include	'init.asm'
+	include 'process-command.asm'
+
+; --------------------------------------------------------------
 ; Mega PCM loops (Part 1)
 ; --------------------------------------------------------------
 
+	include	'loop-calibration.asm'
+	include	'loop-idle.asm'
+	include	'loop-pause.asm'
 	include	'loop-pcm.asm'
 	include	'loop-pcm-turbo.asm'
+	include	'loop-dpcm.asm'
 
 ; --------------------------------------------------------------
-; 256-byte sample buffer used for playback
+; Mega PCM buffers and tables (aligned on 256-byte boundaries)
 ; --------------------------------------------------------------
 
 	align	100h
+
+; --------------------------------
+; 256-byte playback ring buffer
+; --------------------------------
 
 SampleBuffer:
 	ds	100h, 0
 
-	; Playback loops use high byte of `SampleBuffer` offset
-	; for an insane optimization, so it should be 03h
-	assert	(SampleBuffer>>8) == 3
+	; Playback loops use high byte of `SampleBuffer` offset for
+	; an insane optimization, where its value is used for "readahead full" check
+	; This value cannot be <=2 of PCM loops and <=3 for DPCM loops.
+	; It acts as a safe boundary between "read ahead" and "current playback" pointers.
+	; For DPCM, "read ahead" pointer is also 1 byte behind and it pushes
+	; 2 samples per "read ahead" iteration, which makes values <= 3 trigger edge cases.
+	assert	(SampleBuffer>>8) == 5
 
-; --------------------------------------------------------------
-; Lookup tables (aligned on 256-byte boundary)
-; --------------------------------------------------------------
+; -------------------------
+; DPCM decode tables
+; -------------------------
 
-	align	100h
+DPCMTables:
+	ds	100h, 0	; for nibble 0
+	ds	100h, 0	; for nibble 1
+
+; -----------------
+; Sample table
+; -----------------
+
+SampleInput:
+	ds	sSampleInput, 0		; special dynamic sample slot (sample 80h)
+
+SampleTable:				; slots >=81h
+	; This table must be appended by the driver loader.
+	ds	sSampleInput*7Fh, 0
+SampleTable_End:
+
+	; Sample table's base offset (including the dynamic sample) must be
+	; a multiple of 400h for an insane optimization
+	assert	((SampleInput>>8) % 4) == 0
+
+; -----------------
+; Volume tables
+; -----------------
 
 VolumeTables:
 	include	'volume-tables.asm'
-
-DPCMTables:
-	include	'dpcm-tables.asm'
-
 
 ; --------------------------------------------------------------
 ; Cycle waster (aligned on 256-byte boundary)
@@ -146,30 +196,14 @@ DPCMTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
-	include	'loop-dpcm.asm'
-	include	'loop-calibration.asm'
-	include	'loop-pause.asm'
-	include	'loop-idle.asm'
+	include	'loop-dpcm-turbo.asm'
 
 ; --------------------------------------------------------------
-; Misc. modules
+; Misc. modules (Part 2)
 ; --------------------------------------------------------------
 
-	include	'init.asm'
 	include	'play-sample.asm'
-
-; --------------------------------------------------------------
-; Sample table for sample ids >=81h
-; --------------------------------------------------------------
-; NOTE: Sample id 80h is considered "custom" and is read
-; from Work RAM instead (see `SampleInput` in `vars.asm`).
-;
-; This basically allows to bypass limitations of sample table
-; and generate pitches, start/end positions on the fly.
-; --------------------------------------------------------------
-
-SampleTable:
-	; This table must be appended by the driver loader.
+	include	'load-dpcm-table.asm'
 
 Driver_End:
 

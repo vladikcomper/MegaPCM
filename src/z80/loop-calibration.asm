@@ -124,6 +124,7 @@ CalibrationLoop_VBlank:
 	call	PCMLoop_ApplyCalibration
 	call	PCMTurboLoop_ApplyCalibration
 	call	DPCMLoop_ApplyCalibration
+	call	DPCMTurboLoop_ApplyCalibration
 
 	ld	a, 1
 	ld	(CalibrationApplied), a

@@ -5,7 +5,7 @@
 >
 > Sonic 1 Hivebrain 2005 Disassembly is outdated and its usage is generally not recommended for newer projects. If you're looking to start a fresh project, consider using modern disassemblies like Sonic 1 GitHub Disassembly instead.
 
-This is a step-by-step guide for installing Mega PCM 2 in the old Sonic 1 Hivebrain Disassembly (2005 version). If you're starting a new project, it's highly recommended to use a newer disassembly instead, for example, [Sonic 1 Github Disassembly](Sonic-1-Github-AS.md).
+This is a step-by-step guide for installing Mega PCM 2 in the old Sonic 1 Hivebrain Disassembly (2005 version). If you're starting a new project, it's highly recommended to use a newer disassembly instead, for example, [Sonic 1 Github Disassembly](Sonic-1-Github.md).
 
 While installing Mega PCM 2 is technically as easy as including a few files and several lines of bootstrap code, a lot of extra steps are required for integrating it with the game. After all, Sonic 1 comes with its own DAC driver and the main sound driver, SMPS. In this guide, we'll remove the old DAC driver, take out all the manual Z80 start/stops to ensure high-quality playback and integrate SMPS with Mega PCM 2.
 
@@ -206,7 +206,13 @@ Another easy one. You need to download a few files and copy them relative to you
 
 ### Step 3.2. Include Mega PCM and Sonic 1 sample table
 
-Open `sonic1.asm` and search for `Go_SoundTypes:`. Right **above** that label, add lines marked with `++`:
+Open `sonic1.asm`. At the very beginning include `MegaPCM.Macros.asm` file:
+
+```m68k
+                include "MegaPCM.Macros.asm"
+```
+
+Now search for `Go_SoundTypes:`. Right **above** that label, add lines marked with `++`:
 
 ```m68k
                 include "MegaPCM.asm"                   ; ++ ADD THIS LINE
@@ -237,9 +243,13 @@ Find `Sound_E1:` label. Replace all its code as follows:
 ; ---------------------------------------------------------------------------
 
 Sound_E1:                               ; XREF: Sound_ExIndex
-                moveq   #$FFFFFF8C, d0          ; ++ request SEGA PCM sample
-                jmp     MegaPCM_PlaySample      ; ++
+                MPCM_play #dacSega.id
+                rts
 ```
+
+> [!NOTE]
+>
+> If you're using a custom `SampleTable.asm`, not the default one from Mega PCM release page, make sure your SEGA sample has `dacSega:` before `dcSample` for `dacSega.id` reference to work.
 
 We've just replaced a busy loop that freezes the game to play SEGA PCM with a simple request to Mega PCM 2. Since the game logic is no longer blocked, we need to add extra wait for SEGA screen, or else it will be over instantaneously.
 
@@ -255,16 +265,13 @@ This adds extra 2 seconds of wait time. You can change it depending on your SEGA
 ### Step 3.4. Fully remove the old DAC driver
 
 In `sonic1.asm` search for `Kos_Z80:` and **remove all the lines shown below**:
-```m68k
-; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-Kos_Z80:        incbin  sound\z80_1.bin
-                dc.w ((SegaPCM&$FF)<<8)+((SegaPCM&$FF00)>>8)
-                dc.b $21
-                dc.w (((EndOfRom-SegaPCM)&$FF)<<8)+(((EndOfRom-SegaPCM)&$FF00)>>8)
-                incbin  sound\z80_2.bin
-                even
-
-; REMOVE EVERYTHING ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+```diff
+- Kos_Z80:        incbin  sound\z80_1.bin
+-                 dc.w ((SegaPCM&$FF)<<8)+((SegaPCM&$FF00)>>8)
+-                 dc.b $21
+-                 dc.w (((EndOfRom-SegaPCM)&$FF)<<8)+(((EndOfRom-SegaPCM)&$FF00)>>8)
+-                 incbin  sound\z80_2.bin
+-                 even
 ```
 
 Now that this inclusion is gone, let's clean up some files:
@@ -302,8 +309,7 @@ In `sonic1.asm` file, insert the following code right **below** the driver load 
 
 ```m68k
                 ; REMOVE ME ONCE TESTED >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-                moveq   #$FFFFFF8C, d0          ; request SEGA PCM sample
-                jsr     MegaPCM_PlaySample
+                MPCM_play #dacSega.id
                 bra.s   *                       ; FREEZE, BECAUSE IT'S A TEST
 ```
 
@@ -332,9 +338,7 @@ loc_71C88:
                 ;btst   #3,d0                   ; -- REMOVE THIS LINE
                 ;bne.s  loc_71CAC               ; -- REMOVE THIS LINE
                 ;move.b d0,($A01FFF).l          ; -- REMOVE THIS LINE
-                MPCM_stopZ80                            ; ++
-                move.b  d0, $A00000+Z_MPCM_CommandInput ; ++ send DAC sample to Mega PCM
-                MPCM_startZ80                           ; ++
+                MPCM_play d0                    ; ++
 
 locret_71CAA:
                 rts     
@@ -342,18 +346,16 @@ locret_71CAA:
 
 The removed code branched to `loc_71CAC` to setup pitch hacks for the old driver. With Mega PCM, we don't need dirty hacks anymore, so remove the following code completely:
 
-```m68k
-; REMOVE EVERYTHING BELOW >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-; ===========================================================================
-
-loc_71CAC:
-                subi.b  #$88,d0
-                move.b  byte_71CC4(pc,d0.w),d0
-                move.b  d0,($A000EA).l
-                move.b  #$83,($A01FFF).l
-                rts     
-; End of function sub_71C4E
+```diff
+- ; ===========================================================================
+- 
+- loc_71CAC:
+-                 subi.b  #$88,d0
+-                 move.b  byte_71CC4(pc,d0.w),d0
+-                 move.b  d0,($A000EA).l
+-                 move.b  #$83,($A01FFF).l
+-                 rts     
+- ; End of function sub_71C4E
 ```
 
 ### Step 4.2. Patching SMPS for Mega PCM 2: FM routines
@@ -432,4 +434,4 @@ Run `build.bat` to build your ROM and test it. All music, sounds and DAC samples
 
 ## Next steps
 
-While this guide completes basic Mega PCM 2 installation, there are still a few exiting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github-AS.md) (unfortunately, this guide is currently only available for S1 Github AS disassembly).
+While this guide completes basic Mega PCM 2 installation, there are still a few exiting features and refinements your SMPS driver can't use yet! To take full advantage of Mega PCM 2 capabilities, with DAC fade in/fade out, pausing/unpausing as well as many QoL improvements, see the [Extended Mega PCM 2 integration guide](../2-advanced-integration/Sonic-1-Github.md) (unfortunately, this guide is currently only available for S1 Github disassembly).

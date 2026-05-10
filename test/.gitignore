@@ -1,10 +1,7 @@
 *
-
-!z80vm/
-!megapcm-emu/
-
 !.gitignore
 !.clangd
 !Makefile
 !*.h
 !*.c
+!*.md

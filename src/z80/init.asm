@@ -19,6 +19,13 @@ InitDriver:
 	push	hl
 	djnz	.clearWorkRAM
 
+	; Replace entry point at offset 0000h with `ProcessCommandInput` routine
+	; allowing for `rst ProcessCommandInput`
+	ex	de, hl				; de = 0000h
+	ld	hl, ProcessCommandInput_CodePatch
+	ld	bc, ProcessCommandInput_CodePatch_End-ProcessCommandInput_CodePatch
+	ldir
+
 	; Initialize stack
 	ld	sp, Stack
 
@@ -41,4 +48,4 @@ InitDriver:
 
 	TraceMsg "Mega PCM init finish"
 
-	jr	IdleLoop
+	jp	IdleLoop

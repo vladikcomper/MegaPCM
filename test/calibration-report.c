@@ -9,7 +9,7 @@
 void runTest(uint16_t romScore, uint16_t ramScore, uint8_t expectedCalibration, Z80VM_Context* context) {
 	fprintf(stderr, "Running calibration test: ROM=%d, RAM=%d\n", romScore, ramScore);
 
-	const size_t MAX_CYCLES = 400;
+	const size_t MAX_CYCLES = 500;
 
 	// We need to clear "CalibrationApplied", because it's not cleared after it's set
 	Z80_WriteByte(Z_MPCM_CalibrationApplied, 0, context);

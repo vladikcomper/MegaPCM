@@ -19,8 +19,8 @@ Menu.SelectedItem:		rs.b	1
 Menu.SelectedBGM:		rs.b	1
 Menu.SelectedSFX:		rs.b	1
 Menu.SelectedCMD:		rs.b	1
+Menu.SelectedDAC:		rs.b	1
 Menu.RedrawFlag:		rs.b	1
-						rs.b	1
 
 v_snddriver_ram:		rs.b	$600
 
@@ -28,7 +28,7 @@ v_snddriver_ram:		rs.b	$600
 Main:
 	Console.SetXY #1, #1
 	Console.WriteLine "%<pal1>Sonic 1 SMPS + Mega PCM 2 Example"
-	Console.WriteLine "(c) 2024, Vladikcomper"
+	Console.WriteLine "(c) 2024-2026, Vladikcomper"
 
 	; Display header
 	Console.SetXY #1, #6
@@ -70,7 +70,7 @@ Main:
 
 ; ------------------------------------------------------------------------------
 
-	include	'dma-survival-test/input.asm'
+	include	'common/input.asm'
 
 ; ------------------------------------------------------------------------------
 ; Menu subsystem
@@ -152,6 +152,11 @@ Menu.Items:
 	dc.b	$E0, $E4				; min, max
 	dc.l	@Draw_SelectedCMD		; draw function
 	dc.l	PlaySound				; execute function
+
+	dc.w	Menu.SelectedDAC		; address
+	dc.b	$81, $80+(SampleTable_End-SampleTable)/10	; min, max
+	dc.l	@Draw_SelectedDAC		; draw function
+	dc.l	MegaPCM_PlaySample		; execute function
 @Items_End:
 	dc.w	0						; end of list
 
@@ -165,6 +170,10 @@ Menu.Items:
 
 @Draw_SelectedCMD:
 	Console.WriteLine "  %<pal2>CMD: %<pal0>%<.b Menu.SelectedCMD>"
+	rts
+
+@Draw_SelectedDAC:
+	Console.WriteLine "  %<pal2>DAC: %<pal0>%<.b Menu.SelectedDAC>"
 	rts
 
 ; ------------------------------------------------------------------------------
@@ -228,8 +237,8 @@ Menu.InputConfig:
 
 ; ------------------------------------------------------------------------------
 @PlayVoice:
-	moveq	#$FFFFFF8C, d0
-	jmp		MegaPCM_PlaySample
+	MPCM_play #voice.id
+	rts
 
 ; ------------------------------------------------------------------------------
 

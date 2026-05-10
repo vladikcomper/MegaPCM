@@ -1,11 +1,11 @@
 
 ; ==============================================================
 ; --------------------------------------------------------------
-; Mega PCM 2.0
+; Mega PCM 2.1
 ; --------------------------------------------------------------
 ; DPCM loop module
 ;
-; (c) 2023-2024, Vladikcomper
+; (c) 2023-2026, Vladikcomper
 ; --------------------------------------------------------------
 
 ; --------------------------------------------------------------
@@ -15,7 +15,7 @@
 ;	ix	Pointer to `sSample` structure
 ; --------------------------------------------------------------
 
-DPCMLoop:
+DPCMLoop:	; Classic DPCM
 	di
 
 	TraceMsg "Entering DPCMLoop"
@@ -27,95 +27,59 @@ DPCMLoop:
 	ld	hl, DPCMLoop_VBlank
 	ld	(VBlankRoutine), hl
 
-	ld	(StackCopy), sp			; backup stack
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Fetch input sample data (see `sSampleInput` struct) ...
-	; TODO: Disable sample input?
-	ld	sp, ix				; load sample in the stack
-	inc	sp				; skip type
-	pop	af				; a = pitch, f = flags
-	pop	bc				; c = startBank
-						; b = endBank
-	pop	hl				; hl = start offset (first bank)
-	pop	de				; de = end offset (last bank)
+	; Load DPCM delta table #0
+	ld	hl, DPCM_DeltaTable_0
+	call	LoadDPCMTable2_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	; Initialize active sample playback parameters (see `sActiveSample`) ...
-	ld	sp, ActiveSample+sActiveSample
-	push	af				; (ActiveSample+sActiveSample.pitch) = a
-						; (ActiveSample+sActiveSample.flags) = f
-	ex	af, af'
+	jp	DPCMLoop_Reload
 
-	set	7, h				; make sure hl points to ROM bank
-	push	hl				; (ActiveSample+sActiveSample.startOffset) = hl
+; --------------------------------------------------------------
+DPCMHQLoop:	; DPCM-HQ
+	di
 
-	res	7, d				; de = end offset & 7FFFh
-	dec	de				; de = (end offset & 7FFFh) - 1
-	ld	a, d
-	and	e
-	inc	a				; is de = -1?
-	jr	nz, .lengthOk			; if not, branch
-	dec	b
-	ld	d, 7Fh				; de = 7FFFh (use max end length)
-.lengthOk:
-	; WARNING! This value is incorrect for single-bank samples; luckily, it's ignored
- 	inc	d				; increment `d` by one so Z flag means borrow on decrement
- 	inc	e				; increment 'e' by one so Z flag means borrow on decrement
-	push	de				; (ActiveSample+sActiveSample.endLength) = de
-	dec	d
-	dec	e
+	TraceMsg "Entering DPCMHQLoop"
 
-	ld	a, b				; a = endBank
-	cp	c				; endBank == startBank?
-	jr	nz, .isMultibank		; if not, branch
-	jp	c, StopSamplePlayback		; if endBank < startBank, abort playback
-	res	7, h
-	ex	de, hl				; hl = end length - 1, de = start length
-	sbc	hl, de				; hl = length - 1
-	jp	.setFirstBankLen
+	ld	a, LOOP_DPCM_HQ
+	ld	(LoopId), a
 
-.isMultibank:
-	; Implements: de = 10000h - hl - 1, or simply de = -hl-1
-	xor	a				; a = 0
-	sub	l				; a = 0 - l
-	ld	e, a				; e = 0 - l
-	sbc	h				; a = 0 - h - l - carry
-	add	l				; a = 0 - h - carry
-	ld	d, a				; d = 0 - h - carry
-	ex	de, hl
-	dec	hl
+	; Setup VInt ...
+	ld	hl, DPCMLoop_VBlank
+	ld	(VBlankRoutine), hl
 
-.setFirstBankLen:
- 	inc	h				; increment `h` by one so Z flag means borrow on decrement
- 	inc	l				; increment 'l' by one so Z flag means borrow on decrement
-	push	hl				; (ActiveSample+sActiveSample.startLength) = hl
-	push	bc				; (ActiveSample+sActiveSample.startBank) = c
-						; (ActiveSample+sActiveSample.endBank) = b
+	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	assert FLAGS_SFX==0			; we need this assertion to ensure trick below works
+	; Set initial ROM bank ...
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
 
-	ld	hl, VolumeInput			; hl = VolumeInput
-	ex	af, af'				; a = pitch, f = flags
-	jr	nc, .setVolumeInputPtr		; Carry = FLAGS_SFX
-	inc	l				; hl = SFXVolumeInput
-.setVolumeInputPtr:
-	push	hl				; (ActiveSample+sActiveSample.volumeInputPtr) = hl
+	; Load DPCM delta table based on last byte from the header (read back to header)
+	ld	hl, (ActiveSample+sActiveSample.startOffset)
+	dec	l				; move back to read last byte of the header (we're sure this won't cross the bank boundary or even 256-byte boundary)
+	ld	a, (hl)				; a = Delta table index * 10h
+	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	ld	sp, (StackCopy)			; restore stack
+	jp	DPCMLoop_Cont			; skip over `DPCMLoop_Reload` because we've already set the bank
 
 ; --------------------------------------------------------------
 DPCMLoop_Reload:
-
 	; Set initial ROM bank ...
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
 	di
 
+DPCMLoop_Cont:
 	; Init read ahead registers ...
 	ld	bc, SampleBuffer
 	ld	h, DPCMTables>>8
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	ld	ix, (ActiveSample+sActiveSample.startLength)
+	; TODO: Do this in `LoadActiveSampleData_DI` (create DPCM-specific version)
+	; or in `MegaPCM_LoadSampleTable` on 68k side.
+	dec	ix				; ix = Remaining length in ROM bank - 1
+	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
 
 	; Init playback registers ...
 	Playback_Init_DI	SampleBuffer
@@ -134,7 +98,7 @@ DPCMLoop_Reload:
 ;	de	= ROM pos
 ;	hl	= DPCM decode table pointer
 ;	ixl	= Remaining length in ROM bank - 1 (LOW) + 1
-;	ixh	= Remaining length in ROM bank - 1 (HIGH) + 1
+;	ixh	= Remaining length in ROM bank - 1 (HIGH)
 ; --------------------------------------------------------------
 
 DPCMLoop_NormalPhase_NoCycleStealing:
@@ -142,8 +106,6 @@ DPCMLoop_NormalPhase_NoCycleStealing:
 						;	... that don't emulate cycle-stealing
 
 DPCMLoop_NormalPhase:
-	TraceMsg "DPCMLoop_NormalPhase iteration"
-
 	; Handle "read-ahead" buffer
 	ld	a, (de)				; 7+3.3*
 	inc	de				; 6	increment ROM pointer
@@ -164,18 +126,21 @@ DPCMLoop_NormalPhase:
 
 	; Handle playback
 .Playback_DI:
-	Playback_Run_DI						; 60-61	playback a buffered sample
+	Playback_Run_DI2					; 60-61	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
+	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
+	; as an optimization (because DPCM decoder re-fetches last sample),
+	; so `ChkReadaheadOk` check thinks read ahead buffer is full
+	; 1 sample early, but this isn't a big deal for us, since buffer
+	; is 256 samples large anyways.
 	Playback_ChkReadaheadOk	c, b, DPCMLoop_NormalPhase	; 18
-	; Total cycles: 46
+	; Total cycles: 82-83
 
 	; Total "DPCMLoop_NormalPhase" cycles: ~169-170 + 3.3*
 	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	TraceMsg "PCMLoop_NormalPhase_ReadAheadFull iteration"
-
 	; Waste 87 + 3* cycles (we cannot handle "read-ahead" now)
 	push	af						; 11
 	pop	af						; 10
@@ -190,7 +155,7 @@ DPCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 .ChkReadAheadExhausted_DI:
 	dec	ixh				; 8	decrement high byte of length
-	jp	nz, .Playback_DI		; 10	if no borrow, back to playback
+	jp	p, .Playback_DI			; 10	if no borrow, back to playback
 
 .ReadAheadExhausted_DI:
 	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
@@ -212,22 +177,27 @@ DPCMLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 DPCMLoop_DrainPhase:
-	TraceMsg "DPCMLoop_DrainPhase iteration"
-
 	; Handle playback in draining mode
 	di							; 4
+	; NOTE: We correct "sample buffer pos" pointer here (`bc`)
+	; As an optimization, in the normal phase loop (`DPCMLoop_NormalPhase`)
+	; "sample buffer pos" points to the start of the last sample, not the
+	; next sample to write (because DPCM decoder needs to re-fetch it)
+	; Why can't we do this correction permanently when reaching drain phase?
+	; Because VBlank also does the same correction and applying it twice
+	; may break it.
+	inc	c						; 4	correct `bc` pointer
 	Playback_Run_Draining	c, .Drained_EXX_DI		; 71-72
+	dec	c						; 4	undo `bc` pointer correction
 	ei							; 4
 
-	; Waste 90 + 3* cycles
+	; Waste 82 + 3* cycles
 	push	af						; 11
 	pop	af						; 10
 	push	af						; 11
 	pop	af						; 10
 	push	hl						; 11
-	inc	hl						; 6
-	inc	hl						; 6
-	inc	hl						; 6
+	ld	hl, 0						; 10
 	pop	hl						; 10
 	jr	DPCMLoop_DrainPhase				; 12
 	; Total "DPCMLoop_DrainPhase" cycles: ~169-170 + 3*
@@ -258,11 +228,13 @@ DPCMLoop_NormalPhase_LoadNextBank:
 
 	; Setup sample source and length
 	ld	de, ROMWindow			; de = 8000h (alt: ld b, ROMWindow<<8)
-	ld	ix, 8000h			; ix = 8000h (7Fh+1, FFh+1)
+	ld	ix, 7F00h			; ix = 7F00h (7Fh+0, 0FFh+1)
 	cp	(hl)				; current bank is the last one?
-	jr	nz, .lengh_ok			; if not, branch
+	jr	nz, .length_ok			; if not, branch
 	ld	ix, (ActiveSample+sActiveSample.endLength)
-.lengh_ok:
+	dec	ix				; ix = Remaining length in ROM bank - 1
+	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
+.length_ok:
 	ld	h, DPCMTables>>8
 
 	; Switch to the next ROM bank
@@ -305,6 +277,7 @@ DPCMLoop_VBlank_Loop_DrainDoneSync_EXX:
 DPCMLoop_VBlank:
 	push	af
 	push	bc
+	inc	c					; correct "read ahead" pointer (see comment on previous `inc c` instruction)
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
 	; This means in worst-case scenario, we must play 116 samples to survive VBlank.
@@ -312,8 +285,6 @@ DPCMLoop_VBlank:
 
 ; --------------------------------------------------------------
 DPCMLoop_VBlankPhase:
-	TraceMsg "DPCMLoop_VBlankPhase iteration"
-
 	; Handle sample playback in draining mode
 	Playback_Run_Draining	c, DPCMLoop_VBlank_Loop_DrainDoneSync_EXX	; 71-72/24	playback one sample
 
@@ -331,7 +302,7 @@ DPCMLoop_VBlankPhase_Sync:
 	pop	hl					; 10
 	nop						; 4
 	djnz	DPCMLoop_VBlankPhase			; 13/8
-	; Total "PCMLoop_VBlankPhase" cycles: 169-170 + 3*
+	; Total "DPCMLoop_VBlankPhase" cycles: 169-170 + 3*
 	; *) emulated lost cycles on M68K bus access on average
 
 ; --------------------------------------------------------------
@@ -343,25 +314,8 @@ DPCMLoop_VBlankPhase_LastIteration:
 	exx						; 4
 	Playback_LoadPitch				; 21	reload pitch
 
-DPCMLoop_VBlankPhase_CheckCommandOrSample:
-	ld	a, (CommandInput)			; 13	a = command
-	or	a					; 4	is command > 00h?
-	jr	z, .ChkCommandOrSample_Done		; 7/12	if not, branch
-	jp	p, .ChkCommandOrSample_Command		;	if command = 01..7Fh, branch
+	rst	ProcessCommandInput			; 11+22	returns a=0 once driver input is processed
 
-	; Only low-priority samples can be overriden
-	assert	FLAGS_SFX==0				; `FLAGS_SFX` should be 0 for the next optimization to work ...
-
-	ld	a, (ActiveSample+sActiveSample.flags)
-	rrca						; push `FLAGS_SFX` to Carry
-	jr	nc, .PlaySample				; if not SFX, branch
-
-.ChkCommandOrSample_ResetInput:
-	; Reset command
-	xor	a
-	ld	(CommandInput), a
-
-.ChkCommandOrSample_Done:
 	; Handle sample playback one last time
 	Playback_Run_Draining_NoSync	c		; 71-72/28
 
@@ -369,32 +323,7 @@ DPCMLoop_VBlankPhase_CheckCommandOrSample:
 	xor	a
 	ld	(VBlankActive), a			; 13
 
-	pop	bc					; 10
+	pop	bc					; 10	also undoes "read ahead" pointer correction
 	pop	af					; 10
 	ei						; 4
 	ret						; 10
-
-; --------------------------------------------------------------
-.ChkCommandOrSample_Command:
-	dec	a					; is command 01h (`COMMAND_STOP`)?
-	jp	z, StopSamplePlayback			; if yes, branch
-	dec	a					; is command 02h (`COMMAND_PAUSE`)?
-	jr	nz, .UnkownCommand			; if yes, branch
-
-.PausePlayback:
-	; There's a trick to it: While the "pause command" is set,
-	; we reset sample pitch to 0, cancelling pitch reload above.
-	; As soon as this command is unset, the pitch reload will restore it.
-	Playback_ResetPitch				; set pitch to 00h
-	jr	.ChkCommandOrSample_Done
-
-.PlaySample:
-	ld	a, (CommandInput)			; a = sample
-	jp	RequestSamplePlayback
-
-; --------------------------------------------------------------
-.UnkownCommand:
-	TraceException	"Uknown command"
-	ld	a, ERROR__UNKNOWN_COMMAND
-	ld	(LastErrorCode), a
-	jr	.ChkCommandOrSample_ResetInput

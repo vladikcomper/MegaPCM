@@ -8,7 +8,7 @@ SRC_DIR := .
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.asm)
 
-.PHONY:	megapcm-z80 volume-tables dpcm-tables clean
+.PHONY:	megapcm-z80 volume-tables clean
 
 megapcm-z80: $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.exports.asm $(BUILD_DIR)/megapcm.exports.h $(BUILD_DIR)/megapcm.symbols.asm $(BUILD_DIR)/megapcm.symbols.h | $(BUILD_DIR)
 
@@ -17,16 +17,8 @@ $(BUILD_DIR)/megapcm.bin $(BUILD_DIR)/megapcm.symbols.sym &:	$(SRC_FILES) | $(BU
 
 volume-tables:	$(SRC_DIR)/volume-tables.asm
 
-dpcm-tables: $(SRC_DIR)/dpcm-tables.asm
-
 $(SRC_DIR)/volume-tables.asm:
 	$(MKVOLUME) -n 16 $@
-
-$(SRC_DIR)/dpcm-hq-tables.asm:
-	$(MKDPCMTBL) --table -34 -21 -13 -8 -5 -3 -2 -1 0 1 2 3 5 8 13 21 $@
-
-$(SRC_DIR)/dpcm-tables.asm:
-	$(MKDPCMTBL) $@
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)

@@ -27,6 +27,15 @@
 	endm
 
 ; -----------------------------------------------------------------------------
+
+	macro	PlaybackTurbo_Init_EXX_DI readaheadPtr
+	ld	hl, readaheadPtr		; hl = readaheadPtr
+	ld	de, YM_Port0_Data
+	exx
+	endm
+
+
+; -----------------------------------------------------------------------------
 ; Executes playback tick/iteration in "normal" mode (playback + readahead)
 ;
 ; WARNING! This doesn't check if playback and readhead pointers clash!
@@ -46,12 +55,35 @@
 	endm
 
 ; -----------------------------------------------------------------------------
+
+	macro	PlaybackTurbo_Run_EXX_DI
+	ld	a, (hl)				; 7	load sample
+	ld	(de), a				; 7	send it to YM
+	inc	l				; 4	advance playback pointer
+	ld	a, l				; 4	a = buffer position
+	exx					; 4
+	; Cycles: 26 (playback)
+	endm
+
+; -----------------------------------------------------------------------------
+
+	; "DPCM" version, assumes `bc` being one sample behind
+	macro	PlaybackTurbo_Run_EXX_DI2
+	ld	a, (hl)				; 7	load sample
+	ld	(de), a				; 7	send it to YM
+	ld	a, l				; 4	a = buffer position
+	inc	l				; 4	advance playback pointer
+	exx					; 4
+	; Cycles: 26 (playback)
+	endm
+
+; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
 ; Should be used after `PlaybackTurbo_Run_DI`
 ; -----------------------------------------------------------------------------
 ; ARGUMENTS:
 ;	regReadAheadPtrLow - Low byte of readahead position (c, e, l)
-;	regValue03h - register that contains value of 03h
+;	regValue05h - register that contains value of 05h
 ;	locReadaheadOk - location to jump if readahead isn't full
 ;
 ; INPUT:
@@ -61,11 +93,11 @@
 ;	af, Shadow registers
 ; -----------------------------------------------------------------------------
 
-	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, regValue03h, locReadaheadOk
+	macro	PlaybackTurbo_ChkReadaheadOk	regReadAheadPtrLow, regValue05h, locReadaheadOk
 	sub	regReadAheadPtrLow		; 4	a = buffer position - regReadAheadPtrLow
-	sub	regValue03h			; 4	a = buffer position - regReadAheadPtrLow - 2
+	sub	regValue05h			; 4	a = buffer position - regReadAheadPtrLow - 5
 @.chkReadahead_sm1:		; points to self-modifying code (allows to overwrite `locReadaheadOk` for cycle calibration)
-	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 2), then read ahead is ok
+	jp	nc, locReadaheadOk 		; 10	if (buffer position - regReadAheadPtrLow <= 5), then read ahead is ok
 	; Cycles: 18
 	endm
 

@@ -90,6 +90,7 @@ setx	equ		$FA				; set x-position
 ; Screen appearence flags
 _eh_address_error	equ	$01		; use for address and bus errors only (tells error handler to display additional "Address" field)
 _eh_show_sr_usp		equ	$02		; displays SR and USP registers content on error screen
+_eh_hide_caller		equ	$04		; don't guess and print caller in the header (in SGDK and C/C++ projects naive caller detection isn't reliable)
 
 ; Advanced execution flags
 ; WARNING! For experts only, DO NOT USE them unless you know what you're doing
@@ -174,8 +175,27 @@ _eh_align_offset	equ	$80
 	endif
 
 ; ---------------------------------------------------------------
-; Creates assertions for debugging
+; Creates compile-time assertions
 ; ---------------------------------------------------------------
+; EXAMPLES:
+;	static_assert def(__DEBUG__)
+;	static_assert MY_CONST=42
+; ---------------------------------------------------------------
+
+static_assert:	macro
+	if \_
+	else
+		inform 2,"Assertion failed: \_"
+	endif
+	endm
+
+
+; ---------------------------------------------------------------
+; Creates run-time assertions for debugging
+; ---------------------------------------------------------------
+; NOTE:
+;	Run-time asserts only work if `__DEBUG__` is defined.
+;
 ; EXAMPLES:
 ;	assert.b	d0, eq, #1		; d0 must be $01, or else crash
 ;	assert.w	d5, pl			; d5 must be positive
@@ -190,14 +210,14 @@ _eh_align_offset	equ	$80
 ;	this behavior and safe a few cycles.
 ; ---------------------------------------------------------------
 
-assert	macro
+assert:	macro	src, cond, dest, console_program
 		move.w	sr, -(sp)
-		_assert.\0	\_
+		_assert.\0	<\src>, <\cond>, <\dest>, <\console_program>
 		move.w	(sp)+, sr
 	endm
 
 ; Same as "assert", but doesn't save/restore CCR (can be used to save a few cycles)
-_assert	macro	src, cond, dest, console_program
+_assert:	macro	src, cond, dest, console_program
 	if strlen("\dest")
 		cmp.\0	\dest, \src
 	else
@@ -227,7 +247,7 @@ _assert	macro	src, cond, dest, console_program
 ;	RaiseError	"Module crashed! Extra info:", YourMod_Debugger
 ; ---------------------------------------------------------------
 
-RaiseError	macro	string, console_program, opts
+RaiseError:	macro	string, console_program, opts
 	pea		*(pc)				; this simulates M68K exception
 	move.w	sr, -(sp)			; ...
 	__FSTRING_GenerateArgumentsCode \string
@@ -247,7 +267,7 @@ RaiseError	macro	string, console_program, opts
 	opt l-
 @data\@:
 	popo
-	__FSTRING_GenerateDecodedString \string
+	__FSTRING_GenerateDecodedString \string, 0 ; 0 = no automatic newline
 
 	if strlen("\console_program")			; if console program offset is specified ...
 		dc.b	\opts+_eh_enter_console|(((*&1)^1)*_eh_align_offset)	; add flag "_eh_align_offset" if the next byte is at odd offset ...
@@ -294,15 +314,15 @@ RaiseError	macro	string, console_program, opts
 ;	this behavior and safe a few cycles.
 ; ---------------------------------------------------------------
 
-Console macro
+Console:	macro
 	; "Console.Run" doesn't have to save/restore CCR, because it's a no-return
 	if strcmp("\0","run")|strcmp("\0","Run")
-		_Console.\0	\_
+		_Console.\0	<\1>, <\2>
 
 	; Other Console calls do save/restore CCR
 	else
 		move.w	sr, -(sp)
-		_Console.\0	\_
+		_Console.\0	<\1>, <\2>
 		move.w	(sp)+, sr
 	endif
 	endm
@@ -320,7 +340,7 @@ _Console	macro
 			movem.l	a0-a2/d7, -(sp)
 			lea		4*4(sp), a2
 			lea		@str\@, a1
-			jsr		MDDBG__Console_\0\_Formatted
+			jsr		MDDBG__Console_Write_Formatted
 			movem.l	(sp)+, a0-a2/d7
 			if (__sp>8)
 				lea		__sp(sp), sp
@@ -332,7 +352,7 @@ _Console	macro
 		else
 			move.l	a0, -(sp)
 			lea		@str\@, a0
-			jsr		MDDBG__Console_\0
+			jsr		MDDBG__Console_Write
 			move.l	(sp)+, a0
 		endif
 
@@ -340,7 +360,7 @@ _Console	macro
 		pushs
 		section dbgstrings
 	@str\@:
-		__FSTRING_GenerateDecodedString \1
+		__FSTRING_GenerateDecodedString \1, <strcmp("\0","writeline")|strcmp("\0","WriteLine")> ; add automatic newline if method is ".WriteLine"
 		even
 
 		; Back to previous section (it should be 'rom' for this trick to work)
@@ -406,14 +426,14 @@ _Console	macro
 ;	this behavior and safe a few cycles.
 ; ---------------------------------------------------------------
 
-KDebug	macro
+KDebug:	macro
 		move.w	sr, -(sp)
-		_KDebug.\0	\_
+		_KDebug.\0	<\1>
 		move.w	(sp)+, sr
 	endm
 
 ; Same as "KDebug", but doesn't save/restore CCR (can be used to save a few cycles)
-_KDebug	macro
+_KDebug:	macro
 	if strcmp("\0","write")|strcmp("\0","writeline")|strcmp("\0","Write")|strcmp("\0","WriteLine")
 		__FSTRING_GenerateArgumentsCode \1
 
@@ -445,7 +465,7 @@ _KDebug	macro
 		pushs
 		section dbgstrings
 	@str\@:
-		__FSTRING_GenerateDecodedString \1
+		__FSTRING_GenerateDecodedString \1, 0 ; 0 = no automatic newline
 		even
 
 		; Back to previous section
@@ -453,7 +473,7 @@ _KDebug	macro
 		popo	
 
 	elseif strcmp("\0","breakline")|strcmp("\0","BreakLine")
-		jsr		MDDBG__KDebug_FlushLine
+		move.w	#$9E00, ($C00004).l
 
 	elseif strcmp("\0","starttimer")|strcmp("\0","StartTimer")
 		move.w	#$9FC0, ($C00004).l
@@ -471,11 +491,10 @@ _KDebug	macro
 	endm
 
 ; ---------------------------------------------------------------
-__ErrorMessage &
-	macro	string, opts
+__ErrorMessage:	macro	string, opts
 		__FSTRING_GenerateArgumentsCode \string
 		jsr		MDDBG__ErrorHandler
-		__FSTRING_GenerateDecodedString \string
+		__FSTRING_GenerateDecodedString \string, 0 ; 0 = no automatic newline
 		if DEBUGGER__EXTENSIONS__ENABLE
 			dc.b	\opts+_eh_return|(((*&1)^1)*_eh_align_offset)	; add flag "_eh_align_offset" if the next byte is at odd offset ...
 			even													; ... to tell Error handler to skip this byte, so it'll jump to ...
@@ -487,8 +506,7 @@ __ErrorMessage &
 	endm
 
 ; ---------------------------------------------------------------
-__FSTRING_GenerateArgumentsCode &
-	macro	string
+__FSTRING_GenerateArgumentsCode:	macro string
 
 	__pos:	= instr(\string,'%<')		; token position
 	__stack:= 0						; size of actual stack
@@ -502,6 +520,9 @@ __FSTRING_GenerateArgumentsCode &
 
 		; Retrive expression in brackets following % char
     	__endpos:	= instr(__pos+1,\string,'>')
+    	if __endpos=0
+			inform 3,'Missing a closing bracket after %<'
+    	endif
     	__midpos:	= instr(__pos+5,\string,' ')
     	if (__midpos<1)|(__midpos>__endpos)
 			__midpos: = __endpos
@@ -513,6 +534,12 @@ __FSTRING_GenerateArgumentsCode &
 		if "\__type">>8="."
 			__operand:	substr	__pos+1+1,__midpos-1,\string			; .type ea
 			__param:	substr	__midpos+1,__endpos-1,\string			; param
+
+			if instr("\__operand","(sp)")|instr("\__operand","(SP)")
+				; Referring to (SP) may get unexpected results because stack is already shifted at this point
+				; Using -(SP) and (SP)+ will crash because of stack corruption.
+				inform 3,'Cannot use (SP) in a formatted string'
+			endif
 
 			if "\__type"=".b"
 				pushp	"move\__operand\,1(sp)"
@@ -531,7 +558,7 @@ __FSTRING_GenerateArgumentsCode &
 				__sp: = __sp+4
 
 			else
-				fatal 'Unrecognized type in string operand: %<\__substr>'
+				inform 3,'Unrecognized type in string operand: %<\__substr>'
 			endif
 		endif
 
@@ -549,8 +576,7 @@ __FSTRING_GenerateArgumentsCode &
 	endm
 
 ; ---------------------------------------------------------------
-__FSTRING_GenerateDecodedString &
-	macro string
+__FSTRING_GenerateDecodedString:	macro string, addnewline
 
 	__lpos:	= 1							; start position
 	__pos:	= instr(\string,'%<')		; token position
@@ -605,6 +631,9 @@ __FSTRING_GenerateDecodedString &
 	; Write part of string before the end
 	__substr:	substr	__lpos,,\string
 	dc.b	"\__substr"
+	if addnewline
+		dc.b	endl
+	endif
 	dc.b	0
 
 	endm

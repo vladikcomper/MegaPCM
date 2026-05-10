@@ -18,17 +18,17 @@ Now open Mega PCM 2's sample table (`SampleTable.asm`) and add your sample in an
 
 ```m68k
 SampleTable:
-    ;           type            pointer     Hz
-    dcSample    TYPE_DPCM,      Kick,       8000                ; $81
-    dcSample    TYPE_PCM,       Snare,      24000               ; $82
-    dcSample    TYPE_DPCM,      Timpani,    7250                ; $83
-    dcSample    TYPE_PCM,       MySFX,      0, FLAGS_SFX        ; $84  NOTE: sample rate is auto-detected from WAV file
-    ; <...>
-    dc.w    -1  ; end marker
+        ;           type            pointer     Hz
+        dcSample    TYPE_DPCM,      Kick,       8000                ; $81
+        dcSample    TYPE_PCM,       Snare,      24000               ; $82
+        dcSample    TYPE_DPCM,      Timpani,    7250                ; $83
+sfx:    dcSample    TYPE_PCM,       MySFX,      0, FLAGS_SFX        ; $84  NOTE: sample     rate is auto-detected from WAV file
+        ; <...>
+        dc.w    -1  ; end marker
 
 ; ---------------------------------------------------------------
-    ; <...>
-    incdac  MySFX, "sound/dac/my-sfx.wav"
+        ; <...>
+        incdac  MySFX, "sound/dac/my-sfx.wav"
 ```
 
 It's highly recommended that your sample has `FLAGS_SFX` set in the sample table (as shown above). It will still work without it, but it may get interrupted by BGM drums, which would have the same priority otherwise.
@@ -44,17 +44,17 @@ Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files sh
 Use this code to play your sample when desired:
 
 ```m68k
-    move.b  #<<YOUR SAMPLE ID>>, d0
+    MPCM_play #sfx.id
+```
+
+`sfx.id` refers to the sample ID in Mega PCM's sample table, as in this example, we've added `sfx:` label before `MySFX` sample (remember that all labels must be unique!). 
+
+Or alternatively, you can use this older approach:
+
+```m68k
+    ; Alternative, older code:
+    move.b  #sfx.id, d0
     jsr     MegaPCM_PlaySample
 ```
 
-Where `<<YOUR SAMPLE ID>>` is a sample number in Mega PCM's sample table. You usually count these manually starting from $81 (comments in the sample table above help in tracking those numbers).
-
-In our example ID should be `$84` (as noted in the sample table).
-
-
-> [!WARNING]
->
-> As of version 2.0, samples with `FLAGS_SFX` have the highest priority and cannot be interrupted by other samples, even if they have `FLAGS_SFX` set as well. This may not be desired in some scenarios, where you want currently playing SFX to cut when another one is played.
->
-> In this case, however, the only easy workaround is to remove `FLAGS_SFX` from your sample and risk it being interrupted by BGM drums and inheriting their settings (panning and volume). Another workaround, which I don't recommend because of how hard & dirty it is, is to do `jsr MegaPCM_StopPlayback`, wait 1 frame for Mega PCM to accept the command and then play the desired SFX.
+`MPCM_play #X` and `move.b #X, d0 / jsr MegaPCM_PlaySample` are interchangeable, but the former results in a cleaner and more flexible code. The only minor downside is that it generates code in-place, which takes slightly more space (but it's faster because you don't have to call a subroutine). So unless you need to save a few bytes, always prefer `MPCM_play` (and `MPCM_*` macros in general).

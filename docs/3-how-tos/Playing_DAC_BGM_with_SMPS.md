@@ -1,7 +1,7 @@
 
 # How to play DAC BGM using SMPS and Mega PCM 2
 
-This guide will show you an easy and reliable way of implementing DAC BGMs natively using SMPS and Mega PCM 2 in Sonic 1 Github AS disassembly.
+This guide will show you an easy and reliable way of implementing DAC BGMs natively using SMPS and Mega PCM 2 in Sonic 1 Github disassembly.
 
 The overall process goes as follows:
 1. Add your music to Mega PCM 2's sample table;
@@ -10,7 +10,7 @@ The overall process goes as follows:
 
 This method has the following advantages:
 - Your BGM is immediately available in the sound test;
-- SMPS treats it as a proper BGM: it will stop when another BGM is played and will react to fade in/fade out commands (unless it's `TYPE_PCM_TURBO` which excludes volume control).
+- SMPS treats it as a proper BGM: it will stop when another BGM is played and will react to fade in/fade out commands (unless it's `TYPE_PCM_TURBO` or `TYPE_DPCM_TURBO` which doesn't support volume effects).
 
 ## 1. Adding a sample for BGM
 
@@ -20,17 +20,17 @@ Now open Mega PCM 2's sample table (`SampleTable.asm`) and add your sample in an
 
 ```m68k
 SampleTable:
-    ;           type            pointer     Hz
-    dcSample    TYPE_DPCM,      Kick,       8000                ; $81
-    dcSample    TYPE_PCM,       Snare,      24000               ; $82
-    dcSample    TYPE_DPCM,      Timpani,    7250                ; $83
-    dcSample    TYPE_PCM,       MyBGM,      0, FLAGS_LOOP       ; $84  NOTE: sample rate is auto-detected from WAV file
-    ; <...>
-    dc.w    -1  ; end marker
+        ;           type            pointer     Hz
+        dcSample    TYPE_DPCM,      Kick,       8000                ; $81
+        dcSample    TYPE_PCM,       Snare,      24000               ; $82
+        dcSample    TYPE_DPCM,      Timpani,    7250                ; $83
+bgm:    dcSample    TYPE_PCM,       MyBGM,      0, FLAGS_LOOP       ; $84  NOTE: sample rate is auto-detected from .WAV file
+        ; <...>
+        dc.w    -1  ; end marker
 
 ; ---------------------------------------------------------------
-    ; <...>
-    incdac  MySFX, "sound/dac/my-bgm.wav"
+        ; <...>
+        incdac  MySFX, "sound/dac/my-bgm.wav"
 ```
 
 You'll probably want your BGM to loop (otherwise it'll just stop once finishes), so add `FLAGS_LOOP` flag for the sample as shown above.
@@ -45,7 +45,7 @@ Make sure your file's format is supported by Mega PCM 2. WAV or raw PCM files sh
 
 For simplicity, let's assume you want to replace GHZ BGM (sound id `$81`) with your new DAC BGM. In Sonic 1 Github AS disassembly, it's located in `sound/music/Mus81 - GHZ.asm` file.
 
-Open this file and replace its contants with the following:
+Open this file and replace its constants with the following:
 
 ```m68k
 Mus81_GHZ_Header:
@@ -57,13 +57,11 @@ Mus81_GHZ_Header:
     smpsHeaderDAC       Mus81_GHZ_DAC
 
 Mus81_GHZ_DAC:
-    dc.b    $84         ; play BGM sample
+    dc.b    bgm.id        ; play BGM sample (`bgm` label defined in sample table)
     smpsStop
 
 Mus81_GHZ_Voices:
 ```
-
-Replace `$84` below `Mus81_GHZ_DAC:` with your sample id, if it's different.
 
 Now, when you build the ROM and go to GHZ, it should play your new DAC BGM instead.
 
@@ -73,4 +71,4 @@ Now, when you build the ROM and go to GHZ, it should play your new DAC BGM inste
 
 > [!WARNING]
 >
-> Your BGM won't support fade out effect if it has `TYPE_PCM_TURBO` or `FLAGS_SFX` flag. "Fade in" effect after 1-up jingle also isn't supported by SMPS for continously playing samples (only newly requested drums will be picked up in normal BGMs).
+> Your BGM won't support fade out effect if it has `TYPE_PCM_TURBO`, `TYPE_DPCM_TURBO` or `FLAGS_SFX` flag. "Fade in" effect after 1-up jingle also isn't supported by SMPS for continuously playing samples (only newly requested drums will be picked up in normal BGMs).

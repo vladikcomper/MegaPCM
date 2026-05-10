@@ -44,6 +44,6 @@ IdleLoop_VBlank:
 
 	ld	a, (CommandInput)		; 13	read command
 	or	a				; 4	is it a sample (>80h)?
-	jp	m, RequestSamplePlayback	; 10	if yes, jump
+	jp	m, RequestSamplePlayback_NR	; 10	if yes, jump
 	ei					; 4	enable interrupts
 	ret					; 10	wait until next VBlank

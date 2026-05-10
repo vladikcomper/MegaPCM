@@ -1,0 +1,11 @@
+*
+!*/
+!.clangd
+!.gitignore
+!Makefile
+!*.md
+!*.txt
+!*.c
+!*.cpp
+!*.py
+!*.asm
