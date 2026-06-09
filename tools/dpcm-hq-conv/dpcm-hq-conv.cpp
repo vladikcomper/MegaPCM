@@ -85,7 +85,7 @@ struct Arguments {
 	optional<float> k;
 
 	static constexpr char programUsageString[] =
-		"DPCM-HQ Encoder and Decoder v.1.0\n"
+		"DPCM-HQ Encoder and Decoder v.1.0.1\n"
 		"(c) 2026, Vladikcomper\n"
 		"\n"
 		"USAGE:\n"
@@ -202,6 +202,7 @@ struct Arguments {
 				catch (...) {
 					throw runtime_error(format("Failed to parse value for -k|--k: {} (expected a float, e.g. 0.5)", argv[i]));
 				}
+		        state = ParserState::OPTION_NAME_OR_PATH;
 				break;
 	        }
 	    }
@@ -242,7 +243,7 @@ struct EncodedStream {
 	void writeToFile(const string& filePath) const {
 		ofstream file(filePath, ios::binary);
 		if (!file.good()) throw runtime_error("Failed to open output file");
-		file.exceptions(ifstream::failbit | ifstream::badbit);
+		file.exceptions(ios_base::failbit | ios_base::badbit);
 
 		const auto streamLength = data.size();
 		const char header[9] = {
@@ -252,7 +253,7 @@ struct EncodedStream {
 			static_cast<char>((streamLength >> 16) & 0xFF),
 			static_cast<char>((streamLength >> 8) & 0xFF),
 			static_cast<char>(streamLength & 0xFF),
-			/* Sample rate (Bin Endian) */
+			/* Sample rate (Big Endian) */
 			static_cast<char>((sampleRate >> 8) & 0xFF),
 			static_cast<char>(sampleRate & 0xFF),
 			/* Table type */
@@ -288,7 +289,7 @@ struct EncodedStream {
 			file.seekg(0, ios::beg);
 		}
 
-		file.exceptions(ifstream::failbit | ifstream::badbit);
+		file.exceptions(ios_base::failbit | ios_base::badbit);
 		vector<uint8_t> data(streamLength);
 		file.read(reinterpret_cast<char*>(data.data()), streamLength);
 
@@ -312,7 +313,7 @@ struct DecodedStream {
 	size_t sampleRate;
 	vector<uint8_t> data;
 
-	struct __attribute__((packed)) RIFFHeader {
+	struct RIFFHeader {
 		char fileTypeBlockId[4];
 		uint32_t fileSize;
 		char fileFormatId[4];
@@ -324,7 +325,7 @@ struct DecodedStream {
             );
 		}
 	};
-	struct __attribute__((packed)) RIFFFmtChunk {
+	struct RIFFFmtChunk {
 		char chunkId[4];
 		uint32_t chunkSize;
 		uint16_t audioFormat;
@@ -341,7 +342,7 @@ struct DecodedStream {
             );
 		}
 	};
-	struct __attribute__((packed)) RIFFDataChunk {
+	struct RIFFDataChunk {
 		char chunkId[4];
 		uint32_t chunkSize;
 
@@ -356,7 +357,7 @@ struct DecodedStream {
 	void writeToFile(const string& filePath) const {
 		ofstream file(filePath, ios::binary);
 		if (!file.good()) throw runtime_error("Failed to open output file");
-		file.exceptions(ifstream::failbit | ifstream::badbit);
+		file.exceptions(ios_base::failbit | ios_base::badbit);
 		RIFFHeader header {
 			.fileTypeBlockId = {'R','I','F','F'},
 			.fileSize = static_cast<uint32_t>(sizeof(RIFFHeader) + sizeof(RIFFFmtChunk) + sizeof(RIFFDataChunk) + data.size() - 8),
@@ -399,7 +400,7 @@ struct DecodedStream {
 			if (strncmp(maybeHeader.fileFormatId, "WAVE", 4) != 0) throw runtime_error("Invalid WAVE header");
 
 			RIFFFmtChunk fmtChunk;
-			file.exceptions(ifstream::failbit | ifstream::badbit);
+			file.exceptions(ios_base::failbit | ios_base::badbit);
 			file.read(reinterpret_cast<char*>(&fmtChunk), sizeof(fmtChunk));
 			Logger::debug(format("RIFFFmtChunk = {}", fmtChunk.dumpDebugInfo()));
 			if (strncmp(fmtChunk.chunkId, "fmt ", 4) != 0) throw runtime_error("Invalid WAVE: Missing 'fmt' chunk");
@@ -426,7 +427,7 @@ struct DecodedStream {
 		/* Otherwise, assume raw stream */
 		else {
 			file.clear();
-			file.exceptions(ifstream::failbit | ifstream::badbit);
+			file.exceptions(ios_base::failbit | ios_base::badbit);
 			file.seekg(0, ios::end);
 			streamLength = file.tellg();
 			file.seekg(0, ios::beg);			
@@ -480,8 +481,8 @@ namespace Encoder {
 		if (samples.size() % 2) throw runtime_error("Buffer should contain even number of samples");
 		vector<uint8_t> outDeltas(samples.size() / 2);
 
-	    const auto deltaTable = deltaTables[deltaTableIndex];
-	    const auto deltaClickFactor = deltaClickFactors[deltaTableIndex];
+	    const auto deltaTable = deltaTables.at(deltaTableIndex);
+	    const auto deltaClickFactor = deltaClickFactors.at(deltaTableIndex);
 
 	    uint8_t currentSample = 0x80;
 	    array<uint8_t, 16> predictedSamples;
@@ -522,7 +523,7 @@ namespace Decoder {
 	vector<uint8_t> decode(const vector<uint8_t>& data, size_t deltaTableIndex) {
 		uint8_t currentSample = 0x80;
 		vector<uint8_t> output(data.size() * 2);
-		const auto deltaTable = deltaTables[deltaTableIndex];
+		const auto deltaTable = deltaTables.at(deltaTableIndex);
 		size_t i = 0;
 		for (const auto byte : data) {
 			currentSample += deltaTable[byte>>4];
@@ -618,9 +619,9 @@ int main(int argc, char* argv[]) {
 				/* Otherwise, run encoder against all tables in parallel and guess the best one */
 				else {
 					array<future<Encoder::EncodingResult>, 3> tasks = {
-						async(launch::async, encodeTask, decodedStream.data, 0, k),
-						async(launch::async, encodeTask, decodedStream.data, 1, k),
-						async(launch::async, encodeTask, decodedStream.data, 2, k),
+						async(launch::async, encodeTask, cref(decodedStream.data), 0, k),
+						async(launch::async, encodeTask, cref(decodedStream.data), 1, k),
+						async(launch::async, encodeTask, cref(decodedStream.data), 2, k),
 					};
 				    const std::array<Encoder::EncodingResult, 3> results = {
 				    	tasks[0].get(), tasks[1].get(), tasks[2].get()
