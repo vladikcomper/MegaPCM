@@ -33,7 +33,10 @@ dcSample: macro	{INTLABEL}, SAMPLETYPE, SAMPLEPTR, SAMPLERATE, SAMPLEFLAGS
 	__ST_PrevInvokeLoc:	set	__ST_PrevInvokeLoc+10
 	__ST_SampleID:		set __ST_SampleID+1
 
-__LABEL__
+	if "__LABEL__"<>""
+__LABEL__: label *
+	endif
+
 	; Setup default sample description field (based on flags and type)
 	if ARGCOUNT<4 ; if "flags" parameter is not specified
 		._desc: set SAMPLETYPE|PRIO_NORMAL
