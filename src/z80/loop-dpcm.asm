@@ -33,7 +33,7 @@ DPCMLoop:	; Classic DPCM
 	ld	hl, DPCM_DeltaTable_0
 	call	LoadDPCMTable2_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMLoop_Reload
+	jp	DPCMLoop_Cont
 
 ; --------------------------------------------------------------
 DPCMHQLoop:	; DPCM-HQ
@@ -50,7 +50,7 @@ DPCMHQLoop:	; DPCM-HQ
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Set initial ROM bank ...
+	; Set initial ROM bank (required for reading the header)
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
@@ -59,20 +59,17 @@ DPCMHQLoop:	; DPCM-HQ
 	dec	l				; move back to read last byte of the header (we're sure this won't cross the bank boundary or even 256-byte boundary)
 	ld	a, (hl)				; a = Delta table index * 10h
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
-
-	jp	DPCMLoop_Cont			; skip over `DPCMLoop_Reload` because we've already set the bank
+	; fallthrough
 
 ; --------------------------------------------------------------
-DPCMLoop_Reload:
-	; Set initial ROM bank ...
-	ld	a, (ActiveSample+sActiveSample.startBank)
-	rst	SetBank
-
-	di
-
 DPCMLoop_Cont:
+	; Init playback registers ...
+	Playback_Init_DI	SampleBuffer
+
 	; Init read ahead registers ...
 	ld	bc, SampleBuffer
+
+DPCMLoop_Reload_DI:
 	ld	h, DPCMTables>>8
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	ld	ix, (ActiveSample+sActiveSample.startLength)
@@ -81,14 +78,14 @@ DPCMLoop_Cont:
 	dec	ix				; ix = Remaining length in ROM bank - 1
 	inc	ixl				; ixl = Remaining length in ROM bank - 1 (LOW) + 1
 
-	; Init playback registers ...
-	Playback_Init_DI	SampleBuffer
-
+	; Set initial ROM bank ...
 	ei
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
+
 	dec	c
 	ld	a, 80h				; set initial sample to zero (80h)
 	ld	(bc), a				; ''
-
 
 ; --------------------------------------------------------------
 ; DPCM: Main playback loop (readahead & playback)
@@ -170,7 +167,12 @@ DPCMLoop_NormalPhase:
 	cp	(hl)						; 7	current bank is the last one?
 	jr	nz, DPCMLoop_NormalPhase_LoadNextBank		; 7/12	if not, branch
 
-	; TODO: Make sure we waste as many cycles as half of the drain iteration
+	; Are we looping?
+	ld	a, (ActiveSample+sActiveSample.flags)
+	bit	FLAGS_LOOP, a					; is sample set to loop?
+	jr	z, DPCMLoop_DrainPhase				; if not, drain the remaining samples
+	di
+	jp	DPCMLoop_Reload_DI				; otherwise, reload playback position
 
 ; --------------------------------------------------------------
 ; DPCM: Draining loop (playback only)
@@ -213,10 +215,6 @@ DPCMLoop_DrainPhase:
 	; interrupts for longer than that. Missing VBlank may mess up
 	; "DMA protection" (avoiding ROM access during VBlank)
 	ei
-
-	ld	a, (ActiveSample+sActiveSample.flags)	; a = flags
-	and	1<<FLAGS_LOOP				; is sample set to loop?
-	jp	nz, DPCMLoop_Reload			; re-enter playback loop
 
 	; Return from the playback loop
 	ret

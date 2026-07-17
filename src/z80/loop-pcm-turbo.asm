@@ -30,23 +30,20 @@ PCMTurboLoop:
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 	ld	ix, ActiveSample
 
-; --------------------------------------------------------------
-PCMTurboLoop_Reload:
-
-	; Set initial ROM bank ...
-	ld	a, (ActiveSample+sActiveSample.startBank)
-	rst	SetBank
-
-	di
-
-	; Init read ahead registers ...
-	ld	de, SampleBuffer
-	ld	hl, (ActiveSample+sActiveSample.startOffset)
-	ld	bc, (ActiveSample+sActiveSample.startLength)
-
 	; Init playback registers ...
 	PlaybackTurbo_Init_DI	SampleBuffer
 
+	; Init read ahead registers ...
+	ld	de, SampleBuffer
+
+PCMTurboLoop_Reload_DI:
+	ld	hl, (ActiveSample+sActiveSample.startOffset)
+	ld	bc, (ActiveSample+sActiveSample.startLength)
+
+	; Set initial ROM bank ...
+	ei
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
 
 ; --------------------------------------------------------------
 ; PCM-Turbo: Main playback loop (readahead & playback)
@@ -101,7 +98,11 @@ PCMTurboLoop_NormalPhase:
 	cp	(ix+sActiveSample.endBank)			; current bank is the last one?
 	jr	nz, PCMTurboLoop_NormalPhase_LoadNextBank	; if not, branch
 
-	; TODO: Make sure we waste as many cycles as half of the drain iteration
+	; Are we looping?
+	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
+	jr	z, PCMTurboLoop_DrainPhase			; if not, drain the remaining samples
+	di							; NOTE: Disabling interrupts isn't necessary, but we do it for consistency anyways
+	jp	PCMTurboLoop_Reload_DI				; otherwise, reload playback position
 
 ; --------------------------------------------------------------
 ; PCM-Turbo: Draining loop (playback only)
@@ -132,9 +133,6 @@ PCMTurboLoop_DrainPhase:
 	; interrupts for longer than that. Missing VBlank may mess up
 	; "DMA protection" (avoiding ROM access during VBlank)
 	ei
-
-	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
-	jp	nz, PCMTurboLoop_Reload				; re-enter playback loop
 
 	; Return from the playback loop
 	ret

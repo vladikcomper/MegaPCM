@@ -126,7 +126,6 @@ VoidInterrupt:
 ; --------------------------------------------------------------
 
 	include	'loop-calibration.asm'
-	include	'loop-idle.asm'
 	include	'loop-pause.asm'
 	include	'loop-pcm.asm'
 	include	'loop-pcm-turbo.asm'
@@ -196,6 +195,7 @@ VolumeTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
+	include	'loop-idle.asm'
 	include	'loop-dpcm-turbo.asm'
 
 ; --------------------------------------------------------------

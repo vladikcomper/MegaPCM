@@ -30,33 +30,20 @@ PCMLoop:
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 	ld	ix, ActiveSample
 
-; --------------------------------------------------------------
-PCMLoop_Reload:
-
-	; Set initial ROM bank ...
-	ld	a, (ActiveSample+sActiveSample.startBank)
-	rst	SetBank
-
-	di							; 4
-
-	; Init read ahead registers ...
-	ld	hl, (ActiveSample+sActiveSample.startOffset)	; 16
-	ld	bc, (ActiveSample+sActiveSample.startLength)	; 20
-	ld	de, SampleBuffer				; 10
-
 	; Init playback registers ...
 	Playback_Init_DI	SampleBuffer			; 106
 
-	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
-	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
-	; interrupts for longer than that. Missing VBlank may mess up
-	; "DMA protection" (avoiding ROM access during VBlank)
-	ei							; 4
+	; Init read ahead registers ...
+	ld	de, SampleBuffer				; 10
 
-	; NOTE: Interrupts may still be disabled here because EI's effect
-	; isn't immediate. We must make sure the next instruction following
-	; EI *isn't* DI, otherwise it won't enable interrupts at all.
-	nop							; 4
+PCMLoop_Reload_DI:
+	ld	hl, (ActiveSample+sActiveSample.startOffset)	; 16
+	ld	bc, (ActiveSample+sActiveSample.startLength)	; 20
+
+	; Set initial ROM bank ...
+	ei							; 4
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
 
 ; --------------------------------------------------------------
 ; PCM: Normal playback phase (readahead & playback)
@@ -113,7 +100,11 @@ PCMLoop_NormalPhase:
 	cp	(ix+sActiveSample.endBank)			; 19	current bank is the last one?
 	jr	nz, PCMLoop_NormalPhase_LoadNextBank		; 7/12	if not, branch
 
-	; TODO: Make sure we waste as many cycles as half of the drain iteration
+	; Are we looping?
+	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
+	jr	z, PCMLoop_DrainPhase				; if not, drain the remaining samples
+	di							; NOTE: Disabling interrupts isn't necessary, but we do it for consistency anyways	jp	PCMLoop_Reload_DI				; otherwise, reload playback position
+	jp	PCMLoop_Reload_DI
 
 ; --------------------------------------------------------------
 ; PCM: Draining phase (playback only)
@@ -146,9 +137,6 @@ PCMLoop_DrainPhase:
 	; interrupts for longer than that. Missing VBlank may mess up
 	; "DMA protection" (avoiding ROM access during VBlank)
 	ei
-
-	bit	FLAGS_LOOP, (ix+sActiveSample.flags)	; is sample set to loop?
-	jp	nz, PCMLoop_Reload			; re-enter playback loop
 
 	; Return from the playback loop
 	ret

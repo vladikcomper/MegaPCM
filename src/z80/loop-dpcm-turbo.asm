@@ -33,7 +33,7 @@ DPCMTurboLoop:	; Classic DPCM (Turbo mode)
 	ld	hl, DPCM_DeltaTable_0
 	call	LoadDPCMTable2_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
 
-	jp	DPCMTurboLoop_Reload
+	jp	DPCMTurboLoop_Cont
 
 ; --------------------------------------------------------------
 DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
@@ -50,7 +50,7 @@ DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
 
 	call	LoadActiveSampleData_DI		; `ActiveSample` is initialized with data from `ix`
 
-	; Set initial ROM bank ...
+	; Set initial ROM bank (required for reading the header)
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
@@ -59,20 +59,17 @@ DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
 	dec	l				; move back to read last byte of the header (we're sure this won't cross the bank boundary or even 256-byte boundary)
 	ld	a, (hl)				; a = Delta table index * 10h
 	call	LoadDPCMTable_DI		; NOTE: This trashes *all* registers, so we have to do it after `LoadActiveSampleData_DI`
-
-	jp	DPCMTurboLoop_Cont		; skip over `DPCMTurboLoop_Reload` because we've already set the bank
+	; fallthrough
 
 ; --------------------------------------------------------------
-DPCMTurboLoop_Reload:
-	; Set initial ROM bank ...
-	ld	a, (ActiveSample+sActiveSample.startBank)
-	rst	SetBank
-
-	di
-
 DPCMTurboLoop_Cont:
+	; Init playback registers ...
+	PlaybackTurbo_Init_DI	SampleBuffer
+
 	; Init read ahead registers ...
 	ld	bc, SampleBuffer
+
+DPCMTurboLoop_Reload_DI:
 	ld	h, DPCMTables>>8
 	ld	de, (ActiveSample+sActiveSample.startOffset)
 	exx
@@ -81,11 +78,13 @@ DPCMTurboLoop_Cont:
 	; or in `MegaPCM_LoadSampleTable` on 68k side.
 	dec	bc				; bc' = Remaining length in ROM bank - 1
 	inc	c				; c' = Remaining length in ROM bank - 1 (LOW) + 1
+	exx
 
-	; Init playback registers ...
-	PlaybackTurbo_Init_EXX_DI	SampleBuffer
-
+	; Set initial ROM bank ...
 	ei
+	ld	a, (ActiveSample+sActiveSample.startBank)
+	rst	SetBank
+
 	dec	c
 	ld	a, 80h				; set initial sample to zero (80h)
 	ld	(bc), a				; ''
@@ -174,7 +173,12 @@ DPCMTurboLoop_NormalPhase:
 	cp	(hl)						; 7	current bank is the last one?
 	jr	nz, DPCMTurboLoop_NormalPhase_LoadNextBank	; 7/12	if not, branch
 
-	; TODO: Make sure we waste as many cycles as half of the drain iteration
+	; Are we looping?
+	ld	a, (ActiveSample+sActiveSample.flags)
+	bit	FLAGS_LOOP, a					; is sample set to loop?
+	jr	z, DPCMTurboLoop_DrainPhase			; if not, drain the remaining samples
+	di
+	jp	DPCMTurboLoop_Reload_DI				; otherwise, reload playback position
 
 ; --------------------------------------------------------------
 ; DPCM Turbo: Draining loop (playback only)
@@ -217,10 +221,6 @@ DPCMTurboLoop_DrainPhase:
 	; interrupts for longer than that. Missing VBlank may mess up
 	; "DMA protection" (avoiding ROM access during VBlank)
 	ei
-
-	ld	a, (ActiveSample+sActiveSample.flags)	; a = flags
-	and	1<<FLAGS_LOOP				; is sample set to loop?
-	jp	nz, DPCMTurboLoop_Reload		; re-enter playback loop
 
 	; Return from the playback loop
 	ret
