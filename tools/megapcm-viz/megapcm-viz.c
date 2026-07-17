@@ -438,6 +438,9 @@ int main(int argc, char** argv) {
 	SDL_DestroyTexture(viz.tex_dac_output);
 	SDL_DestroyAudioStream(audio_stream);
 
+	SDL_free(rom);
+	free(sample_table);
+
 quit:
 	if (window) {
 		SDL_DestroyWindow(window);
