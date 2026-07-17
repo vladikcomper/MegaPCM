@@ -38,6 +38,6 @@
 - Other changes and improvements.
 
 
-## Version 2.0 (2024-05-30)
+## Version 2.0 (2024-05-31)
 
 Initial 2.x release.
