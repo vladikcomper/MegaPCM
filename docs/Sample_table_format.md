@@ -58,7 +58,7 @@ mySample:   dcSample TYPE_PCM, MySampleName, 22050, FLAGS_LOOP|FLAGS_SFX|PRIO_HI
     - `<Label>.id` - returns ID of the sample in the table (e.g. `$85`);
     - `<Label>.desc` - returns sample's description field
     - `<Label>.pitch` - returns sample's internal pitch values (converted from Sample Rate to 0..$FF scale);
-    - See [Name Samples](#named-samples) section below for more information.
+    - See [Named Samples](#named-samples) section below for more information.
 - `<Type>` - sample type:
     - `TYPE_NONE` - marks empty/null slot (can still be "played" to interrupt other samples, depending on priority);
     - `TYPE_PCM` - .WAV/.RAW files;

@@ -74,7 +74,7 @@ DPCM-HQ Converter aims to select the best encoding table based on certain heuris
 DPCM-HQ currently only has 3 delta tables for encoding (indexed `0`, `1` and `2`, see `--table` option). Different tables may produce better results depending on nature of sound and sample rate:
 
 - `--table 0`
-    - It's he same delta table as classic DPCM (based on powers of 2);
+    - It's the same delta table as classic DPCM (based on powers of 2);
     - Good for lower-rate and sharp sounds, but introduces more quantization noise;
 - `--table 1`
     - Delta table with smaller steps (based on fibonacci numbers);
@@ -143,9 +143,9 @@ Here's an example:
 DPCM-HQ V1 has a 9-byte header, followed by DPCM-HQ stream. All bytes are Big-Endian.
 
 | Offset       | Size      | Description
-|--------------|-----------|--------------------------------------------------
+|--------------|-----------|----------------------------------------------------
 | `0x0000`     | 2         | "DQ" magic string
-| `0x0002`     | 1         | DPCM-HQ version string (should be "1")
-| `0x0003`     | 3         | DPCM-HQ stream size (in bytes)
+| `0x0002`     | 1         | Version string (should be "1")
+| `0x0003`     | 3         | Stream size (in bytes)
 | `0x0006`     | 2         | Sample rate (in HZ)
-| `0x0008`     | 1         | DPCM-HQ table number (`0x00`, `0x10` or `0x20`)
+| `0x0008`     | 1         | Table number times 0x10 (`0x00`, `0x10` or `0x20`)

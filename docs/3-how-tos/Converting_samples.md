@@ -1,7 +1,7 @@
 
 # Converting Samples for Mega PCM 2
 
-This quick tutorial explains how to get the most of sample quality and/or size when adding samples to your ROM.
+This quick tutorial explains how to get the most out of sample quality and/or size when adding samples to your ROM.
 
 ## The Basics
 
