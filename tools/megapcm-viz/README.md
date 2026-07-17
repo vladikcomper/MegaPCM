@@ -25,6 +25,7 @@ It's recommended to `megapcm-viz` from terminal to see driver's debug output.
     - Hold `Shift` to change normal sample volume
 - **`Esc`** - Stop playback
 - **`p`** - Pause/unpause playback
+- **`r`** - Toggle between NTSC/PAL regions
 - **`[` / `]` / `\`** - change initial SFX panning (left, right, center)
     - Only applies to new samples;
     - Hold `Shift` to change normal sample panning.

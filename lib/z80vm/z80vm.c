@@ -163,7 +163,6 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 	cycles_emulated += Z80VM_Emulate(context, int_signal_start_cycles);
 
 	/* Trigger VBlank signal for 172 cycles */
-	// fprintf(stderr, "Entering VBlanking period (cycles=%lld)...\n", context->z80State.cycles_emulated);
 	size_t interrupt_enter_cycles = 0;
 	// WARNING! We technically can enter interrupt multiple times between
 	// `int_signal_start_cycles` and `int_signal_end_cycles`,
@@ -180,7 +179,6 @@ size_t Z80VM_EmulateTVFrame(Z80VM_Context *context, size_t prevFrameOvershootCyc
 		if (context->onEnterVBlank) {
 			context->onEnterVBlank(context);
 		}
-		// fprintf(stderr, "Enterting interrupt after %lu cycles\n", cycles_emulated - int_signal_start_cycles);
 		cycles_emulated += interrupt_enter_cycles;
 	}
 	else {

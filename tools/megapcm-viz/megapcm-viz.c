@@ -1,4 +1,5 @@
 
+#include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_messagebox.h>
 #include <assert.h>
@@ -30,12 +31,13 @@ typedef struct {
 	uint8_t selected_sample;
 	SDL_Texture * tex_health_buffer;
 	SDL_Texture * tex_dac_output;
+	SDL_AudioStream * audio_stream;
 	Z80VM_Extension * z80vm_ext;
 } VizState;
 
 
 /* YM DAC output support */
-#define YM_DAC_DEVICE_BUFFER_SAMPLES 1024
+#define YM_DAC_DEVICE_BUFFER_SAMPLES 2048
 
 typedef struct {
 	long long previous_master_cycle;
@@ -194,6 +196,15 @@ static inline bool Viz_HandleEvents(VizState* viz) {
 				} else if (e.key.key == SDLK_BACKSLASH) {
 					MPCM_SetSFXPan(z80vm, 0xC0);
 					fprintf(stderr, "Pan SFX center\n");
+				} else if (e.key.key == SDLK_R) {
+					z80vm->VPDRegion = z80vm->VPDRegion == NTSC ? PAL : NTSC;
+					SDL_AudioSpec spec = {
+						.channels = 2,
+						.format = SDL_AUDIO_U8,
+						.freq = z80vm->VPDRegion == NTSC ? 53267 : 52781,
+					};
+					SDL_SetAudioStreamFormat(viz->audio_stream, &spec, NULL);
+					fprintf(stderr, "Set region to %s\n", z80vm->VPDRegion == NTSC ? "NTSC" : "PAL");
 				}
 				break;
 		}
@@ -213,6 +224,7 @@ static inline void Viz_PlotSamplesToTexture(SDL_Texture* texture, int width, int
 
         if (samples_len >= 2) {
 	        for (int x = 0; x < width; x++) {
+	        	// FIXME: Switch to idx = x * step pattern?
 	            int idx = ((float)x / (float)(width - 1)) * (samples_len - 1);
 	            assert(idx >= 0 && idx < samples_len);
 	            const uint8_t sample = samples[idx];
@@ -269,6 +281,7 @@ static inline void Viz_RenderVideoFrame(VizState* viz) {
 			SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
 
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 8.0f, "SAMPLE: %X", viz->selected_sample);
+			SDL_RenderDebugText(renderer, 264.0f, 8.0f, z80vm->VPDRegion == NTSC ? "[NTSC]" : " [PAL]");
 
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 24.0f, "Volume: %X", Z80_ReadByte(Z_MPCM_VolumeInput, z80vm));
 			SDL_RenderDebugTextFormat(renderer, 8.0f, 32.0f, "SFX Volume: %X", Z80_ReadByte(Z_MPCM_SFXVolumeInput, z80vm));
@@ -289,7 +302,7 @@ static inline void Viz_RenderVideoFrame(VizState* viz) {
 			}
 			{
 				SDL_RenderDebugText(renderer, 8.0f, 156.0f, "DAC OUTPUT:");
-				SDL_RenderDebugTextFormat(renderer, 224.0f, 156.0f, "[%05zu kHz]", viz->z80vm_ext->mpcm_buffer_health_sampled_pos * 60);
+				SDL_RenderDebugTextFormat(renderer, 224.0f, 156.0f, "[%05zu kHz]", viz->z80vm_ext->mpcm_buffer_health_sampled_pos * (z80vm->VPDRegion == NTSC ? 60 : 50));
 				SDL_FRect dstrect = { .x = 0, .y = 164, .w = 320, .h = 64 };
 				Viz_PlotSamplesToTexture2(viz->tex_dac_output, &dstrect, viz->z80vm_ext->ym_dac_output_sampled, viz->z80vm_ext->ym_dac_output_sampled_pos);
 				SDL_RenderTexture(renderer, viz->tex_dac_output, NULL, &dstrect);
@@ -318,18 +331,6 @@ int main(int argc, char** argv) {
 	if (!SDL_SetRenderLogicalPresentation(renderer, 320, 240, SDL_LOGICAL_PRESENTATION_LETTERBOX)) {
 		fprintf(stderr, "Failed to set renderer logical presentation: %s\n", SDL_GetError());
 		exit_code = 1;
-		goto quit;
-	}
-
-	SDL_AudioSpec spec = {
-		.channels = 2,
-		.format = SDL_AUDIO_U8,
-		.freq = 53267,
-	};
-	SDL_AudioStream* audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, NULL, NULL);
-	if (!audio_stream) {
-		fprintf(stderr, "Failed to initialize audio stream: %s\n", SDL_GetError());
-		exit_code = 2;
 		goto quit;
 	}
 
@@ -405,8 +406,38 @@ int main(int argc, char** argv) {
 
 	/* Emulation loop */
 	assert(!z80vm->z80State.cycles_emulated);	// shouldn't have emulated any cycles by now
-	SDL_ResumeAudioStreamDevice(audio_stream);
-	
+
+	/* Setup audio stream */
+	SDL_AudioSpec out_spec = {
+		.channels = 2,
+		.format = SDL_AUDIO_U8,
+		.freq = 48000,
+	};
+	SDL_AudioDeviceID audio_device = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &out_spec);
+	if (!audio_device) {
+		fprintf(stderr, "Failed to initialize audio device: %s\n", SDL_GetError());
+		exit_code = 2;
+		goto quit;		
+	}
+
+	SDL_AudioSpec in_spec = {
+		.channels = 2,
+		.format = SDL_AUDIO_U8,
+		.freq = z80vm->VPDRegion == NTSC ? 53267 : 52781,
+	};
+	viz.audio_stream = SDL_CreateAudioStream(&in_spec, &out_spec);
+	if (!viz.audio_stream) {
+		fprintf(stderr, "Failed to initialize audio stream: %s\n", SDL_GetError());
+		exit_code = 2;
+		goto quit;
+	}
+	if (!SDL_BindAudioStream(audio_device, viz.audio_stream)) {
+		fprintf(stderr, "Failed to bind audio stream to a device: %s\n", SDL_GetError());
+		exit_code = 2;
+		goto quit;
+	}
+	SDL_ResumeAudioDevice(audio_device);
+
 	bool running = true;
 	size_t prevFrameOvershootCycles = 0;
 	while (running) {
@@ -421,22 +452,23 @@ int main(int argc, char** argv) {
 
 		// Render audio
 		YM_DAC_RenderOutput(&ym_dac_device, z80vm);
-		SDL_PutAudioStreamData(audio_stream, ym_dac_device.buffer, ym_dac_device.buffer_pos);
+		SDL_PutAudioStreamData(viz.audio_stream, ym_dac_device.buffer, ym_dac_device.buffer_pos);
 		YM_DAC_FlushBuffer(&ym_dac_device);
 
 		// Render video
 		Viz_RenderVideoFrame(&viz);
 
-		// Cap at 60 fps
+		// Cap refresh rate at 60 Hz (NTSC) or 50 Hz (PAL)
 		const uint64_t frame_end_ns = SDL_GetTicksNS();
-		const int64_t delay_ns = 1000000000 / 60 - (frame_end_ns - frame_start_ns);
+		const int64_t delay_ns = 1000000000 / (z80vm->VPDRegion == NTSC ? 60 : 50) - (frame_end_ns - frame_start_ns);
 
 		if (delay_ns > 0) SDL_DelayPrecise(delay_ns);
 	}
 
 	SDL_DestroyTexture(viz.tex_health_buffer);
 	SDL_DestroyTexture(viz.tex_dac_output);
-	SDL_DestroyAudioStream(audio_stream);
+	SDL_DestroyAudioStream(viz.audio_stream);
+	SDL_CloseAudioDevice(audio_device);
 
 	SDL_free(rom);
 	free(sample_table);
