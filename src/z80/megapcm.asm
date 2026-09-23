@@ -55,6 +55,7 @@
 	export	LOOP_PCM
 	export	LOOP_PCM_TURBO
 	export	LOOP_DPCM
+	export	LOOP_DPCM_TURBO
 	export	LOOP_CALIBRATION
 	export	TYPE_NONE
 	export	TYPE_PCM
