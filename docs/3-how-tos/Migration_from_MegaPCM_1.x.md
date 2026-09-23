@@ -232,14 +232,14 @@ Unfortunately, some pitches from 1.x are incompatible, especially for DPCM. This
 |                  | **PCM/WAV**                                      | **DPCM**                                           |
 |------------------|:------------------------------------------------:|:--------------------------------------------------:|
 | **Mega PCM 1.x** | 1050 .. 28500 Hz                                 | 1050 .. 31450 Hz                                   |
-| **Mega PCM 2.0** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20500 Hz                                    |
-| **Mega PCM 2.1** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20500 Hz<br>25800 Hz fixed (Turbo mode)     |
+| **Mega PCM 2.0** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20600 Hz                                    |
+| **Mega PCM 2.1** | 100 .. 25100 Hz<br/>32000 Hz fixed (Turbo mode)  | 100 .. 20600 Hz<br>25800 Hz fixed (Turbo mode)     |
 
 As you can see, Mega PCM 2 has a higher maximum playback rate in turbo mode. However, due to addition of volume and pitch control in normal modes, max PCM rate is slightly lower and max DPCM rate is noticeably lower because Mega PCM 2's streaming system wasn't designed for DPCM (it was mostly added for feature-parity).
 
 General takeaways from the above table:
 
-- If your DPCM sample's rate is higher than 20500 Hz, you need to convert it to PCM or upsample to 25800 Hz (since _Mega PCM 2.1_);
+- If your DPCM sample's rate is higher than 20600 Hz, you need to convert it to PCM or upsample to 25800 Hz (since _Mega PCM 2.1_);
 - If your PCM sample's rate is between 25100 and 28500 Hz, you need to either downsample it to 25100 Hz (recommended) or upsample to 32000 Hz.
 - In every other case, you can set the correct sample rate without sample data conversion.
 

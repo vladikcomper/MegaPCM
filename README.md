@@ -22,7 +22,7 @@ _You may also see this demo of [crystal-clear PCM playback @ 32 kHz](https://www
 
 - **High playback rates:**
     - **WAVE/PCM:** up to **25.1 kHz** (supporting effects) or **32 kHz** (turbo mode);
-    - **DPCM-HQ/DPCM:** up to **20.5 kHz** (supporting effects) or **25.8 kHz** (turbo mode);
+    - **DPCM-HQ/DPCM:** up to **20.6 kHz** (supporting effects) or **25.8 kHz** (turbo mode);
 
 - **Support for volume and pitch effects:**
     - 16 volume levels;
