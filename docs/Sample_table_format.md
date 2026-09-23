@@ -69,7 +69,7 @@ mySample:   dcSample TYPE_PCM, MySampleName, 22050, FLAGS_LOOP|FLAGS_SFX|PRIO_HI
 - `<SampleRateHz>` (optional for .WAV and .DPCMQ files) - sample rate in Hz, supported rates are:
     - For `TYPE_PCM`: 100 .. 25100 Hz;
     - For `TYPE_PCM_TURBO`: 32000 Hz fixed;
-    - For `TYPE_DPCM`: 100 ... 20500 Hz;
+    - For `TYPE_DPCM`: 100 ... 20600 Hz;
     - For `TYPE_DPCM_TURBO`: 25800 Hz fixed _(since Mega PCM 2.1)_;
     - If set to `0` or not specified, Mega PCM attempts to auto-detect sample rate from file header (**WARNING!** This only works for .WAV and .DPCMQ files);
 - `<Flags>` (optional) - can specify playback/priority flags or their combinations:
