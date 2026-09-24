@@ -116,7 +116,7 @@ StackCopy:		dw	1		; stores a copy of stack pointer
 VBlankRoutineCopy:	dw	1		; stores previous VBlank routine for nested loops
 
 VBlankActive:		ds	1		; set if inside VBlank
-CalibrationApplied:	ds	1		; set if callibration is applied for crappy emulators
+CalibrationApplied:	ds	1		; set if calibration is applied for crappy emulators
 CalibrationScore_ROM:	dw	1		; ROM read count per frame reported by calibration loop
 CalibrationScore_RAM:	dw	1		; RAM read count per frame reported by calibration loop
 

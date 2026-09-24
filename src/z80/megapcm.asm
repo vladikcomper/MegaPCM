@@ -7,7 +7,7 @@
 ; --------------------------------------------------------------
 
 ; --------------------------------------------------------------
-; Naming convetions:
+; Naming conventions:
 ;
 ; - `SomeLabel_EXX` - routine expects alternative regiters
 ;	(`exx` must be executed before calling or jumping to it!)
@@ -17,9 +17,10 @@
 ;	(it fully resets stack and currently running loop)
 ; --------------------------------------------------------------
 
-
 	include	'vars.asm'
 	include	'trace.asm'		; trace support for Z80VM
+	include	'playback.asm'		; normal mode playback macros
+	include	'playback-turbo.asm'	; "Turbo" mode playback macros
 
 ; --------------------------------------------------------------
 
@@ -68,7 +69,7 @@
 	export	ERROR__UNKNOWN_COMMAND
 
 ; --------------------------------------------------------------
-; Driver's entry points
+; Entry point
 ; --------------------------------------------------------------
 
 	org	00h
@@ -78,25 +79,19 @@ Driver_Start:
 	jp	InitDriver
 
 ; --------------------------------------------------------------
-; Bank-switch routines
-; --------------------------------------------------------------
-; NOTE: The must be stored at offset 08h to make use of RST
-; instruction for fast calls.
+; Fast-call routines (for use with RST)
 ; --------------------------------------------------------------
 
+	; RST 08h - `SetBank` routine
+	; RST 10h - `SetBank2` routine
 	org	08h
 	include	'set-bank.asm'		; bank-switching routines
 
-; --------------------------------------------------------------
-; Driver version magic string
-; --------------------------------------------------------------
+	; RST 30h - `ProcessCommandInput` routine
+	org	30h
+	include	'process-command-input.asm'
 
-	db	'MegaPCM v.2.1', 0
-
-; --------------------------------------------------------------
-; Vertical interrupts handler with dynamic jump
-; --------------------------------------------------------------
-
+	; RST 38h - Standard VBlank handler
 	org	38h
 VBlank:
 	jp	VoidInterrupt	; NOTE: self-modifying code
@@ -109,28 +104,20 @@ VoidInterrupt:
 	ret
 
 ; --------------------------------------------------------------
-; Playback functions (macros only)
-; --------------------------------------------------------------
-
-	include	'playback.asm'
-	include	'playback-turbo.asm'
-
-; --------------------------------------------------------------
 ; Misc. modules (Part 1)
 ; --------------------------------------------------------------
 
-	include	'init.asm'
-	include 'process-command.asm'
+	include 'process-command-input-2.asm'
 
 ; --------------------------------------------------------------
 ; Mega PCM loops (Part 1)
 ; --------------------------------------------------------------
 
-	include	'loop-calibration.asm'
-	include	'loop-pause.asm'
+	include	'loop-idle.asm'
 	include	'loop-pcm.asm'
 	include	'loop-pcm-turbo.asm'
 	include	'loop-dpcm.asm'
+	include	'loop-dpcm-turbo.asm'
 
 ; --------------------------------------------------------------
 ; Mega PCM buffers and tables (aligned on 256-byte boundaries)
@@ -158,8 +145,17 @@ SampleBuffer:
 ; -------------------------
 
 DPCMTables:
-	ds	100h, 0	; for nibble 0
-	ds	100h, 0	; for nibble 1
+	; NOTE: Both tables are dynamically filled by `LoadDPCMTable_DI`
+	ds	100h, 0	; nibble 0 table
+	;ds	100h, 0	; nibble 1 table (overwritten, see below)
+
+	; NOTE: Space for nibble 1 table is reused by init routine and calibration loop.
+	; They can be safely trashed after initialization.
+	include	'init.asm'
+	include	'loop-calibration.asm'
+	align	100h
+
+	assert $-DPCMTables = 200h
 
 ; -----------------
 ; Sample table
@@ -196,8 +192,7 @@ VolumeTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
-	include	'loop-idle.asm'
-	include	'loop-dpcm-turbo.asm'
+	include	'loop-pause.asm'
 
 ; --------------------------------------------------------------
 ; Misc. modules (Part 2)
@@ -206,6 +201,7 @@ VolumeTables:
 	include	'play-sample.asm'
 	include	'load-dpcm-table.asm'
 
+	; FIXME: Extend address space to 1FFFh, fill the RAM
 Driver_End:
 
 ; --------------------------------------------------------------

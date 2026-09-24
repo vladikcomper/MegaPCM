@@ -68,3 +68,5 @@ SetBank2:
 	pop	hl			; 10
 	ret				; 10
 	; Total cycles: 145
+
+	assert $-SetBank <= 28h

@@ -53,4 +53,6 @@
 MegaPCM:
 	incbin	"../../build/z80/megapcm.bin"
 MegaPCM_End:
+
+	dc.b	'MegaPCM v.2.2', 0	; driver's magic string
 	even
