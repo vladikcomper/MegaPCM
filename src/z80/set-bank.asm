@@ -34,7 +34,7 @@ SetBank:
 .sm1:	cp	.CurrentBank_Initial	; 7	are we in this bank already?
 	jp	nz, SetBank2		; 10	if not, branch
 	ret				; 10
-	; Total cycles: 162 (bankswitch), 27 (same bank)
+	; Total cycles: 166 (bankswitch), 27 (same bank)
 
 ; -----------------------------------------------------------------------------
 ; Loads the specified bank without checking if it's selected already
@@ -55,18 +55,16 @@ SetBank:
 
 	align	8			; align so it's RST-callable
 SetBank2:
-	ld	(CurrentBank), a	; 13	update current bank
 	push	hl			; 11
 	ld	hl, BankRegister	; 10
-
-	rept 7			; 77 cycles
-		ld	(hl), a		; 7	do pins A15-A21
+	rept 8			; 88 cycles
+		ld	(hl), a		; 7	do pins A15-A22
 		rrca			; 4
 	endr
-	ld	(hl),a			; 7	pin A22
 	ld	(hl),l			; 7	pin A23 is always zero
+	ld	(CurrentBank), a	; 13	update current bank (only after it's committed)
 	pop	hl			; 10
 	ret				; 10
-	; Total cycles: 145
+	; Total cycles: 149
 
 	assert $-SetBank <= 28h
