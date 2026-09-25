@@ -1,13 +1,15 @@
 
-#include "z80emu.h"
+#include <stdbool.h>
 #include <string.h>
-#include <z80vm.h>
-#include <megapcm-emu.h>
 
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <z80vm.h>
+#include <z80emu.h>
+#include <megapcm-emu.h>
 
 /**
  * Simple state for emulating Mega PCM's playback
@@ -15,15 +17,16 @@
  * Used to track currently played sample and compare it against what real Mega PCM outputs to YM DAC
  */
 typedef struct {
-	uint8_t sampleType;
 	uint32_t pos;
 	uint32_t length;
+	uint8_t flags;
 	uint8_t pitch;
 	uint8_t pitchCounter;
+	uint8_t loops;
 	const uint8_t *referenceSamples;
 } EmulatedPlaybackState;
 
-const uint8_t sample_pcm_2[]   = { 0xFF, 0xFF };
+const uint8_t sample_pcm_2[]   = { 0x80, 0xC0 };
 const uint8_t sample_pcm_8[]   = { 0, 1, 2, 3, 4, 5, 6, 7 };
 const uint8_t sample_pcm_254[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 
 								  21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 
@@ -275,19 +278,27 @@ uint8_t emulateSamplePlayback(Z80VM_Context * context) {
 		abort();
 	}
 	if (playbackState->length == 0) {
-		fprintf(stderr, "Attempt to read past the end of sample\n");
-		Z80VM_DumpCPURegisters(context);
-		abort();
+		if (playbackState->flags & (1<<Z_MPCM_FLAGS_LOOP)) {
+			playbackState->length = playbackState->pos;
+			playbackState->pos = 0;
+			playbackState->loops++;
+		}
+		else {
+			fprintf(stderr, "Attempt to read past the end of sample\n");
+			Z80VM_DumpCPURegisters(context);
+			abort();
+		}
 	}
 
 	/* Fetch sample */
 	uint8_t sample = playbackState->referenceSamples[playbackState->pos];
 
 	/* Apply pitch */
-	if ((playbackState->sampleType == Z_MPCM_TYPE_PCM_TURBO) 
-			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_TURBO)
-			|| (playbackState->sampleType == Z_MPCM_TYPE_DPCM_HQ_TURBO)
-			|| ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)
+	const uint8_t sampleType = playbackState->flags & Z_MPCM_MASK_TYPE;
+	if ((sampleType == Z_MPCM_TYPE_PCM_TURBO) 
+		|| (sampleType == Z_MPCM_TYPE_DPCM_TURBO)
+		|| (sampleType == Z_MPCM_TYPE_DPCM_HQ_TURBO)
+		|| ((uint16_t)playbackState->pitchCounter + (uint16_t)playbackState->pitch >= 0x100)
 	) {
 		playbackState->pos++;
 		playbackState->length--;
@@ -324,13 +335,16 @@ void runTest_WriteByteCallback(uint16_t address, uint8_t value, Z80VM_Context * 
 		fprintf(stderr, "YM Port 1 Write: %02X %02X\n", context->ymPort1Reg, value);
 	}
 	else if (address == 0x6000) {
-		fprintf(stderr, "Rotating bank register: %04X\n", context->ROMBankId);
+		fprintf(stderr, "Rotating bank register: prev=%03X, push=%d\n", context->ROMBankId, value&1);
+	}
+	else if (address == Z_MPCM_CurrentBank) {
+		fprintf(stderr, "Updating CurrentBank: %02X\n", value);
 	}
 }
 
 void runTest_ReadByteCallback(uint16_t address, Z80VM_Context * context) {
 	if (address >= 0x8000) {
-		fprintf(stderr, "ROM Read from %02X (@%02X)\n", address, context->z80State.pc);
+		fprintf(stderr, "ROM Read from %02X, bank=%02X (@%02X)\n", address, context->ROMBankId, context->z80State.pc);
 	}
 }
 
@@ -341,7 +355,7 @@ void runTest_EnterVBlank(Z80VM_Context * context) {
 
 void runTest(
 		Z80VM_Context * context,
-		uint8_t sampleType,
+		uint8_t sampleTypeAndFlags,
 		const uint8_t * sample,
 		const uint8_t * reference_sample,
 		size_t sampleSize,
@@ -349,7 +363,7 @@ void runTest(
 		uint8_t pitch
 ) {
 
-	fprintf(stderr, "\n# Testing sample: type=%02X, size=%ld, startOffset=%X, pitch=%02X...\n", sampleType, sampleSize, startOffsetInROM, pitch);
+	fprintf(stderr, "\n# Testing sample: type=%02X, size=%ld, startOffset=%X, pitch=%02X...\n", sampleTypeAndFlags, sampleSize, startOffsetInROM, pitch);
 
 	/* Setup callbacks */
 	context->onReadByte = &runTest_ReadByteCallback;
@@ -366,7 +380,7 @@ void runTest(
 
 	/* Setup sample */
 	MPCM_Sample * sampleInput = (MPCM_Sample*) &context->programRAM[Z_MPCM_SampleInput];
-	sampleInput->flags = (1<<Z_MPCM_FLAGS_SAMPLE) | sampleType;
+	sampleInput->flags = (1<<Z_MPCM_FLAGS_SAMPLE) | sampleTypeAndFlags;
 	sampleInput->pitch = pitch;
 	sampleInput->startBank = startOffsetInROM >> 15;
 	sampleInput->startOffset = 0x8000 | (startOffsetInROM & 0x7FFE);
@@ -377,35 +391,44 @@ void runTest(
 	memset(&context->programRAM[Z_MPCM_SampleBuffer], 0, 0x100);
 
 	/* Setup playback emulation state */
-	bool is_dpcm_sample = (sampleType == Z_MPCM_TYPE_DPCM) || (sampleType == Z_MPCM_TYPE_DPCM_TURBO) || (sampleType == Z_MPCM_TYPE_DPCM_HQ) || (sampleType == Z_MPCM_TYPE_DPCM_HQ_TURBO);
+	const uint8_t sampleType = sampleTypeAndFlags & Z_MPCM_MASK_TYPE;
+	bool is_dpcm_sample = (sampleType == Z_MPCM_TYPE_DPCM) || (sampleType == Z_MPCM_TYPE_DPCM_TURBO) || (sampleType == Z_MPCM_TYPE_DPCM_HQ) || (sampleTypeAndFlags == Z_MPCM_TYPE_DPCM_HQ_TURBO);
 	EmulatedPlaybackState playbackState = {
-		.sampleType = sampleType,
 		.pos = 0,
 		.length = sampleSize * (is_dpcm_sample ? 2 : 1),
+		.flags = sampleInput->flags,
 		.pitch = pitch,
 		.pitchCounter = 0,
+		.loops = 0,
 		.referenceSamples = reference_sample,
 	};
 	context->stateExtension = &playbackState;
 
 	/* Start emulation */
 	const size_t MAX_FRAMES = 32;
+	const size_t MAX_SAMPLE_LOOPS = 2;
 	size_t frame = 0;
-
-	uint8_t errorCode = 0;
 
 	/* Request sample playback */
 	Z80_WriteByte(Z_MPCM_CommandInput, 0x80, context);
 
 	/* Emulate Mega PCM now */
+	uint8_t errorCode = 0;
 	size_t prevFrameOvershootCycles = 0;
+	bool playbackFinished = false;
 	for (;
 		/* `playbackState` is updated by Z80 write-byte callbacks when YM DAC is written to */
-		frame < MAX_FRAMES && playbackState.length != 0 && !errorCode;
+		frame < MAX_FRAMES && !playbackFinished && !errorCode;
 		++frame
 	) {
 		prevFrameOvershootCycles = Z80VM_EmulateTVFrame(context, prevFrameOvershootCycles);
 
+		// For looping samples, playback never finishes, so we just stop after some number of loops
+		if (playbackState.flags & (1<<Z_MPCM_FLAGS_LOOP) && playbackState.loops >= MAX_SAMPLE_LOOPS) {
+			Z80_WriteByte(Z_MPCM_CommandInput, Z_MPCM_COMMAND_STOP, context);
+		}
+
+		playbackFinished = Z80_ReadByte(Z_MPCM_LoopId, context) == Z_MPCM_LOOP_IDLE;
 		errorCode = Z80_ReadByte(Z_MPCM_LastErrorCode, context);
 	}
 
@@ -414,7 +437,7 @@ void runTest(
 	if (errorCode) {
 		MPCM_ThrowLastErrorCode(context);
 	}
-	assert(playbackState.length == 0);
+	assert(playbackFinished);
 
 	/* 
 	 * Test passes if no exceptions are thrown;
@@ -491,6 +514,23 @@ int main(int argc, char * argv[]) {
 	runTest(context, Z_MPCM_TYPE_DPCM_TURBO, kick_dpcm, kick_dpcm_output, sizeof(kick_dpcm), 0x7FFE, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0x7FFE, 0xFF);
 	runTest(context, Z_MPCM_TYPE_PCM_TURBO, kick_dpcm_output, kick_dpcm_output, sizeof(kick_dpcm_output), 0x7FFE, 0xFF);
+
+	/* Loop tests */
+	/* WARNING! Since Mega PCM 2.2 PCM samples of length 2 won't play outside of VBlank due to drain phase optimization. Sample order is still perfect though */
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_2, sample_pcm_2, sizeof(sample_pcm_2), 0, 0xFF);	// PCM - 2 samples
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_2, sample_pcm_2, sizeof(sample_pcm_2), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_2, sample_pcm_2, sizeof(sample_pcm_2), 0, 0x80);
+
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0, 0xFF);	// PCM - 8 samples
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0, 0xFF);
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0, 0x80);
+
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FF8, 0xFF);	// PCM - 8 samples at bank edge
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FF8, 0xC0);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FFA, 0xFF);	// PCM - 8 samples cross bank
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_8, sample_pcm_8, sizeof(sample_pcm_8), 0x7FFA, 0xC0);
+	runTest(context, Z_MPCM_TYPE_PCM_TURBO | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0, 0xFF);		// PCM - 254 samples
+	runTest(context, Z_MPCM_TYPE_PCM | (1<<Z_MPCM_FLAGS_LOOP), sample_pcm_254, sample_pcm_254, sizeof(sample_pcm_254), 0x7FF0, 0xC0);
 
 	Z80VM_Destroy(context);
 
