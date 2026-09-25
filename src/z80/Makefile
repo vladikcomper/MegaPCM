@@ -27,7 +27,7 @@ $(BUILD_DIR):
 	$(SYMTOH) --prefix "Z_MPCM_" --locals $< $@
 
 %.asm: %.sym
-	$(SYMTOH) --prefix "Z_MPCM_" --outputFormat asm $< $@
+	$(CONVSYM) $< $@ -in txt -out asm -inopt "/fmt='%1023[^:.]: EQU 0x%08X'" -addprefix Z_MPCM_
 
 clean:
 	rm -rf $(BUILD_DIR)/*
