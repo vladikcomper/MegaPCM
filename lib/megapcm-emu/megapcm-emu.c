@@ -289,10 +289,6 @@ void MPCM_ThrowLastErrorCode(Z80VM_Context * context) {
 		fputs("Unkown command\n", stderr);
 		break;
 
-	case Z_MPCM_ERROR__BAD_SAMPLE_TYPE:
-		fputs("Invalid sample type\n", stderr);
-		break;
-
 	default:
 		fprintf(stderr, "Unknown error code: %02X\n", lastErrorCode);
 	}

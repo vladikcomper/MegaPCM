@@ -65,7 +65,6 @@
 	export	TYPE_DPCM_TURBO
 	export	TYPE_DPCM_HQ
 	export	TYPE_DPCM_HQ_TURBO
-	export	ERROR__BAD_SAMPLE_TYPE
 	export	ERROR__UNKNOWN_COMMAND
 
 ; --------------------------------------------------------------
