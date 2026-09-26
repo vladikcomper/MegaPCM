@@ -18,9 +18,9 @@
 ; --------------------------------------------------------------
 
 	include	'vars.asm'
-	include	'trace.asm'		; trace support for Z80VM
-	include	'playback.asm'		; normal mode playback macros
-	include	'playback-turbo.asm'	; "Turbo" mode playback macros
+	include	'trace.asm'			; trace support for Z80VM
+	include	'playback.asm'			; normal mode playback macros
+	include	'playback-pcm-turbo.asm'	; "Turbo" mode playback macros for PCM streams
 
 ; --------------------------------------------------------------
 

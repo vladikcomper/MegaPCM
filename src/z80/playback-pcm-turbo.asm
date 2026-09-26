@@ -8,6 +8,8 @@
 ; (c) 2023-2026, Vladikcomper
 ; -----------------------------------------------------------------------------
 
+; FIXME: Rename everything from `PlaybackTurbo` to `PlaybackPCMTurbo`
+
 ; -----------------------------------------------------------------------------
 ; Initializes playback registers
 ; -----------------------------------------------------------------------------
@@ -32,20 +34,6 @@
 ; WARNING! This doesn't check if playback and readhead pointers clash!
 ; Make sure to buffer at least 2 samples ahead of time before calling this!
 ; -----------------------------------------------------------------------------
-;
-; -----------------------------------------------------------------------------
-
-	macro	PlaybackTurbo_Run_DI
-	exx					; 4
-	ld	a, (hl)				; 7	load sample
-	ld	(de), a				; 7	send it to YM
-	inc	l				; 4	advance playback pointer
-	ld	a, l				; 4	a = buffer position
-	exx					; 4
-	; Cycles: 30 (playback)
-	endm
-
-; -----------------------------------------------------------------------------
 
 	macro	PlaybackTurbo_Run_EXX_DI
 	ld	a, (hl)				; 7	load sample
@@ -58,15 +46,12 @@
 
 ; -----------------------------------------------------------------------------
 
-	; "DPCM" version, assumes `bc` being one sample behind
-	macro	PlaybackTurbo_Run_EXX_DI2
-	ld	a, (hl)				; 7	load sample
-	ld	(de), a				; 7	send it to YM
-	ld	a, l				; 4	a = buffer position
-	inc	l				; 4	advance playback pointer
+	macro	PlaybackTurbo_Run_DI
 	exx					; 4
-	; Cycles: 26 (playback)
+	PlaybackTurbo_Run_EXX_DI		; 26	(see above)
+	; Cycles: 30 (playback)
 	endm
+
 
 ; -----------------------------------------------------------------------------
 ; Checks whether readahead buffer can accept more samples
@@ -112,7 +97,7 @@
 	ld	(de), a				; 7	send it to YM
 	inc	l				; 4	advance playback pointer
 	exx					; 4
-	; Total cycles: 41 (playback), 20 (drained)
+	; Total cycles: 41 (playback), 24 (drained)
 	endm
 
 ; -----------------------------------------------------------------------------
@@ -136,21 +121,4 @@
 .playback_Drained:
 	exx					; 4
 	; Total cycles: 41 (playback), 24 (drained)
-	endm
-
-
-; -----------------------------------------------------------------------------
-; Reports buffer health (UNUSED)
-; -----------------------------------------------------------------------------
-; USES:
-;	af, Shadow registers
-; -----------------------------------------------------------------------------
-
-	macro	PlaybackTurbo_VBlank_ReportBufferHealth	regReadAheadPtrLow, opHealthDst
-	exx					; 4
-	ld	a, l				; 4
-	exx					; 4
-	sub	regReadAheadPtrLow		; 4
-	ld	opHealthDst, a			; 13 - if `opHealthDst` is (nnn)
-	; Total cycles: 29
 	endm

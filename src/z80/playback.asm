@@ -221,20 +221,3 @@
 	exx					; 4
 	; Total cycles: 71-72 (playback), 28 (drained)
 	endm
-
-
-; -----------------------------------------------------------------------------
-; Reports buffer health (UNUSED)
-; -----------------------------------------------------------------------------	
-; USES:
-;	af, Shadow registers
-; -----------------------------------------------------------------------------
-
-	macro	Playback_VBlank_ReportBufferHealth	regReadAheadPtrLow, opHealthDst
-	exx					; 4
-	ld	a, l				; 4
-	exx					; 4
-	sub	regReadAheadPtrLow		; 4
-	ld	opHealthDst, a			; 13 - if `opHealthDst` is (nn)
-	; Total cycles: 29
-	endm

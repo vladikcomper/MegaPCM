@@ -71,8 +71,8 @@ PCMTurboLoop_NormalPhase:
 	PlaybackTurbo_Run_DI					; 30	playback a buffered sample
 	ei							; 4	we only allow interrupts before buffering samples
 	PlaybackTurbo_ChkReadaheadOk	e, d, PCMTurboLoop_NormalPhase	; 18
-	; Total "PCMTurboLoop_NormalPhase" cycles: 105+*
-	; *) additional cycles lost due to M68K bus access	
+	; Total "PCMTurboLoop_NormalPhase" cycles: 105 + 7*
+	; *) additional cycles lost due to M68K bus access
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
@@ -111,7 +111,7 @@ PCMTurboLoop_NormalPhase:
 PCMTurboLoop_DrainPhase:
 	; Handle playback in draining mode
 	di							; 4
-	PlaybackTurbo_Run_Draining	e, .Drained_EXX_DI	; 41/20
+	PlaybackTurbo_Run_Draining	e, .Drained_EXX_DI	; 41/24
 	ei							; 4
 
 	; Waste 56+7* cycles (instead of handling readahead)
@@ -177,10 +177,11 @@ PCMTurboLoop_ApplyCalibration:
 ; --------------------------------------------------------------
 
 PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 21 cycles
+	; Waste 17 cycles
 	exx						; 4
-	ld	a, 00h					; 7
+	nop						; 4
 	jp	PCMTurboLoop_VBlankPhase.FetchWindow	; 10
+	; WARNING! This wastes 1 extra cycle!
 
 ; --------------------------------------------------------------
 PCMTurboLoop_VBlank:
@@ -194,7 +195,7 @@ PCMTurboLoop_VBlank:
 ; --------------------------------------------------------------
 PCMTurboLoop_VBlankPhase:
 	; Handle sample playback in draining mode
-	PlaybackTurbo_Run_Draining	e, PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX	; 41/20
+	PlaybackTurbo_Run_Draining	e, PCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX	; 41/24
 
 .FetchWindow:
 	; Slightly late, but report we're in VBlank
