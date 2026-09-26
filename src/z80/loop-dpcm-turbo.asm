@@ -63,104 +63,100 @@ DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_Cont:
+	ld	ix, ActiveSample
+
 	; Init playback registers ...
-	PlaybackTurbo_Init_DI	SampleBuffer
+	PlaybackDPCMTurbo_Init_DI	SampleBuffer, DPCMTables
 
 	; Init read ahead registers ...
-	ld	bc, SampleBuffer
+	ld	de, SampleBuffer
 
 DPCMTurboLoop_Reload_DI:
-	ld	h, DPCMTables>>8
-	ld	de, (ActiveSample+sActiveSample.startOffset)
-	exx
+	ld	hl, (ActiveSample+sActiveSample.startOffset)
 	ld	bc, (ActiveSample+sActiveSample.startLength)
-	; TODO: Do this in `LoadActiveSampleData_DI` (create DPCM-specific version)
-	; or in `MegaPCM_LoadSampleTable` on 68k side.
-	dec	bc				; bc' = Remaining length in ROM bank - 1
-	inc	c				; c' = Remaining length in ROM bank - 1 (LOW) + 1
-	exx
 
 	; Set initial ROM bank ...
 	ei
 	ld	a, (ActiveSample+sActiveSample.startBank)
 	rst	SetBank
 
-	dec	c
-	ld	a, 80h				; set initial sample to zero (80h)
-	ld	(bc), a				; ''
-
 ; --------------------------------------------------------------
 ; DPCM Turbo: Main playback loop (readahead & playback)
 ; --------------------------------------------------------------
 ; Registers:
-;	bc 	= Sample buffer pos (read-ahead)
-;	de	= ROM pos
-;	hl	= DPCM decode table pointer
-;	c'	= Remaining length in ROM bank - 1 (LOW) + 1
-;	b'	= Remaining length in ROM bank - 1 (HIGH)
+;	bc	= Remaining length in ROM bank
+;	de 	= Sample buffer pos (read-ahead)
+;	hl	= ROM pos
 ; --------------------------------------------------------------
 
 DPCMTurboLoop_NormalPhase_NoCycleStealing:
-	nop					; +4*	used as entry point to the loop for poor emulators
-						;	... that don't emulate cycle-stealing
+	ld	a, 0h						; +7*	used as entry point to the loop for poor emulators
+								;	... that don't emulate cycle-stealing
 
 DPCMTurboLoop_NormalPhase:
-	; Handle "read-ahead" buffer
-	ld	a, (de)				; 7+3.3*
-	inc	de				; 6	increment ROM pointer
-	ld	l, a				; 4	l = 2 DPCM samples (nibbles)
-	ld	a, (bc)				; 7	a = previous sample
-	inc	c				; 4	increment buffer pointer
-	add	a, (hl)				; 7	a = first sample (decoded)
-	inc	h				; 4	select DPCM table for the second nibble
-	di					; 4	-- don't move this too far away from `ei` below
-	ld	(bc), a				; 7	store first sample
-	inc	c				; 4	increment buffer pointer
-	add	a, (hl)				; 7	a = second sample (decoded)
-	dec	h				; 4	reset DPCM table to the first nibble (for next iteration)
-	ld	(bc), a				; 7	store second sample
-	exx					; 4
-	dec	c				; 4	decrement sample length
-	jr	z, .ChkReadAheadExhausted_EXX_DI; 7/12	if borrow from a high byte, branch
-	; Total cycles: 87
+	; Fill "read ahead" buffer (part 1)
+	di							; 4
+	ldi							; 16+3.3*
+	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
+	jp	po, .ReadAheadExhausted_DI			; 10	if bc == 0, branch
 
-	; Handle playback
-.Playback_EXX_DI:
-	PlaybackTurbo_Run_EXX_DI2				; 26	playback a buffered sample
-	ei							; 4	we only allow interrupts before buffering samples
-	; NOTE: "sample buffer pos" (`bc`) always lags 1 sample behind
-	; as an optimization (because DPCM decoder re-fetches last sample),
-	; so `ChkReadaheadOk` check thinks read ahead buffer is full
-	; 1 sample early, but this isn't a big deal for us, since buffer
-	; is 256 samples large anyways.
-	PlaybackTurbo_ChkReadaheadOk	c, b, DPCMTurboLoop_NormalPhase	; 18
-	; Total cycles: 48
+.Playback_Nibble0_DI:
+	; Decode and play nibble 0 from the sample buffer
+	PlaybackDPCMTurbo_Run_Nibble0_DI			; 41	af <=> af', de' <=> hl'
 
-	; Total "DPCMTurboLoop_NormalPhase" cycles: ~135 + 3.3*
+	; Fill "read ahead" buffer (part 2)
+	; WARNING! `af` is actually `af'` here! Don't use accumulator without `ex af,af'` first!
+	; WARNING! Do not enable interrupts between Nibble 0 and Nibble 1 playback
+	ldi							; 16+3.3*
+	ld	d, SampleBuffer>>8				; 7	fix `d` in case of carry from `e`
+	jp	po, .ReadAheadExhausted_Nibble1_DI		; 10	if bc == 0, branch
+
+.Playback_Nibble1_DI:
+	; Decode and play nibble 1 from the sample buffer
+	PlaybackDPCMTurbo_Run_Nibble1_EXAF_DI			; 42	af <=> af', de' <=> hl'
+
+	; WARNING! Make sure no more than 170 cycles have passed since interrupts were disabled
+	ei							; 4
+	PlaybackDPCMTurbo_ChkReadaheadOk	e, d, DPCMTurboLoop_NormalPhase	; 18
+
+	; Total "DPCMTurboLoop_NormalPhase" cycles: ~175 + 7*
 	; *) additional cycles lost due to M68K bus access on average
 
 ; --------------------------------------------------------------
 .ReadAheadFull:
-	; Waste 87 + 3* cycles (we cannot handle "read-ahead" now)
+	; Spend 111 + 7* cycles here in total (we cannot handle "read-ahead" now)
+
+	; Waste 41 cycles (instead of "Fill read ahead buffer (part 1)" from the normal loop)
 	push	af						; 11
 	pop	af						; 10
-	push	af						; 11
-	pop	af						; 10
-	push	hl						; 11
-	ld	l, 0						; 7
-	pop	hl						; 10
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	nop							; 4
 	di							; 4
-	exx							; 4
-	jr	.Playback_EXX_DI				; 12
+
+	; Decode and play nibble 0 from the sample buffer
+	PlaybackDPCMTurbo_Run_Nibble0_DI			; 41	af <=> af', de' <=> hl'
+
+	; Waste 36 cycles (instead of "Fill read ahead buffer (part 2)" from the normal loop)
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	nop							; 4
+	jr	.Playback_Nibble1_DI				; 12
 
 ; --------------------------------------------------------------
-.ChkReadAheadExhausted_EXX_DI:
-	dec	b				; 4	decrement high byte of length
-	jp	p, .Playback_EXX_DI		; 10	if no borrow, back to playback
+.ReadAheadExhausted_Nibble1_DI:
+	; WARNING! `af` is actually `af'` here! Don't use accumulator without `ex af,af'` first!
 
-.ReadAheadExhausted_EXX_DI:
-	exx
+	; Decode and play nibble 1 from the sample buffer
+	PlaybackDPCMTurbo_Run_Nibble1_EXAF_DI			; 42	af <=> af', de' <=> hl'
 
+	; NOTE: `af` is restored from now on
+
+.ReadAheadExhausted_DI:
 	; NOTE: Enabling interrupts so we don't miss VBlank if it fires.
 	; Initial VBlank trigger lasts ~171 cycles, so we shouldn't disable
 	; interrupts for longer than that. Missing VBlank may mess up
@@ -168,16 +164,17 @@ DPCMTurboLoop_NormalPhase:
 	ei							; 4
 
 	; Are we done playing?
-	ld	a, (CurrentBank)				; 13
-	ld	hl, ActiveSample+sActiveSample.endBank		; 10
-	cp	(hl)						; 7	current bank is the last one?
-	jr	nz, DPCMTurboLoop_NormalPhase_LoadNextBank	; 7/12	if not, branch
+	ld	a, (CurrentBank)
+	cp	(ix+sActiveSample.endBank)			; current bank is the last one?
+	jr	nz, DPCMTurboLoop_NormalPhase_LoadNextBank	; if not, branch
 
 	; Are we looping?
-	ld	a, (ActiveSample+sActiveSample.flags)
-	bit	FLAGS_LOOP, a					; is sample set to loop?
+	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
 	jr	z, DPCMTurboLoop_DrainPhase			; if not, drain the remaining samples
-	di
+	ex	af, af'
+	ld	a, 80h						; reset initial sample to 80h
+	ex	af, af'
+	di							; NOTE: Disabling interrupts isn't necessary, but we do it for consistency anyways
 	jp	DPCMTurboLoop_Reload_DI				; otherwise, reload playback position
 
 ; --------------------------------------------------------------
@@ -185,30 +182,29 @@ DPCMTurboLoop_NormalPhase:
 ; --------------------------------------------------------------
 
 DPCMTurboLoop_DrainPhase:
-	; Handle playback in draining mode
 	di							; 4
-	; NOTE: We correct "sample buffer pos" pointer here (`bc`)
-	; As an optimization, in the normal phase loop (`DPCMLoop_NormalPhase`)
-	; "sample buffer pos" points to the start of the last sample, not the
-	; next sample to write (because DPCM decoder needs to re-fetch it)
-	; Why can't we do this correction permanently when reaching drain phase?
-	; Because VBlank also does the same correction and applying it twice
-	; may break it.
-	inc	c						; 4	correct `bc` pointer
-	PlaybackTurbo_Run_Draining	c, .Drained_EXX_DI	; 41
-	dec	c						; 4	undo `bc` pointer correction
-	ei							; 4
+	
+	; Decode and play nibble 0 from the sample buffer + drain check
+	PlaybackDPCMTurbo_Run_Draining_Nibble0	e, .Drained_EXX_DI	; 60/24
 
-	; Waste 78 + 3* cycles
-	push	af						; 11
-	pop	af						; 10
-	push	af						; 11
-	pop	af						; 10
+	; Waste 36 cycles
+	; WARNING! Do not enable interrupts between Nibble 0 and Nibble 1 playback
+	nop							; 4
 	push	hl						; 11
-	inc	hl						; 6
+	add	hl, hl						; 11	WARNING! Trashes `f`
 	pop	hl						; 10
+
+	; Decode and play nibble 1 from the sample buffer
+	PlaybackDPCMTurbo_Run_Draining_Nibble1			; 42
+
+	; Waste 40 cycles
+	ei							; 4
+	inc	hl						; 6
+	dec	hl						; 6
+	inc	hl						; 6
+	dec	hl						; 6
 	jr	DPCMTurboLoop_DrainPhase			; 12
-	; Total "DPCMTurboLoop_DrainPhase" cycles: 135 + 3*
+	; Total "DPCMTurboLoop_DrainPhase" cycles: 175 + 7*
 	; *) additional cycles lost due to M68K bus access on average
 
 
@@ -228,30 +224,24 @@ DPCMTurboLoop_DrainPhase:
 ; --------------------------------------------------------------
 DPCMTurboLoop_NormalPhase_LoadNextBank:
 	; Prepare next bank id
+	ld	a, (CurrentBank)
 	inc	a
 
 	; Setup sample source and length
-	cp	(hl)				; is next bank the last one?
-	ld	h, DPCMTables>>8
-	ld	de, ROMWindow			; de = 8000h (alt: ld b, ROMWindow<<8)
-	di					; we can't allow interrupts when using shadow registers
-	exx
-	ld	bc, 7F00h			; bc' = 7F00h (7Fh+0, FFh+1)
-	jr	nz, .length_ok			; if not the last bank, branch
+	ld	hl, ROMWindow			; hl = 8000h (alt: ld h, ROMWindow<<8)
+	ld	b, h				; bc = 8000h (alt: ld b, 80h)
+	cp	(ix+sActiveSample.endBank)	; current bank is the last one?
+	jr	nz, .length_ok			; if not, branch
 	ld	bc, (ActiveSample+sActiveSample.endLength)
-	dec	bc				; bc' = Remaining length in ROM bank - 1
-	inc	c				; c' = Remaining length in ROM bank - 1 (LOW) + 1
 .length_ok:
-	exx
-	ei
 
 	; Switch to the next ROM bank
 	rst	SetBank2
 
 	; Jump back to playback loop where we left off...
 	di
-	exx
-	jp	DPCMTurboLoop_NormalPhase.Playback_EXX_DI
+	; FIXME: Make sure lack of "readahead buffer full" check won't cause issues (it shouldn't)
+	jp	DPCMTurboLoop_NormalPhase.Playback_Nibble0_DI
 
 ; --------------------------------------------------------------
 ; DPCM Turbo: Apply calibration for inaccurate emulators
@@ -261,10 +251,6 @@ DPCMTurboLoop_NormalPhase_LoadNextBank:
 ; --------------------------------------------------------------
 
 DPCMTurboLoop_ApplyCalibration:
-	; TODO:
-	;ld 	hl, DPCMTurboLoop_NormalPhase_NoCycleStealing
-	;ld 	(DPCMTurboLoop_NormalPhase.chkReadahead_sm1+1), hl
-	;
 	ld	hl, DPCMTurboLoop_NormalPhase.chkReadahead_sm1+1
 	ld	(hl), DPCMTurboLoop_NormalPhase_NoCycleStealing&0FFh
 	inc	hl
@@ -275,54 +261,62 @@ DPCMTurboLoop_ApplyCalibration:
 ; DPCM Turbo: VBlank loop (playback only)
 ; --------------------------------------------------------------
 
-DPCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX:
-	; Waste 21 cycles
+DPCMTurboLoop_VBlank_Loop_Drained_EXX:
+	; WARNING! BUG! This branch doesn't report we're in VBlank!
+	; Waste 111 cycles
 	exx						; 4
-	ld	a, 00h					; 7
-	jp	DPCMTurboLoop_VBlankPhase.FetchWindow	; 10
+	push	hl					; 11
+	pop	hl					; 10
+	push	hl					; 11
+	pop	hl					; 10
+	push	hl					; 11
+	pop	hl					; 10
+	push	hl					; 11
+	add	hl, hl					; 15
+	pop	hl					; 10
+	jp	DPCMTurboLoop_VBlankPhase.DrainSynced	; 12
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_VBlank:
 	push	af
 	push	bc
-	inc	c					; correct "read ahead" pointer (see comment on previous `inc c` instruction)
 
 	; NOTE: VBlank takes ~8653 cycles on NTSC or up to ~20008 on PAL (V28 mode).
-	; This means in worst-case scenario, we must play 144 samples to survive VBlank.
-	ld	b, 144-2
+	; This means in worst-case scenario, we must play 240 samples to survive VBlank.
+	ld	b, 240/2-1+1	; FIXME: Check this number
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_VBlankPhase:
-	; Handle sample playback in draining mode
-	PlaybackTurbo_Run_Draining	c, DPCMTurboLoop_VBlank_Loop_DrainDoneSync_EXX	; 41/20	playback one sample
+	; Play nibble 0 in Draining mode
+	PlaybackDPCMTurbo_Run_Draining_Nibble0	e, DPCMTurboLoop_VBlank_Loop_Drained_EXX	; 60/24
 
-.FetchWindow:
 	; Slightly late, but report we're in VBlank
 	ld	a, 0FFh					; 7
 	ld	(VBlankActive), a			; 13
 
-	; Waste 74 + 3* cycles
-	push	bc					; 11
-	pop	bc					; 10
+	; Waste 16 cycles
+	nop						; 4
+	inc	hl					; 6
+	dec	hl					; 6
+
+	; Play nibble 1 in Draining mode
+	PlaybackDPCMTurbo_Run_Draining_Nibble1		; 42
+
+.DrainSynced:
+	; Waste 44 cycles
 	push	hl					; 11
-	add	hl, hl					; 11
-	add	hl, hl					; 11
+	nop						; 4
+	inc	hl					; 6
 	pop	hl					; 10
 	djnz	DPCMTurboLoop_VBlankPhase		; 13/8
-	; Total "DPCMTurboLoop_VBlankPhase" cycles: 135 + 3*
+	; Total "DPCMTurboLoop_VBlankPhase" cycles: 175 + 7*
 	; *) emulated lost cycles on M68K bus access on average
 
 .LastIteration:
-	; Handle sample playback in the last iteration
-	PlaybackTurbo_Run_Draining_NoSync	c	; 41/24
-
 	rst	ProcessCommandInput			; 11+22	returns a=0 once driver input is processed
-
-	ld	a, 0					; 4 	a=0
 	ld	(VBlankActive), a			; 13	report we're out of VBlank
 
-	ld	bc, 0					; 10
-	pop	bc					; 10	also undoes "read ahead" pointer correction
+	pop	bc					; 10
 	pop	af					; 10
 	ei						; 4
 	ret						; 10

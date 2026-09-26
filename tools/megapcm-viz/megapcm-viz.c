@@ -131,7 +131,7 @@ static inline void Z80VM_Extension_SampleBufferHealth(Z80VM_Context * z80vm) {
 
 	const uint8_t loopId = z80vm->programRAM[Z_MPCM_LoopId];
 	const uint8_t playbackPos = z80vm->z80State.registers.byte[Z80_L];
-	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_TURBO) || (loopId == Z_MPCM_LOOP_DPCM_HQ) || (loopId == Z_MPCM_LOOP_DPCM_HQ_TURBO))
+	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_HQ))
 		? (z80vm->z80State.alternates[Z80_BC] & 0xFF)
 		: (z80vm->z80State.alternates[Z80_DE] & 0xFF);
 

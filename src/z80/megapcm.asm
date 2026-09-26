@@ -10,9 +10,11 @@
 ; Naming conventions:
 ;
 ; - `SomeLabel_EXX` - routine expects alternative regiters
-;	(`exx` must be executed before calling or jumping to it!)
+;	(`exx` must be executed before calling or jumping to it)
+; - `SomeLabel_EXAF` - routine expects af and af` to be swapped
+;	(`ex af, af'` must be run before calling or jumping)
 ; - `SomeLabel_DI` - routine expects interrupts to be disabled
-;	(`di` must be executed before calling or jumping to it!)
+;	(`di` must be executed before calling or jumping to it)
 ; - `SomeLabel_NR` - routine is a NO RETURN
 ;	(it fully resets stack and currently running loop)
 ; --------------------------------------------------------------
@@ -21,6 +23,7 @@
 	include	'trace.asm'			; trace support for Z80VM
 	include	'playback.asm'			; normal mode playback macros
 	include	'playback-pcm-turbo.asm'	; "Turbo" mode playback macros for PCM streams
+	include	'playback-dpcm-turbo.asm'	; "Turbo" mode playback macros for DPCM streams
 
 ; --------------------------------------------------------------
 
@@ -113,10 +116,10 @@ VoidInterrupt:
 ; --------------------------------------------------------------
 
 	include	'loop-idle.asm'
+	include	'loop-pause.asm'
 	include	'loop-pcm.asm'
 	include	'loop-pcm-turbo.asm'
 	include	'loop-dpcm.asm'
-	include	'loop-dpcm-turbo.asm'
 
 ; --------------------------------------------------------------
 ; Mega PCM buffers and tables (aligned on 256-byte boundaries)
@@ -191,7 +194,7 @@ VolumeTables:
 ; Mega PCM loops (Part 2)
 ; --------------------------------------------------------------
 
-	include	'loop-pause.asm'
+	include	'loop-dpcm-turbo.asm'
 
 ; --------------------------------------------------------------
 ; Misc. modules (Part 2)
