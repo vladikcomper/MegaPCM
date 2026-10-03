@@ -66,10 +66,10 @@
 	; hl'	= DPCM decode table for nibble 1
 	exx					; 4
 	add	a, (hl)				; 7	a' = current sample
+	ld	(bc), a				; 7	send to YM
 	dec	h				; 4	use nibble 0 decode table next
 	ex	de, hl				; 4
 	inc	l				; 4	next buffer pos
-	ld	(bc), a				; 7	send to YM
 	ex	af, af'				; 4	remember as previous sample
 	ld	a, l				; 4	a = buffer pos
 	;FIXME: ei here

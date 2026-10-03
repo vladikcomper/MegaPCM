@@ -25,7 +25,7 @@ PRIO_HIGHEST:	equ	$30		; priority level 3 (higest)
 ; Maximum playback rates:
 TYPE_PCM_TURBO_MAX_RATE:	equ	32000 ; Hz
 TYPE_PCM_MAX_RATE:			equ	25100 ; Hz
-TYPE_DPCM_TURBO_MAX_RATE:	equ	25800 ; Hz
+TYPE_DPCM_TURBO_MAX_RATE:	equ	39200 ; Hz
 TYPE_DPCM_MAX_RATE:			equ	20600 ; Hz
 
 ; Internal driver's base rates for pitched playback.
