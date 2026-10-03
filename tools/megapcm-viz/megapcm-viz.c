@@ -130,13 +130,15 @@ static inline void Z80VM_Extension_SampleBufferHealth(Z80VM_Context * z80vm) {
 	Z80VM_Extension* extension = z80vm->stateExtension;
 
 	const uint8_t loopId = z80vm->programRAM[Z_MPCM_LoopId];
-	const uint8_t playbackPos = z80vm->z80State.registers.byte[Z80_L];
-	const uint8_t readaheadPos = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_HQ))
-		? (z80vm->z80State.alternates[Z80_BC] & 0xFF)
-		: (z80vm->z80State.alternates[Z80_DE] & 0xFF);
+	const uint16_t playbackPtr = ((loopId == Z_MPCM_LOOP_DPCM_TURBO || loopId == Z_MPCM_LOOP_DPCM_HQ_TURBO) && (z80vm->z80State.registers.byte[Z80_D] == (Z_MPCM_SampleBuffer>>8)))
+		? z80vm->z80State.registers.word[Z80_DE]
+		: z80vm->z80State.registers.word[Z80_HL];
+	const uint16_t readaheadPtr = ((loopId == Z_MPCM_LOOP_DPCM) || (loopId == Z_MPCM_LOOP_DPCM_HQ))
+		? z80vm->z80State.alternates[Z80_BC]
+		: z80vm->z80State.alternates[Z80_DE];
 
 	assert(extension->mpcm_buffer_health_sampled_pos < MAX_SAMPLES_PER_TV_FRAME);
-	extension->mpcm_buffer_health_sampled[extension->mpcm_buffer_health_sampled_pos++] = 0xFF - (playbackPos - readaheadPos);
+	extension->mpcm_buffer_health_sampled[extension->mpcm_buffer_health_sampled_pos++] = 0xFF - ((playbackPtr & 0xFF) - (readaheadPtr & 0xFF));
 }
 
 
