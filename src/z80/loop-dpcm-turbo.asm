@@ -65,13 +65,13 @@ DPCMHQTurboLoop:	; DPCM-HQ (Turbo mode)
 DPCMTurboLoop_Cont:
 	ld	ix, ActiveSample
 
+DPCMTurboLoop_Reload_DI:
 	; Init playback registers ...
 	PlaybackDPCMTurbo_Init_DI	SampleBuffer, DPCMTables
 
 	; Init read ahead registers ...
 	ld	de, SampleBuffer
 
-DPCMTurboLoop_Reload_DI:
 	ld	hl, (ActiveSample+sActiveSample.startOffset)
 	ld	bc, (ActiveSample+sActiveSample.startLength)
 
@@ -173,12 +173,6 @@ DPCMTurboLoop_NormalPhase:
 	cp	(ix+sActiveSample.endBank)			; current bank is the last one?
 	jr	nz, DPCMTurboLoop_NormalPhase_LoadNextBank	; if not, branch
 
-	; Are we looping?
-	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
-	jr	z, DPCMTurboLoop_DrainPhase			; if not, drain the remaining samples
-	di							; NOTE: Disabling interrupts isn't necessary, but we do it for consistency anyways
-	jp	DPCMTurboLoop_Reload_DI				; otherwise, reload playback position
-
 ; --------------------------------------------------------------
 ; DPCM Turbo: Draining loop (playback only)
 ; --------------------------------------------------------------
@@ -220,8 +214,12 @@ DPCMTurboLoop_DrainPhase:
 	; "DMA protection" (avoiding ROM access during VBlank)
 	ei
 
-	; Return from the playback loop
-	ret
+	; Are we looping?
+	bit	FLAGS_LOOP, (ix+sActiveSample.flags)		; is sample set to loop?
+	ret	z						; if not, return
+	; NOTE: `WaitVBlankEnd` auto-disables interrupts after execution
+	call	WaitVBlankEnd					; we must wait until start of next frame
+	jp	DPCMTurboLoop_Reload_DI				; re-enter playback loop
 
 ; --------------------------------------------------------------
 DPCMTurboLoop_NormalPhase_LoadNextBank:
@@ -241,7 +239,7 @@ DPCMTurboLoop_NormalPhase_LoadNextBank:
 	rst	SetBank2
 
 	; Jump back to playback loop where we left off...
-	; FIXME: Make sure lack of "readahead buffer full" check won't cause issues (it shouldn't)
+	; TODO: Make sure lack of "readahead buffer full" check won't cause issues (it shouldn't)
 	jp	DPCMTurboLoop_NormalPhase
 
 ; --------------------------------------------------------------

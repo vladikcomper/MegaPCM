@@ -26,14 +26,7 @@ PauseLoop:
 	ld	(VBlankRoutine), hl
 	pop	hl
 
-	; Wait for VBlank now
-	ei
-
-.waitVBlank:
-	; TODO: Break out of loop in case if VBlank is disabled for good
-	nop
-	nop
-	jr	.waitVBlank
+	jp	WaitVBlank_NR
 
 ; --------------------------------------------------------------
 ; Pause loop: VBlank phase

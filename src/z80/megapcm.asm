@@ -95,15 +95,7 @@ Driver_Start:
 
 	; RST 38h - Standard VBlank handler
 	org	38h
-VBlank:
-	jp	VoidInterrupt	; NOTE: self-modifying code
-
-VBlankRoutine:	equ	VBlank+1
-
-; --------------------------------------------------------------
-VoidInterrupt:
-	TraceException	"Invalid interrupt"
-	ret
+	include	'vblank.asm'
 
 ; --------------------------------------------------------------
 ; Misc. modules (Part 1)

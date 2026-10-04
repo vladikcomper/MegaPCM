@@ -19,14 +19,7 @@ IdleLoop:
 	ld	hl, IdleLoop_VBlank
 	ld	(VBlankRoutine), hl
 
-	; Wait for VBlank now
-	ei
-
-.waitVBlank:
-	; TODO: Break out of loop in case if VBlank is disabled for good
-	nop
-	nop
-	jr	.waitVBlank
+	jp	WaitVBlank_NR
 
 ; --------------------------------------------------------------
 ; Idle loop: VBlank phase

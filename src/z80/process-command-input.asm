@@ -8,6 +8,7 @@
 ; (c) 2023-2026, Vladikcomper
 ; -----------------------------------------------------------------------------
 
+	assert ($ & 0FFFC7h) == 0	; must be RST-compatible offset
 
 ; -----------------------------------------------------------------------------
 ; Reads and processes commands in `(CommandInput)` byte
